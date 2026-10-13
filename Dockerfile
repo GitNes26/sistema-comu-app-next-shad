@@ -5,8 +5,15 @@
 # ---- Etapa 1: dependencias (cache de npm ci) ----
 FROM node:22-bookworm-slim AS deps
 WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm ci
+# Prisma necesita OpenSSL para detectar su motor al generar el cliente.
+RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+# El postinstall del proyecto (prisma generate + copia del worker de pdf.js y la tipografía
+# de los diplomas) necesita estos archivos ANTES de instalar; sin ellos `npm ci` falla.
+COPY package.json package-lock.json prisma.config.ts ./
+COPY prisma ./prisma
+COPY scripts ./scripts
+# DATABASE_URL de relleno: Prisma 7 la exige para cargar su configuración; no se conecta.
+RUN DATABASE_URL="mysql://build:build@localhost:3306/build" npm ci
 
 # ---- Etapa 2: build (genera Prisma + compila Next) ----
 FROM node:22-bookworm-slim AS build
@@ -31,6 +38,8 @@ COPY . .
 RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 # DATABASE_URL de relleno: Prisma 7 la exige para cargar la configuración; no se conecta.
 RUN DATABASE_URL="mysql://build:build@localhost:3306/build" npx prisma generate
+# Archivos estáticos que salen de node_modules (worker de pdf.js, tipografía de diplomas).
+RUN node scripts/copy-pdfjs-worker.mjs
 RUN npm run build
 
 # ---- Etapa 3: runner ----

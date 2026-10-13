@@ -2,14 +2,14 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { getServerSession } from "next-auth"
 import { redirect } from "next/navigation"
-import { ArrowLeft, CalendarDays, HandHeart, Users } from "lucide-react"
+import { ArrowLeft, CalendarDays, Users } from "lucide-react"
 import { authOptions } from "@/lib/auth/options"
 import { effectiveOrgId } from "@/lib/auth/org-context"
 import { listMyMinistries } from "@/lib/ministries/server"
 import { MINISTRY_ROLE_LABEL } from "@/lib/ministries/rules"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { EmptyState } from "@/components/shared/empty-state"
+import { NoMinistries } from "@/components/mi/no-ministries"
 import { StatusPill } from "@/components/base"
 import { JoinMinistries } from "@/components/portal/join-ministries"
 
@@ -37,11 +37,7 @@ export default async function MyMinistriesPage() {
       {ministries.length === 0 ? (
         <Card>
           <CardContent>
-            <EmptyState
-              icon={HandHeart}
-              title="Aún no sirves en un ministerio"
-              description="Cuando te integren a uno, aparecerá aquí con sus reuniones y su lista."
-            />
+            <NoMinistries />
           </CardContent>
         </Card>
       ) : (

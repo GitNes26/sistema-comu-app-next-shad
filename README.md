@@ -54,3 +54,17 @@ src/lib/            auth, crud, settings, billing, menus, panel, mi, db…
 prisma/             schema, migraciones, seeders
 docs/               BRIEF y guías para agentes
 ```
+
+## Solución de problemas
+
+**Windows: `EPERM: operation not permitted, rename … .nextdevserver*.js.tmp` y el servidor se cae.**
+Turbopack escribe sus manifiestos en un archivo temporal y lo renombra; si otro proceso tiene abierto el archivo destino, Windows rechaza el rename. Causas habituales, en orden:
+
+1. **Extensiones que se inyectan en Node** (p. ej. *Console Ninja*): desactívala para este proyecto (Extensiones → *Disable (Workspace)*) y reinicia el servidor.
+2. **Antivirus** (Windows Defender en tiempo real): excluye `.next` y `node_modules` desde PowerShell **como administrador**:
+   `Add-MpPreference -ExclusionPath "<ruta del proyecto>.next","<ruta del proyecto>
+ode_modules"`
+3. **Dos procesos usando `.next`** (un `next dev` y un `next build`/`next start` a la vez, o dos `next dev`): usa uno solo.
+4. Si sigue pasando: `NEXT_DEV_FS_CACHE=off npm run dev` apaga la caché en disco de Turbopack (arranca más lento, escribe menos).
+
+Para arrancar desde cero tras un bloqueo: `npm run dev:clean` (borra `.next` y arranca).

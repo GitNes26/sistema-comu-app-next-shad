@@ -5,6 +5,9 @@ const nextConfig: NextConfig = {
   agentRules: false,
   // sharp usa binarios nativos: se mantiene fuera del empaquetado.
   serverExternalPackages: ["sharp"],
+  // En Windows, antivirus o extensiones que vigilan la carpeta pueden bloquear los archivos que
+  // Turbopack reescribe (EPERM en .next/dev). NEXT_DEV_FS_CACHE=off apaga su caché en disco.
+  experimental: { turbopackFileSystemCacheForDev: process.env.NEXT_DEV_FS_CACHE !== "off" },
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "images.unsplash.com" },

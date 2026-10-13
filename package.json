@@ -1,6 +1,6 @@
 {
   "name": "sistema-comu-app",
-  "version": "0.17.0",
+  "version": "0.17.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
@@ -23,7 +23,8 @@
     "version:init": "node scripts/version-bump.mjs --init",
     "test:integration": "node --test --test-concurrency=1 tests/permissions.integration.test.mjs",
     "postinstall": "prisma generate && node scripts/copy-pdfjs-worker.mjs",
-    "vapid:generate": "node scripts/generate-vapid.mjs"
+    "vapid:generate": "node scripts/generate-vapid.mjs",
+    "dev:clean": "node -e \"require('fs').rmSync('.next',{recursive:true,force:true,maxRetries:10,retryDelay:300})\" && next dev --turbopack"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts",
