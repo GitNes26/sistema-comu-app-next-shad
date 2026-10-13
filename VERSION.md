@@ -30,6 +30,10 @@ Formato: `MAJOR.MINOR.PATCH.REVISION` (X.X.X.X)
 
 ## Historial
 
+### [0.17.2.0] — 2026-10-13
+- **Tipo:** `fix` (Patch)
+- fix: el build en Docker no necesita DATABASE_URL (cliente de base de datos perezoso) y se pasa un valor de relleno al compilar
+
 ### [0.17.1.0] — 2026-10-13
 - **Tipo:** `fix` (Patch)
 - fix:se arreglo detalles del Dockerfile

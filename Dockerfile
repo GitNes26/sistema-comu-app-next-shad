@@ -40,7 +40,8 @@ RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists
 RUN DATABASE_URL="mysql://build:build@localhost:3306/build" npx prisma generate
 # Archivos estáticos que salen de node_modules (worker de pdf.js, tipografía de diplomas).
 RUN node scripts/copy-pdfjs-worker.mjs
-RUN npm run build
+# DATABASE_URL de relleno: solo evita que alguna ruta intente leerla al compilar; no se conecta.
+RUN DATABASE_URL="mysql://build:build@localhost:3306/build" npm run build
 
 # ---- Etapa 3: runner ----
 FROM node:22-bookworm-slim AS runner
