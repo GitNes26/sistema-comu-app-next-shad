@@ -10,7 +10,7 @@ export function isDemoSeedingEnabled() {
   return process.env.SEED_DEMO === "true" && process.env.NODE_ENV !== "production"
 }
 
-const DEMO_PASSWORD = process.env.DEMO_PASSWORD ?? "Demo-Comu-2026"
+const DEMO_PASSWORD = process.env.DEMO_PASSWORD ?? "Demo123"
 const ORG_NAME = "Comunidad Torreón (demo)"
 
 type DemoUser = {

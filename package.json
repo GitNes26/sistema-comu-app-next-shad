@@ -22,7 +22,8 @@
     "version:bump": "node scripts/version-bump.mjs",
     "version:init": "node scripts/version-bump.mjs --init",
     "test:integration": "node --test --test-concurrency=1 tests/permissions.integration.test.mjs",
-    "postinstall": "prisma generate && node scripts/copy-pdfjs-worker.mjs"
+    "postinstall": "prisma generate && node scripts/copy-pdfjs-worker.mjs",
+    "vapid:generate": "node scripts/generate-vapid.mjs"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts",
