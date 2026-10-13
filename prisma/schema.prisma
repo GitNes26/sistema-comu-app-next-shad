@@ -1,0 +1,2775 @@
+// COMU-APP — Esquema Prisma (MySQL 8.x, Prisma 7).
+// Núcleo transversal (identidad, tenancy, acceso, menús, apariencia, avisos) +
+// dominio de iglesia por lotes. Cada lote nuevo agrega una migración versionada.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Nivel del rol dentro del sistema. Los nombres visibles (Pastor, Tesorero,
+/// Líder de célula…) viven en la tabla `roles`; este enum solo fija el nivel.
+enum OrgRole {
+  superadmin // Plataforma (sin iglesia)
+  owner // Propietario/pastor principal: acceso total a su iglesia
+  admin // Administrador de iglesia: acceso total
+  leader // Líderes y administrativos con permisos configurables
+  servant // Servidores con permisos limitados
+  believer // Creyente: solo su espacio personal
+}
+
+/// Jerarquía eclesiástica (no es un rol del sistema: describe a la persona).
+enum ChurchHierarchy {
+  believer
+  leader
+  disciple
+  pastor
+}
+
+/// Etapas de la visión de crecimiento (ciclo).
+enum VisionStage {
+  win // Ganar
+  consolidate // Consolidar
+  encounter // Encuentro con Jesús
+  school // Escuela de ministerio
+  launch // Lanzamiento
+  leadership // Liderazgo
+  discipleship // Discipulado
+}
+
+enum Gender {
+  male
+  female
+}
+
+enum MaritalStatus {
+  single
+  married
+  free_union
+  separated
+  divorced
+  widowed
+}
+
+/// Papel de una persona DENTRO de un ministerio. Una persona puede tener uno distinto
+/// en cada ministerio (líder en uno, servidor en otro) y estar en varios a la vez.
+enum MinistryRole {
+  leader // Líder: gestiona el ministerio (miembros, reuniones, lista, requisiciones)
+  assistant // Apoyo: prepara al siguiente líder; ve y pasa lista
+  servant // Servidor
+}
+
+enum MeetingKind {
+  internal // Junta del ministerio
+  rehearsal // Ensayo / capacitación
+  service // Servicio en el que el ministerio participa
+}
+
+enum AttendanceStatus {
+  present
+  absent
+  excused
+}
+
+enum RequestStatus {
+  pending
+  approved
+  rejected
+  delivered
+  cancelled
+}
+
+/// Confirmación de un servidor ante su lugar en el rol de alabanza.
+enum RosterStatus {
+  pending
+  confirmed
+  declined
+}
+
+enum AuditionStatus {
+  scheduled
+  passed
+  failed
+  cancelled
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IDENTIDAD Y TENANCY
+// ─────────────────────────────────────────────────────────────────────────────
+
+model User {
+  id                        String    @id @default(cuid())
+  email                     String    @unique
+  passwordHash              String
+  fullName                  String
+  avatarUrl                 String?
+  phone                     String?
+  isActive                  Boolean   @default(true)
+  emailVerified             DateTime?
+  activationRequired        Boolean   @default(false)
+  legalAcceptedAt           DateTime?
+  legalVersion              String?
+  isSuperadmin              Boolean   @default(false)
+  passwordResetToken        String?   @unique
+  passwordResetExpires      DateTime?
+  passwordChangeCodeHash    String?
+  passwordChangeCodeExpires DateTime?
+  /// Se incrementa para invalidar todas las sesiones (cambio de contraseña, baja).
+  authVersion               Int       @default(0)
+  /// Última iglesia activa (se valida contra membresías al iniciar sesión).
+  lastOrganizationId        String?
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @updatedAt
+
+  memberships            Membership[]
+  profile                Profile?
+  organizationsOwned     Organization[]     @relation("OrganizationOwner")
+  members                Member[]
+  notifications          Notification[]
+  recipientNotifications Notification[]     @relation("NotificationRecipient")
+  invitationsSent        UserInvitation[]   @relation("UserInvitationInvitedBy")
+  pushSubscriptions      PushSubscription[]
+
+  @@map("users")
+}
+
+/// Iglesia (tenant). Todo dato de negocio cuelga de `organizationId`.
+model Organization {
+  id            String   @id @default(cuid())
+  name          String
+  ownerId       String
+  currency      String   @default("MXN")
+  timezone      String   @default("America/Mexico_City")
+  isBlocked     Boolean  @default(false)
+  blockedReason String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  owner                 User                      @relation("OrganizationOwner", fields: [ownerId], references: [id])
+  memberships           Membership[]
+  companyProfile        CompanyProfile?
+  appSettings           AppSettings?
+  locations             Location[]
+  members               Member[]
+  memberStageLogs       MemberStageLog[]
+  ministries            Ministry[]
+  ministryMembers       MinistryMember[]
+  ministryMeetings      MinistryMeeting[]
+  ministryAttendance    MinistryAttendance[]
+  ministryRequests      MinistryRequest[]
+  songs                 Song[]
+  consolidationCases    ConsolidationCase[]
+  consolidationContacts ConsolidationContact[]
+  kidsRooms             KidsRoom[]
+  kidsChildren          KidsChild[]
+  kidsGuardians         KidsGuardian[]
+  kidsSessions          KidsSession[]
+  kidsAttendance        KidsAttendance[]
+  kidsRoomStaff         KidsRoomStaff[]
+  kidsMessages          KidsMessage[]
+  cellNetworks          CellNetwork[]
+  cellTypes             CellType[]
+  cells                 Cell[]
+  cellMembers           CellMember[]
+  cellMeetings          CellMeeting[]
+  cellAttendance        CellAttendance[]
+  cellTransfers         CellTransfer[]
+  gatheringSeries       GatheringSeries[]
+  gatherings            Gathering[]
+  gatheringMinistries   GatheringMinistry[]
+  worshipPrograms       WorshipProgram[]
+  worshipProgramSongs   WorshipProgramSong[]
+  worshipRoster         WorshipRosterEntry[]
+  worshipAuditions      WorshipAudition[]
+  employeePositions     EmployeePosition[]
+  employees             Employee[]
+  roles                 Role[]
+  rolePermissions       RolePermission[]
+  userInvitations       UserInvitation[]
+  notifications         Notification[]
+  pushSubscriptions     PushSubscription[]
+  subscription          OrganizationSubscription?
+  subscriptionPayments  SubscriptionPayment[]
+  posts                 Post[]
+  paymentGateways       PaymentGateway[]
+  eventStaffRequests    EventStaffRequest[]
+  eventStaffAssignments EventStaffAssignment[]
+  gatheringServers      GatheringServer[]
+  reportSchedules       ReportSchedule[]
+  bankStatements        BankStatement[]
+  bankLines             BankLine[]
+  streams               Stream[]
+  ministryJoinRequests  MinistryJoinRequest[]
+  venues                Venue[]
+  events                Event[]
+  eventSections         EventSection[]
+  eventItinerary        EventItineraryItem[]
+  eventChecklist        EventChecklistItem[]
+  eventTickets          EventTicket[]
+  eventPayments         EventPayment[]
+  eventAudiences        EventAudienceMinistry[]
+  expenses              Expense[]
+  schools               School[]
+  courses               Course[]
+  courseContents        CourseContent[]
+  courseGroups          CourseGroup[]
+  enrollments           Enrollment[]
+  schoolPayments        SchoolPayment[]
+  classSessions         ClassSession[]
+  classAttendance       ClassAttendance[]
+  assessments           Assessment[]
+  questions             Question[]
+  submissions           Submission[]
+  grades                Grade[]
+  courseDocuments       CourseDocument[]
+  documentSections      DocumentSection[]
+  documentAnnotations   DocumentAnnotation[]
+  diplomas              Diploma[]
+  incomes               Income[]
+  donations             Donation[]
+  vehicles              Vehicle[]
+  vehicleLogs           VehicleLog[]
+  vehicleServices       VehicleService[]
+  vehicleFuels          VehicleFuel[]
+  vehicleDocuments      VehicleDocument[]
+  payrollRuns           PayrollRun[]
+  payrollEntries        PayrollEntry[]
+
+  @@map("organizations")
+}
+
+model SubscriptionPlan {
+  id                     String                     @id @default(cuid())
+  name                   String                     @unique
+  description            String?
+  monthlyPrice           Decimal                    @db.Decimal(12, 2)
+  includedLocations      Int                        @default(1)
+  includedEmployees      Int                        @default(1)
+  extraLocationPrice     Decimal                    @default(0) @db.Decimal(12, 2)
+  extraEmployeePackSize  Int                        @default(1)
+  extraEmployeePackPrice Decimal                    @default(0) @db.Decimal(12, 2)
+  features               Json                       @default("[]")
+  /// Permisos incluidos (null = sin restricción). Limita lo que pueden usar los roles.
+  permissions            Json?
+  isActive               Boolean                    @default(true)
+  sortOrder              Int                        @default(0)
+  createdAt              DateTime                   @default(now())
+  updatedAt              DateTime                   @updatedAt
+  subscriptions          OrganizationSubscription[]
+  payments               SubscriptionPayment[]
+
+  @@map("subscription_plans")
+}
+
+model OrganizationSubscription {
+  id                 String                @id @default(cuid())
+  organizationId     String                @unique
+  planId             String
+  status             String                @default("active")
+  periodStartsAt     DateTime              @default(now())
+  periodEndsAt       DateTime
+  graceEndsAt        DateTime?
+  extraLocations     Int                   @default(0)
+  extraEmployeePacks Int                   @default(0)
+  autoBlockOnPastDue Boolean               @default(true)
+  reminderDaysBefore Int                   @default(5)
+  lastReminderAt     DateTime?
+  notes              String?
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  organization       Organization          @relation(fields: [organizationId], references: [id])
+  plan               SubscriptionPlan      @relation(fields: [planId], references: [id])
+  payments           SubscriptionPayment[]
+
+  @@index([status, periodEndsAt])
+  @@map("organization_subscriptions")
+}
+
+model SubscriptionPayment {
+  id             String                    @id @default(cuid())
+  organizationId String
+  subscriptionId String?
+  planId         String?
+  amount         Decimal                   @db.Decimal(12, 2)
+  currency       String                    @default("MXN")
+  status         String                    @default("paid")
+  paidAt         DateTime?
+  periodStartsAt DateTime?
+  periodEndsAt   DateTime?
+  reference      String?
+  notes          String?
+  createdAt      DateTime                  @default(now())
+  organization   Organization              @relation(fields: [organizationId], references: [id])
+  subscription   OrganizationSubscription? @relation(fields: [subscriptionId], references: [id])
+  plan           SubscriptionPlan?         @relation(fields: [planId], references: [id])
+
+  @@index([organizationId, createdAt])
+  @@map("subscription_payments")
+}
+
+/// Acceso de un usuario a una iglesia, con su nivel (`role`) y rol configurable (`roleId`).
+model Membership {
+  id             String   @id @default(cuid())
+  userId         String
+  organizationId String
+  role           OrgRole
+  roleId         String?
+  createdAt      DateTime @default(now())
+
+  user         User         @relation(fields: [userId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
+  roleRef      Role?        @relation(fields: [roleId], references: [id])
+
+  @@unique([userId, organizationId])
+  @@map("memberships")
+}
+
+/// 1:1 con users (mismo id)
+model Profile {
+  id          String   @id
+  user        User     @relation(fields: [id], references: [id])
+  fullName    String?
+  avatarUrl   String?
+  phone       String?
+  preferences Json     @default("{}")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("profiles")
+}
+
+/// Datos de la iglesia: identidad, contacto, redes y datos de donativos.
+model CompanyProfile {
+  id               String   @id @default(cuid())
+  organizationId   String   @unique
+  legalName        String?
+  tradeName        String?
+  taxId            String?
+  description      String?  @db.Text
+  logoUrl          String?
+  address          String?
+  city             String?
+  state            String?
+  postalCode       String?
+  country          String?
+  phone            String?
+  email            String?
+  website          String?
+  /// Redes sociales: { facebook, instagram, youtube, tiktok, ... }
+  socialLinks      Json     @default("{}")
+  /// Donativos (diezmos y ofrendas): se muestran a los creyentes.
+  donationsEnabled Boolean  @default(false)
+  donationBank     String?
+  donationHolder   String?
+  donationClabe    String?
+  donationAccount  String?
+  donationCard     String?
+  donationLink     String?
+  donationNote     String?  @db.VarChar(300)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@map("company_profiles")
+}
+
+model AppSettings {
+  id             String   @id @default(cuid())
+  organizationId String   @unique
+  primaryHue     Int      @default(24)
+  accentHue      Int      @default(190)
+  theme          String   @default("system")
+  fontFamily     String   @default("poppins")
+  fontScale      Decimal  @default(1) @db.Decimal(3, 2)
+  cardSize       String   @default("md")
+  density        String   @default("comfortable")
+  borderRadius   Decimal  @default(0.75) @db.Decimal(3, 2)
+  sidebarStyle   String   @default("full")
+  surfaceTone    String   @default("subtle")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@map("app_settings")
+}
+
+/// Sede de la iglesia (opcional: una iglesia puede tener una o varias).
+model Location {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  code           String?
+  address        String?
+  latitude       Decimal? @db.Decimal(10, 8)
+  longitude      Decimal? @db.Decimal(11, 8)
+  managerName    String?
+  phone          String?
+  email          String?
+  imageUrl       String?
+  notes          String?
+  timezone       String   @default("America/Mexico_City")
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  members      Member[]
+  employees    Employee[]
+
+  @@index([organizationId])
+  @@map("locations")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PERSONAS (padrón de creyentes) Y PERSONAL
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Creyente: entidad central. Existe con o sin usuario; el usuario es solo la
+/// cuenta de acceso (`userId`).
+model Member {
+  id                String          @id @default(cuid())
+  organizationId    String
+  locationId        String?
+  userId            String?
+  memberCode        String?
+  fullName          String
+  phone             String?
+  email             String?
+  gender            Gender?
+  birthDate         DateTime?       @db.Date
+  maritalStatus     MaritalStatus?
+  occupation        String?
+  street            String?
+  streetNumber      String?
+  neighborhood      String?
+  city              String?
+  postalCode        String?
+  latitude          Decimal?        @db.Decimal(10, 8)
+  longitude         Decimal?        @db.Decimal(11, 8)
+  imageUrl          String?
+  contactSchedule   String?
+  hierarchy         ChurchHierarchy @default(believer)
+  visionStage       VisionStage     @default(win)
+  baptizedWater     Boolean         @default(false)
+  baptizedWaterAt   DateTime?       @db.Date
+  baptizedFire      Boolean         @default(false)
+  baptizedFireAt    DateTime?       @db.Date
+  /// Marcas del camino de la visión: se ponen al finalizar el evento y verificar la asistencia.
+  encounterAt       DateTime?       @db.Date
+  launchAt          DateTime?       @db.Date
+  firstVisitAt      DateTime?       @db.Date
+  joinedAt          DateTime?       @db.Date
+  invitedByMemberId String?
+  invitedByName     String?
+  /// Quien lo discipula (hacia arriba en la jerarquía).
+  discipleOfId      String?
+  notes             String?         @db.Text
+  isActive          Boolean         @default(true)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  organization          Organization           @relation(fields: [organizationId], references: [id])
+  location              Location?              @relation(fields: [locationId], references: [id])
+  user                  User?                  @relation(fields: [userId], references: [id])
+  invitedBy             Member?                @relation("MemberInvitedBy", fields: [invitedByMemberId], references: [id], onDelete: SetNull)
+  invited               Member[]               @relation("MemberInvitedBy")
+  discipler             Member?                @relation("MemberDiscipleship", fields: [discipleOfId], references: [id], onDelete: SetNull)
+  disciples             Member[]               @relation("MemberDiscipleship")
+  employee              Employee?
+  stageLogs             MemberStageLog[]
+  ministryMemberships   MinistryMember[]
+  ministryAttendance    MinistryAttendance[]
+  worshipRoster         WorshipRosterEntry[]
+  worshipAuditions      WorshipAudition[]
+  consolidationCases    ConsolidationCase[]    @relation("ConsolidationPerson")
+  consolidationAssigned ConsolidationCase[]    @relation("ConsolidationFollower")
+  consolidationContacts ConsolidationContact[]
+  kidsGuardianOf        KidsGuardian[]
+  kidsRoomStaff         KidsRoomStaff[]
+  networkLeaderOf       CellNetwork[]          @relation("NetworkLeader")
+  cellHostOf            Cell[]                 @relation("CellHost")
+  cellMemberships       CellMember[]
+  cellAttendance        CellAttendance[]
+  cellTransfers         CellTransfer[]
+  gatheringsSpoke       Gathering[]            @relation("GatheringSpeaker")
+  eventTickets          EventTicket[]
+  itineraryResponsible  EventItineraryItem[]
+  schoolDirectorOf      School[]               @relation("SchoolDirector")
+  schoolSubdirectorOf   School[]               @relation("SchoolSubdirector")
+  groupsTeaching        CourseGroup[]          @relation("GroupTeacher")
+  groupsAssisting       CourseGroup[]          @relation("GroupAssistant")
+  enrollments           Enrollment[]
+  annotations           DocumentAnnotation[]
+  diplomas              Diploma[]
+  incomes               Income[]
+  donations             Donation[]
+  eventStaffAssignments EventStaffAssignment[]
+  gatheringServed       GatheringServer[]
+  vehicleDrives         VehicleLog[]
+  ministryJoinRequests  MinistryJoinRequest[]
+
+  @@unique([organizationId, memberCode])
+  @@unique([organizationId, userId])
+  @@index([organizationId, isActive])
+  @@index([organizationId, visionStage])
+  @@index([organizationId, fullName])
+  @@map("members")
+}
+
+/// Historial de etapas de la visión (para reportes de evolución y transiciones).
+model MemberStageLog {
+  id             String      @id @default(cuid())
+  organizationId String
+  memberId       String
+  stage          VisionStage
+  changedAt      DateTime    @default(now())
+  changedById    String?
+  note           String?
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  member       Member       @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, changedAt])
+  @@index([memberId])
+  @@map("member_stage_logs")
+}
+
+/// Puesto administrativo (responsabilidad): no confundir con el rol del sistema.
+model EmployeePosition {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  description    String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  employees    Employee[]
+
+  @@unique([organizationId, name])
+  @@map("employee_positions")
+}
+
+/// Persona que labora en la iglesia (puesto + datos de nómina). Siempre es un creyente.
+model Employee {
+  id               String    @id @default(cuid())
+  organizationId   String
+  memberId         String    @unique
+  positionId       String?
+  locationId       String?
+  employeeCode     String?
+  hiredAt          DateTime? @db.Date
+  salaryType       String    @default("") // "monthly" | "hourly" | ""
+  salaryAmount     Decimal   @default(0) @db.Decimal(12, 2)
+  paymentFrequency String    @default("biweekly") // "weekly" | "biweekly" | "monthly"
+  payMethod        String    @default("cash") // "cash" | "transfer" | "check"
+  notes            String?
+  isActive         Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  organization Organization      @relation(fields: [organizationId], references: [id])
+  member       Member            @relation(fields: [memberId], references: [id])
+  position     EmployeePosition? @relation(fields: [positionId], references: [id])
+  location     Location?         @relation(fields: [locationId], references: [id])
+
+  payrollEntries PayrollEntry[]
+
+  @@unique([organizationId, employeeCode])
+  @@map("employees")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ACCESO: PERMISOS, ROLES, INVITACIONES, MENÚS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Permission {
+  key    String @id
+  module String
+  action String
+  label  String
+
+  rolePermissions RolePermission[]
+
+  @@map("permissions")
+}
+
+model Role {
+  id                String   @id @default(cuid())
+  /// null = rol de sistema compartido por todas las iglesias.
+  organizationId    String?
+  name              String
+  description       String?
+  /// Nivel que recibe la membresía al asignar este rol.
+  level             OrgRole  @default(servant)
+  isSystem          Boolean  @default(false)
+  /// El superadmin ajustó los permisos de este rol de sistema: el seeder ya no los reescribe.
+  permissionsEdited Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  organization Organization?    @relation(fields: [organizationId], references: [id])
+  permissions  RolePermission[]
+  memberships  Membership[]
+
+  @@map("roles")
+}
+
+model RolePermission {
+  id             String   @id @default(cuid())
+  organizationId String?
+  roleId         String
+  permissionKey  String
+  allowed        Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  organization Organization? @relation(fields: [organizationId], references: [id])
+  role         Role          @relation(fields: [roleId], references: [id])
+  permission   Permission    @relation(fields: [permissionKey], references: [key])
+
+  @@unique([organizationId, roleId, permissionKey])
+  @@map("role_permissions")
+}
+
+model UserInvitation {
+  id             String    @id @default(cuid())
+  organizationId String
+  email          String
+  role           OrgRole   @default(servant)
+  roleId         String?
+  locationId     String?
+  status         String    @default("pending")
+  invitedBy      String?
+  acceptedAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization  Organization @relation(fields: [organizationId], references: [id])
+  invitedByUser User?        @relation("UserInvitationInvitedBy", fields: [invitedBy], references: [id])
+
+  @@map("user_invitations")
+}
+
+model Menu {
+  id            String   @id @default(cuid())
+  parentId      String?
+  type          String   @default("item") @db.VarChar(20)
+  label         String   @db.VarChar(100)
+  icon          String?  @db.VarChar(50)
+  href          String?  @db.VarChar(255)
+  badge         String?  @db.VarChar(50)
+  badgeVariant  String?  @db.VarChar(20)
+  permissionKey String?  @db.VarChar(50)
+  sortOrder     Int      @default(0)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  parent   Menu?  @relation("MenuHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children Menu[] @relation("MenuHierarchy")
+
+  @@index([parentId])
+  @@map("menus")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AVISOS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Notification {
+  id              String    @id @default(cuid())
+  organizationId  String
+  userId          String?
+  recipientUserId String?
+  kind            String
+  title           String
+  body            String?
+  severity        String    @default("info")
+  link            String?
+  metadata        Json?
+  readAt          DateTime?
+  createdAt       DateTime  @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  user         User?        @relation(fields: [userId], references: [id])
+  recipient    User?        @relation("NotificationRecipient", fields: [recipientUserId], references: [id])
+
+  @@index([organizationId, recipientUserId, createdAt])
+  @@map("notifications")
+}
+
+model PushSubscription {
+  id             String   @id @default(cuid())
+  organizationId String
+  userId         String
+  endpoint       String   @db.VarChar(512)
+  p256dh         String   @db.VarChar(255)
+  auth           String   @db.VarChar(255)
+  userAgent      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  user         User         @relation(fields: [userId], references: [id])
+
+  @@unique([userId, endpoint])
+  @@map("push_subscriptions")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MINISTERIOS
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Ministerio (o área de un ministerio mayor mediante `parentId`, p. ej. Producción → Audio).
+model Ministry {
+  id             String   @id @default(cuid())
+  organizationId String
+  parentId       String?
+  name           String
+  /// Especialización futura: "general" | "worship" | "kids" | "consolidation"…
+  kind           String   @default("general") @db.VarChar(30)
+  description    String?  @db.Text
+  /// Requisitos para pertenecer (texto libre).
+  requirements   String?  @db.Text
+  imageUrl       String?
+  sortOrder      Int      @default(0)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization       Organization            @relation(fields: [organizationId], references: [id])
+  parent             Ministry?               @relation("MinistryTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children           Ministry[]              @relation("MinistryTree")
+  members            MinistryMember[]
+  meetings           MinistryMeeting[]
+  requests           MinistryRequest[]
+  worshipPrograms    WorshipProgram[]
+  worshipRoster      WorshipRosterEntry[]
+  worshipAuditions   WorshipAudition[]
+  consolidationCases ConsolidationCase[]
+  kidsSessions       KidsSession[]
+  eventStaffRequests EventStaffRequest[]
+  gatheringServers   GatheringServer[]
+  gatheringsServed   GatheringMinistry[]
+  gatheringsOwned    Gathering[]             @relation("GatheringOwner")
+  seriesOwned        GatheringSeries[]       @relation("SeriesOwner")
+  networksOwned      CellNetwork[]           @relation("NetworkOwner")
+  cellsOwned         Cell[]                  @relation("CellOwner")
+  eventsOwned        Event[]                 @relation("EventOwner")
+  eventAudiences     EventAudienceMinistry[]
+  joinRequests       MinistryJoinRequest[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId, isActive])
+  @@map("ministries")
+}
+
+/// Pertenencia de un creyente a un ministerio (con su papel ahí).
+model MinistryMember {
+  id             String       @id @default(cuid())
+  organizationId String
+  ministryId     String
+  memberId       String
+  role           MinistryRole @default(servant)
+  /// Responsabilidad dentro del ministerio (p. ej. «Director de coro»); no da accesos.
+  positionTitle  String?
+  joinedAt       DateTime     @default(now())
+  isActive       Boolean      @default(true)
+  updatedAt      DateTime     @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  ministry     Ministry     @relation(fields: [ministryId], references: [id], onDelete: Cascade)
+  member       Member       @relation(fields: [memberId], references: [id])
+
+  @@unique([ministryId, memberId])
+  @@index([organizationId, memberId, isActive])
+  @@map("ministry_members")
+}
+
+/// Junta, ensayo o servicio del ministerio (la lista se pasa por reunión).
+model MinistryMeeting {
+  id              String      @id @default(cuid())
+  organizationId  String
+  ministryId      String
+  title           String
+  kind            MeetingKind @default(internal)
+  startsAt        DateTime
+  location        String?
+  notes           String?     @db.Text
+  createdByUserId String?
+  createdAt       DateTime    @default(now())
+
+  organization Organization         @relation(fields: [organizationId], references: [id])
+  ministry     Ministry             @relation(fields: [ministryId], references: [id], onDelete: Cascade)
+  attendance   MinistryAttendance[]
+
+  @@index([ministryId, startsAt])
+  @@index([organizationId, startsAt])
+  @@map("ministry_meetings")
+}
+
+model MinistryAttendance {
+  id             String           @id @default(cuid())
+  organizationId String
+  meetingId      String
+  memberId       String
+  status         AttendanceStatus
+  note           String?
+  markedByUserId String?
+  markedAt       DateTime         @default(now())
+
+  organization Organization    @relation(fields: [organizationId], references: [id])
+  meeting      MinistryMeeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  member       Member          @relation(fields: [memberId], references: [id])
+
+  @@unique([meetingId, memberId])
+  @@index([organizationId, memberId])
+  @@map("ministry_attendance")
+}
+
+/// Requisición de material o recursos que necesita el ministerio.
+model MinistryRequest {
+  id                String        @id @default(cuid())
+  organizationId    String
+  ministryId        String
+  title             String
+  description       String?       @db.Text
+  quantity          Int?
+  neededBy          DateTime?     @db.Date
+  status            RequestStatus @default(pending)
+  requestedByUserId String
+  decidedByUserId   String?
+  decisionNote      String?
+  decidedAt         DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  ministry     Ministry     @relation(fields: [ministryId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, status])
+  @@index([ministryId, createdAt])
+  @@map("ministry_requests")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ALABANZA
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Catálogo de canciones de la iglesia (se usa en los programas semanales).
+model Song {
+  id             String   @id @default(cuid())
+  organizationId String
+  title          String
+  artist         String?
+  /// Tono original o habitual (p. ej. «G», «F#m»).
+  songKey        String?  @db.VarChar(10)
+  bpm            Int?
+  lyrics         String?  @db.LongText
+  notes          String?  @db.Text
+  imageUrl       String?
+  /// Enlaces de referencia: [{ label, url }] (YouTube, Spotify, partituras…).
+  links          Json     @default("[]")
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization         @relation(fields: [organizationId], references: [id])
+  programSongs WorshipProgramSong[]
+
+  @@index([organizationId, isActive, title])
+  @@map("songs")
+}
+
+/// Programa semanal: las mismas canciones toda la semana (la semana inicia en lunes).
+model WorshipProgram {
+  id              String   @id @default(cuid())
+  organizationId  String
+  ministryId      String
+  weekStart       DateTime @db.Date
+  title           String?
+  notes           String?  @db.Text
+  createdByUserId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  organization Organization         @relation(fields: [organizationId], references: [id])
+  ministry     Ministry             @relation(fields: [ministryId], references: [id], onDelete: Cascade)
+  songs        WorshipProgramSong[]
+
+  @@unique([ministryId, weekStart])
+  @@index([organizationId, weekStart])
+  @@map("worship_programs")
+}
+
+model WorshipProgramSong {
+  id             String  @id @default(cuid())
+  organizationId String
+  programId      String
+  songId         String
+  position       Int
+  /// Tono con el que se tocará esa semana (si cambia del habitual).
+  keyUsed        String? @db.VarChar(10)
+  notes          String?
+
+  organization Organization   @relation(fields: [organizationId], references: [id])
+  program      WorshipProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
+  song         Song           @relation(fields: [songId], references: [id])
+
+  @@unique([programId, position])
+  @@index([songId])
+  @@map("worship_program_songs")
+}
+
+/// Rol: quién toca en qué servicio (fecha + etiqueta del servicio, p. ej. «Domingo 10:00»).
+model WorshipRosterEntry {
+  id              String       @id @default(cuid())
+  organizationId  String
+  ministryId      String
+  /// Inicio del servicio.
+  serviceAt       DateTime
+  serviceLabel    String?
+  memberId        String
+  /// Instrumento o función (Voz, Batería, Teclado…).
+  instrument      String?
+  status          RosterStatus @default(pending)
+  createdByUserId String?
+  respondedAt     DateTime?
+  createdAt       DateTime     @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  ministry     Ministry     @relation(fields: [ministryId], references: [id], onDelete: Cascade)
+  member       Member       @relation(fields: [memberId], references: [id])
+
+  @@unique([ministryId, serviceAt, memberId])
+  @@index([organizationId, serviceAt])
+  @@index([memberId, serviceAt])
+  @@map("worship_roster")
+}
+
+/// Audición de un creyente para integrarse al ministerio de alabanza.
+model WorshipAudition {
+  id              String         @id @default(cuid())
+  organizationId  String
+  ministryId      String
+  memberId        String
+  instrument      String?
+  scheduledAt     DateTime
+  status          AuditionStatus @default(scheduled)
+  notes           String?        @db.Text
+  decidedByUserId String?
+  decidedAt       DateTime?
+  createdAt       DateTime       @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  ministry     Ministry     @relation(fields: [ministryId], references: [id], onDelete: Cascade)
+  member       Member       @relation(fields: [memberId], references: [id])
+
+  @@index([ministryId, scheduledAt])
+  @@index([organizationId, status])
+  @@map("worship_auditions")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CONSOLIDACIÓN (nuevos creyentes y su seguimiento)
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum ConsolidationStatus {
+  received
+  following
+  channeled
+  closed
+}
+
+/// A dónde se canalizó a la persona.
+enum ConsolidationOutcome {
+  cell
+  meeting
+  none
+}
+
+enum ContactChannel {
+  call
+  message
+  visit
+  in_person
+}
+
+enum ContactInterest {
+  yes
+  maybe
+  no
+}
+
+/// Seguimiento de una persona que llegó por primera vez. Sus datos de contacto
+/// viven en su ficha de creyente; aquí solo el proceso de consolidación.
+model ConsolidationCase {
+  id               String                @id @default(cuid())
+  organizationId   String
+  ministryId       String
+  memberId         String
+  visitedAt        DateTime              @db.Date
+  serviceLabel     String?
+  /// Hizo la invitación a ser hijo de Dios.
+  acceptedChrist   Boolean               @default(false)
+  status           ConsolidationStatus   @default(received)
+  assignedMemberId String?
+  outcome          ConsolidationOutcome?
+  outcomeNote      String?
+  notes            String?               @db.Text
+  closedAt         DateTime?
+  createdByUserId  String?
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+
+  organization Organization           @relation(fields: [organizationId], references: [id])
+  ministry     Ministry               @relation(fields: [ministryId], references: [id], onDelete: Cascade)
+  member       Member                 @relation("ConsolidationPerson", fields: [memberId], references: [id])
+  assignedTo   Member?                @relation("ConsolidationFollower", fields: [assignedMemberId], references: [id], onDelete: SetNull)
+  contacts     ConsolidationContact[]
+
+  @@unique([ministryId, memberId])
+  @@index([organizationId, status])
+  @@index([assignedMemberId, status])
+  @@map("consolidation_cases")
+}
+
+model ConsolidationContact {
+  id             String           @id @default(cuid())
+  organizationId String
+  caseId         String
+  contactedAt    DateTime         @default(now())
+  channel        ContactChannel
+  summary        String           @db.Text
+  interest       ContactInterest?
+  nextContactAt  DateTime?
+  madeByMemberId String?
+  madeByUserId   String?
+  createdAt      DateTime         @default(now())
+
+  organization Organization      @relation(fields: [organizationId], references: [id])
+  case         ConsolidationCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  madeBy       Member?           @relation(fields: [madeByMemberId], references: [id], onDelete: SetNull)
+
+  @@index([caseId, contactedAt])
+  @@map("consolidation_contacts")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// COMUNIDAD KIDS
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum KidsSection {
+  baby
+  child
+}
+
+enum KidsSessionStatus {
+  open
+  closed
+}
+
+enum KidsMessageDirection {
+  to_parent
+  to_staff
+}
+
+enum KidsMessageKind {
+  message
+  alert
+}
+
+enum KidsStaffRole {
+  teacher
+  support
+}
+
+/// Salón por rango de edad (en meses). Configurable por iglesia.
+model KidsRoom {
+  id             String      @id @default(cuid())
+  organizationId String
+  name           String
+  section        KidsSection @default(child)
+  minAgeMonths   Int
+  maxAgeMonths   Int
+  sortOrder      Int         @default(0)
+  isActive       Boolean     @default(true)
+
+  organization Organization     @relation(fields: [organizationId], references: [id])
+  children     KidsChild[]
+  attendance   KidsAttendance[]
+  staff        KidsRoomStaff[]
+
+  @@unique([organizationId, name])
+  @@map("kids_rooms")
+}
+
+model KidsChild {
+  id             String   @id @default(cuid())
+  organizationId String
+  fullName       String
+  birthDate      DateTime @db.Date
+  gender         Gender?
+  imageUrl       String?
+  /// Salón fijado a mano; si es null se deduce por la edad.
+  roomId         String?
+  /// Indicaciones para los maestros (alergias, cuidados, etc.).
+  indications    String?  @db.Text
+  /// Valor del QR del niño (secreto; solo lo ven sus tutores y el personal).
+  qrToken        String   @unique
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization     @relation(fields: [organizationId], references: [id])
+  room         KidsRoom?        @relation(fields: [roomId], references: [id], onDelete: SetNull)
+  guardians    KidsGuardian[]
+  attendance   KidsAttendance[]
+  messages     KidsMessage[]
+
+  @@index([organizationId, isActive, fullName])
+  @@map("kids_children")
+}
+
+/// Relación padre/tutor y niño: de aquí nace «Mis hijos» en el espacio del creyente.
+model KidsGuardian {
+  id             String   @id @default(cuid())
+  organizationId String
+  childId        String
+  memberId       String
+  relation       String   @default("Padre/Madre") @db.VarChar(40)
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  child        KidsChild    @relation(fields: [childId], references: [id], onDelete: Cascade)
+  member       Member       @relation(fields: [memberId], references: [id])
+
+  @@unique([childId, memberId])
+  @@index([memberId])
+  @@map("kids_guardians")
+}
+
+/// Un servicio de Kids (un día y reunión concretos).
+model KidsSession {
+  id             String            @id @default(cuid())
+  organizationId String
+  ministryId     String
+  date           DateTime          @db.Date
+  label          String            @default("Servicio") @db.VarChar(60)
+  /// "service" (reunión habitual) o "event" (campamento u otra actividad fuera de servicio).
+  kind           String            @default("service") @db.VarChar(10)
+  /// Último día de un evento de varios días.
+  endDate        DateTime?         @db.Date
+  location       String?
+  status         KidsSessionStatus @default(open)
+  openedByUserId String?
+  closedAt       DateTime?
+  createdAt      DateTime          @default(now())
+
+  organization Organization     @relation(fields: [organizationId], references: [id])
+  ministry     Ministry         @relation(fields: [ministryId], references: [id], onDelete: Cascade)
+  attendance   KidsAttendance[]
+  staff        KidsRoomStaff[]
+  messages     KidsMessage[]
+
+  @@unique([ministryId, date, label])
+  @@index([organizationId, date])
+  @@map("kids_sessions")
+}
+
+model KidsAttendance {
+  id               String    @id @default(cuid())
+  organizationId   String
+  sessionId        String
+  childId          String
+  roomId           String
+  checkInAt        DateTime  @default(now())
+  checkInByUserId  String?
+  /// Qué trajo el bebé: { "Pañales": true, ... }.
+  checklist        Json      @default("{}")
+  note             String?
+  checkOutAt       DateTime?
+  checkOutByUserId String?
+  /// Quién recogió al niño (texto libre).
+  pickedUpBy       String?
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  session      KidsSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  child        KidsChild    @relation(fields: [childId], references: [id])
+  room         KidsRoom     @relation(fields: [roomId], references: [id])
+
+  @@unique([sessionId, childId])
+  @@index([childId, checkInAt])
+  @@map("kids_attendance")
+}
+
+/// Maestro y apoyo de cada salón en un servicio.
+model KidsRoomStaff {
+  id             String        @id @default(cuid())
+  organizationId String
+  sessionId      String
+  roomId         String
+  memberId       String
+  role           KidsStaffRole
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  session      KidsSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  room         KidsRoom     @relation(fields: [roomId], references: [id])
+  member       Member       @relation(fields: [memberId], references: [id])
+
+  @@unique([sessionId, roomId, memberId])
+  @@map("kids_room_staff")
+}
+
+/// Mensajes y alertas entre el personal y los padres de un niño.
+model KidsMessage {
+  id             String               @id @default(cuid())
+  organizationId String
+  childId        String
+  sessionId      String?
+  direction      KidsMessageDirection
+  kind           KidsMessageKind      @default(message)
+  body           String               @db.Text
+  senderUserId   String?
+  readAt         DateTime?
+  createdAt      DateTime             @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  child        KidsChild    @relation(fields: [childId], references: [id], onDelete: Cascade)
+  session      KidsSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  @@index([childId, createdAt])
+  @@index([organizationId, direction, readAt])
+  @@map("kids_messages")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CÉLULAS Y REDES
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum CellMemberRole {
+  leader
+  support
+  member
+}
+
+enum TransferStatus {
+  pending
+  approved
+  rejected
+  cancelled
+}
+
+/// Red: grupo de células a cargo, normalmente, de un discípulo.
+model CellNetwork {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  description    String?  @db.Text
+  leaderMemberId String?
+  ministryId     String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization  Organization @relation(fields: [organizationId], references: [id])
+  leader        Member?      @relation("NetworkLeader", fields: [leaderMemberId], references: [id], onDelete: SetNull)
+  ownerMinistry Ministry?    @relation("NetworkOwner", fields: [ministryId], references: [id], onDelete: SetNull)
+  cells         Cell[]
+
+  @@unique([organizationId, name])
+  @@map("cell_networks")
+}
+
+/// Tipo de célula (de mujeres, de matrimonios, de jóvenes…). Configurable.
+model CellType {
+  id             String  @id @default(cuid())
+  organizationId String
+  name           String
+  sortOrder      Int     @default(0)
+  isActive       Boolean @default(true)
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  cells        Cell[]
+
+  @@unique([organizationId, name])
+  @@map("cell_types")
+}
+
+model Cell {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  typeId         String?
+  networkId      String?
+  /// 0 = domingo … 6 = sábado.
+  dayOfWeek      Int
+  /// Hora local «HH:MM».
+  startTime      String   @db.VarChar(5)
+  /// Anfitrión: persona que presta su casa (creyente) o solo su nombre.
+  hostMemberId   String?
+  hostName       String?
+  street         String?
+  neighborhood   String?
+  city           String?
+  reference      String?
+  latitude       Decimal? @db.Decimal(10, 8)
+  longitude      Decimal? @db.Decimal(11, 8)
+  ministryId     String?
+  notes          String?  @db.Text
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization  Organization   @relation(fields: [organizationId], references: [id])
+  type          CellType?      @relation(fields: [typeId], references: [id], onDelete: SetNull)
+  network       CellNetwork?   @relation(fields: [networkId], references: [id], onDelete: SetNull)
+  host          Member?        @relation("CellHost", fields: [hostMemberId], references: [id], onDelete: SetNull)
+  ownerMinistry Ministry?      @relation("CellOwner", fields: [ministryId], references: [id], onDelete: SetNull)
+  members       CellMember[]
+  meetings      CellMeeting[]
+  transfersOut  CellTransfer[] @relation("TransferFrom")
+  transfersIn   CellTransfer[] @relation("TransferTo")
+
+  @@unique([organizationId, name])
+  @@index([organizationId, isActive])
+  @@index([networkId])
+  @@map("cells")
+}
+
+/// Pertenencia a una célula con su papel (líder, apoyo o integrante).
+model CellMember {
+  id             String         @id @default(cuid())
+  organizationId String
+  cellId         String
+  memberId       String
+  role           CellMemberRole @default(member)
+  joinedAt       DateTime       @default(now())
+  isActive       Boolean        @default(true)
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  cell         Cell         @relation(fields: [cellId], references: [id], onDelete: Cascade)
+  member       Member       @relation(fields: [memberId], references: [id])
+
+  @@unique([cellId, memberId])
+  @@index([memberId, isActive])
+  @@map("cell_members")
+}
+
+model CellMeeting {
+  id              String   @id @default(cuid())
+  organizationId  String
+  cellId          String
+  /// Día de la reunión.
+  date            DateTime @db.Date
+  /// Tema (lo manda el pastor; opcional).
+  topic           String?
+  topicUrl        String?
+  notes           String?  @db.Text
+  /// URLs de la evidencia (fotos), opcional.
+  evidenceUrls    Json     @default("[]")
+  createdByUserId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  organization Organization     @relation(fields: [organizationId], references: [id])
+  cell         Cell             @relation(fields: [cellId], references: [id], onDelete: Cascade)
+  attendance   CellAttendance[]
+
+  @@unique([cellId, date])
+  @@index([organizationId, date])
+  @@map("cell_meetings")
+}
+
+model CellAttendance {
+  id             String  @id @default(cuid())
+  organizationId String
+  meetingId      String
+  memberId       String
+  present        Boolean @default(true)
+  /// Llegó por primera vez a esta reunión (nuevo creyente).
+  isNew          Boolean @default(false)
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  meeting      CellMeeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  member       Member       @relation(fields: [memberId], references: [id])
+
+  @@unique([meetingId, memberId])
+  @@index([memberId])
+  @@map("cell_attendance")
+}
+
+/// Traspaso de un creyente entre células, con aprobación de la célula destino.
+model CellTransfer {
+  id                String         @id @default(cuid())
+  organizationId    String
+  memberId          String
+  fromCellId        String
+  toCellId          String
+  status            TransferStatus @default(pending)
+  reason            String?
+  requestedByUserId String?
+  decidedByUserId   String?
+  decidedAt         DateTime?
+  createdAt         DateTime       @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  member       Member       @relation(fields: [memberId], references: [id])
+  fromCell     Cell         @relation("TransferFrom", fields: [fromCellId], references: [id], onDelete: Cascade)
+  toCell       Cell         @relation("TransferTo", fields: [toCellId], references: [id], onDelete: Cascade)
+
+  @@index([toCellId, status])
+  @@index([fromCellId, status])
+  @@map("cell_transfers")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// REUNIONES GENERALES Y DE JÓVENES
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum GatheringKind {
+  general
+  youth
+}
+
+/// Horario recurrente de una reunión (p. ej. «Domingo 10:00»). Configurable.
+model GatheringSeries {
+  id             String        @id @default(cuid())
+  organizationId String
+  name           String
+  kind           GatheringKind @default(general)
+  /// 0 = domingo … 6 = sábado.
+  dayOfWeek      Int
+  startTime      String        @db.VarChar(5)
+  ministryId     String?
+  sortOrder      Int           @default(0)
+  isActive       Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+
+  organization  Organization @relation(fields: [organizationId], references: [id])
+  ownerMinistry Ministry?    @relation("SeriesOwner", fields: [ministryId], references: [id], onDelete: SetNull)
+  gatherings    Gathering[]
+
+  @@unique([organizationId, name])
+  @@map("gathering_series")
+}
+
+/// Una reunión realizada: tema, quién compartió y asistencia por categoría.
+model Gathering {
+  id              String        @id @default(cuid())
+  organizationId  String
+  seriesId        String?
+  kind            GatheringKind @default(general)
+  date            DateTime      @db.Date
+  /// Hora real (HH:MM); por defecto la del horario.
+  startTime       String?       @db.VarChar(5)
+  topic           String?
+  speakerMemberId String?
+  /// Quien compartió, si no es un creyente del padrón.
+  speakerName     String?
+  imageUrl        String?
+  notes           String?       @db.Text
+  evidenceUrls    Json          @default("[]")
+  /// Asistencia por categoría. «Nuevos» es un subconjunto (no suma al total).
+  menCount        Int           @default(0)
+  womenCount      Int           @default(0)
+  youthCount      Int           @default(0)
+  kidsCount       Int           @default(0)
+  newCount        Int           @default(0)
+  /// Grupo dueño (p. ej. Jóvenes); null = la iglesia en general.
+  ministryId      String?
+  createdByUserId String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  organization  Organization        @relation(fields: [organizationId], references: [id])
+  series        GatheringSeries?    @relation(fields: [seriesId], references: [id], onDelete: SetNull)
+  speaker       Member?             @relation("GatheringSpeaker", fields: [speakerMemberId], references: [id], onDelete: SetNull)
+  ownerMinistry Ministry?           @relation("GatheringOwner", fields: [ministryId], references: [id], onDelete: SetNull)
+  incomes       Income[]
+  servers       GatheringServer[]
+  ministries    GatheringMinistry[]
+
+  @@unique([seriesId, date])
+  @@index([organizationId, date])
+  @@index([organizationId, kind, date])
+  @@map("gatherings")
+}
+
+/// Ministerios que estuvieron en servicio durante la reunión.
+model GatheringMinistry {
+  id             String @id @default(cuid())
+  organizationId String
+  gatheringId    String
+  ministryId     String
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  gathering    Gathering    @relation(fields: [gatheringId], references: [id], onDelete: Cascade)
+  ministry     Ministry     @relation(fields: [ministryId], references: [id], onDelete: Cascade)
+
+  @@unique([gatheringId, ministryId])
+  @@map("gathering_ministries")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EVENTOS, BOLETOS Y ACOMODO
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum EventScope {
+  internal
+  external
+}
+
+enum EventStatus {
+  draft
+  published
+  closed
+  cancelled
+}
+
+/// libre = sin lugar asignado · sections = por secciones con cupo · seats = asiento/mesa concreto.
+enum EventSeating {
+  free
+  sections
+  seats
+}
+
+/// Quién elige el lugar cuando el acomodo es por asientos.
+enum SeatSelection {
+  self
+  assigned
+  both
+}
+
+enum EventAudience {
+  open
+  leaders
+  ministries
+}
+
+enum TicketStatus {
+  reserved
+  paid
+  cancelled
+}
+
+enum PaymentMethod {
+  cash
+  transfer
+  card
+  other
+}
+
+enum ItineraryKind {
+  activity
+  clinic
+  break
+  meal
+}
+
+/// Área física (Auditorio Principal, Auditorio Menor, Comunidad Kids…) con su plano.
+model Venue {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  description    String?  @db.Text
+  kind           String   @default("auditorium") @db.VarChar(20)
+  /// Tamaño del plano en unidades lógicas.
+  planWidth      Int      @default(1000)
+  planHeight     Int      @default(600)
+  /// { sections: [{id,name,color}], elements: [{id,type,x,y,w,h,rotation,label,sectionId,seats,shape,blocked}] }
+  layout         Json     @default("{}")
+  sortOrder      Int      @default(0)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  events       Event[]
+
+  @@unique([organizationId, name])
+  @@map("venues")
+}
+
+model Event {
+  id               String        @id @default(cuid())
+  organizationId   String
+  /// Grupo dueño (Jóvenes, Varones, Mujeres…); null = toda la iglesia.
+  ministryId       String?
+  scope            EventScope    @default(internal)
+  /// Etiqueta libre: Encuentro con Jesús, Lanzamiento, Taller, Curso, Tabernáculos…
+  kind             String        @default("general") @db.VarChar(40)
+  name             String
+  topic            String?
+  description      String?       @db.Text
+  imageUrl         String?
+  startsAt         DateTime
+  endsAt           DateTime?
+  /// Lugar escrito (externos) o complemento del área.
+  location         String?
+  venueId          String?
+  status           EventStatus   @default(draft)
+  price            Decimal       @default(0) @db.Decimal(10, 2)
+  /// null = sin límite.
+  capacity         Int?
+  audience         EventAudience @default(open)
+  seating          EventSeating  @default(free)
+  seatSelection    SeatSelection @default(both)
+  /// Permite que cada creyente aparte su boleto desde su espacio.
+  selfRegistration Boolean       @default(true)
+  createdByUserId  String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  organization  Organization            @relation(fields: [organizationId], references: [id])
+  ownerMinistry Ministry?               @relation("EventOwner", fields: [ministryId], references: [id], onDelete: SetNull)
+  venue         Venue?                  @relation(fields: [venueId], references: [id], onDelete: SetNull)
+  sections      EventSection[]
+  itinerary     EventItineraryItem[]
+  checklist     EventChecklistItem[]
+  tickets       EventTicket[]
+  audiences     EventAudienceMinistry[]
+  staffRequests EventStaffRequest[]
+  expenses      Expense[]
+  diplomas      Diploma[]
+
+  @@index([organizationId, startsAt])
+  @@index([organizationId, status])
+  @@map("events")
+}
+
+model EventAudienceMinistry {
+  id             String @id @default(cuid())
+  organizationId String
+  eventId        String
+  ministryId     String
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  event        Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  ministry     Ministry     @relation(fields: [ministryId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, ministryId])
+  @@map("event_audience_ministries")
+}
+
+/// Sección con cupo propio (acomodo por secciones).
+model EventSection {
+  id              String  @id @default(cuid())
+  organizationId  String
+  eventId         String
+  name            String
+  capacity        Int
+  sortOrder       Int     @default(0)
+  /// Sección del plano a la que corresponde (si el evento usa plano).
+  layoutSectionId String?
+
+  organization Organization  @relation(fields: [organizationId], references: [id])
+  event        Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  tickets      EventTicket[]
+
+  @@unique([eventId, name])
+  @@map("event_sections")
+}
+
+/// Itinerario: actividades, clínicas (tema + actividad de ministración), pausas, comidas.
+model EventItineraryItem {
+  id                  String        @id @default(cuid())
+  organizationId      String
+  eventId             String
+  startsAt            DateTime
+  durationMin         Int           @default(30)
+  kind                ItineraryKind @default(activity)
+  title               String
+  speakerName         String?
+  responsibleMemberId String?
+  location            String?
+  notes               String?       @db.Text
+  sortOrder           Int           @default(0)
+
+  organization Organization         @relation(fields: [organizationId], references: [id])
+  event        Event                @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  responsible  Member?              @relation(fields: [responsibleMemberId], references: [id], onDelete: SetNull)
+  checklist    EventChecklistItem[]
+
+  @@index([eventId, startsAt])
+  @@map("event_itinerary")
+}
+
+/// Material y pendientes por verificar antes del evento (general o de una clínica).
+model EventChecklistItem {
+  id             String    @id @default(cuid())
+  organizationId String
+  eventId        String
+  itineraryId    String?
+  title          String
+  isDone         Boolean   @default(false)
+  doneAt         DateTime?
+  doneByUserId   String?
+  sortOrder      Int       @default(0)
+
+  organization Organization        @relation(fields: [organizationId], references: [id])
+  event        Event               @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  itinerary    EventItineraryItem? @relation(fields: [itineraryId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+  @@map("event_checklist")
+}
+
+model EventTicket {
+  id                String       @id @default(cuid())
+  organizationId    String
+  eventId           String
+  /// Valor del QR del boleto (secreto).
+  code              String       @unique
+  memberId          String?
+  guestName         String?
+  guestPhone        String?
+  status            TicketStatus @default(reserved)
+  price             Decimal      @default(0) @db.Decimal(10, 2)
+  sectionId         String?
+  /// Asiento o mesa-asiento del plano («A-12», «M3-2»); null = sin lugar.
+  seatCode          String?
+  notes             String?
+  checkedInAt       DateTime?
+  checkedInByUserId String?
+  createdByUserId   String?
+  createdAt         DateTime     @default(now())
+  cancelledAt       DateTime?
+
+  organization Organization   @relation(fields: [organizationId], references: [id])
+  event        Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  member       Member?        @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  section      EventSection?  @relation(fields: [sectionId], references: [id], onDelete: SetNull)
+  payments     EventPayment[]
+
+  @@unique([eventId, seatCode])
+  @@index([eventId, status])
+  @@index([memberId])
+  @@map("event_tickets")
+}
+
+/// Historial de pagos de un boleto (abonos).
+model EventPayment {
+  id               String        @id @default(cuid())
+  organizationId   String
+  ticketId         String
+  amount           Decimal       @db.Decimal(10, 2)
+  method           PaymentMethod @default(cash)
+  reference        String?
+  note             String?
+  paidAt           DateTime      @default(now())
+  receivedByUserId String?
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  ticket       EventTicket  @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+  @@map("event_payments")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GASTOS (se capturan por evento y los ve Finanzas: son el mismo registro)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Expense {
+  id              String         @id @default(cuid())
+  organizationId  String
+  /// Evento al que pertenece el gasto; null = gasto general (Finanzas).
+  eventId         String?
+  concept         String
+  /// hotel, comida, material, transporte, honorarios, renta, otro…
+  category        String         @default("otro") @db.VarChar(40)
+  amount          Decimal        @db.Decimal(10, 2)
+  spentAt         DateTime       @db.Date
+  vendor          String?
+  receiptUrl      String?
+  paymentMethod   PaymentMethod?
+  notes           String?        @db.Text
+  vehicleId       String?
+  payrollRunId    String?
+  createdByUserId String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  event        Event?       @relation(fields: [eventId], references: [id], onDelete: SetNull)
+
+  vehicle    Vehicle?    @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+  payrollRun PayrollRun? @relation(fields: [payrollRunId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, spentAt])
+  @@index([eventId])
+  @@map("expenses")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ESCUELA MINISTERIAL (Escuela de ministerio y Universidad Teológica) Y PORTAL EDUCATIVO
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum SchoolKind {
+  ministry
+  university
+}
+
+enum GroupStatus {
+  planned
+  open
+  closed
+}
+
+enum EnrollmentStatus {
+  requested
+  enrolled
+  completed
+  failed
+  dropped
+  rejected
+}
+
+enum AssessmentKind {
+  task
+  exercise
+}
+
+enum QuestionType {
+  open
+  multiple_choice
+  multiple_select
+  fill_blank
+  matching
+  ordering
+  true_false
+}
+
+enum SubmissionStatus {
+  draft
+  submitted
+  graded
+}
+
+enum ContentType {
+  text
+  pdf
+  video
+  link
+  image
+}
+
+enum SchoolPaymentConcept {
+  enrollment
+  book
+}
+
+/// Programa educativo: la Escuela de ministerio o la Universidad Teológica.
+model School {
+  id                  String     @id @default(cuid())
+  organizationId      String
+  kind                SchoolKind
+  name                String
+  description         String?    @db.Text
+  directorMemberId    String?
+  subdirectorMemberId String?
+  /// Calificación mínima para aprobar (escala 0–10).
+  passScore           Decimal    @default(7) @db.Decimal(4, 2)
+  enrollmentFee       Decimal    @default(0) @db.Decimal(10, 2)
+  /// Diploma: «generated» (diseño del sistema) o «uploaded» (imagen/PDF propio con el nombre encima).
+  diplomaMode         String     @default("generated") @db.VarChar(12)
+  diplomaFile         String?
+  diplomaMime         String?
+  /// Posición del nombre (0–1 desde la esquina superior izquierda) y tamaño (fracción del ancho).
+  diplomaNameX        Float      @default(0.5)
+  diplomaNameY        Float      @default(0.5)
+  diplomaNameSize     Float      @default(0.06)
+  diplomaNameColor    String     @default("#1f2937") @db.VarChar(9)
+  diplomaShowSerial   Boolean    @default(true)
+  isActive            Boolean    @default(true)
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  director     Member?      @relation("SchoolDirector", fields: [directorMemberId], references: [id], onDelete: SetNull)
+  subdirector  Member?      @relation("SchoolSubdirector", fields: [subdirectorMemberId], references: [id], onDelete: SetNull)
+  diplomas     Diploma[]
+  courses      Course[]
+
+  @@unique([organizationId, kind])
+  @@map("schools")
+}
+
+/// Libro / grado / curso. Los libros de la escuela van en orden (sortOrder).
+model Course {
+  id             String   @id @default(cuid())
+  organizationId String
+  schoolId       String
+  name           String
+  description    String?  @db.Text
+  imageUrl       String?
+  sortOrder      Int      @default(0)
+  weeks          Int      @default(8)
+  tasksCount     Int      @default(7)
+  exercisesCount Int      @default(7)
+  /// null = usa el costo de inscripción del programa.
+  enrollmentFee  Decimal? @db.Decimal(10, 2)
+  /// Libro de texto: se vende aparte y es opcional.
+  bookPrice      Decimal  @default(0) @db.Decimal(10, 2)
+  /// Libro digital dentro de la plataforma (enlace configurable).
+  digitalBookUrl String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  organization Organization     @relation(fields: [organizationId], references: [id])
+  school       School           @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  contents     CourseContent[]
+  documents    CourseDocument[]
+  groups       CourseGroup[]
+  assessments  Assessment[]
+
+  @@unique([schoolId, name])
+  @@index([schoolId, sortOrder])
+  @@map("courses")
+}
+
+/// Material por semana (lectura, PDF, video, enlace, imagen).
+model CourseContent {
+  id             String      @id @default(cuid())
+  organizationId String
+  courseId       String
+  week           Int
+  title          String
+  type           ContentType @default(text)
+  url            String?
+  body           String?     @db.LongText
+  sortOrder      Int         @default(0)
+  isPublished    Boolean     @default(true)
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  course       Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([courseId, week])
+  @@map("course_contents")
+}
+
+/// Grupo (salón virtual y presencial) que cursa un libro en un periodo.
+model CourseGroup {
+  id                String      @id @default(cuid())
+  organizationId    String
+  courseId          String
+  name              String
+  teacherMemberId   String?
+  assistantMemberId String?
+  startDate         DateTime?   @db.Date
+  endDate           DateTime?   @db.Date
+  status            GroupStatus @default(planned)
+  capacity          Int?
+  createdAt         DateTime    @default(now())
+
+  organization Organization   @relation(fields: [organizationId], references: [id])
+  course       Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  teacher      Member?        @relation("GroupTeacher", fields: [teacherMemberId], references: [id], onDelete: SetNull)
+  assistant    Member?        @relation("GroupAssistant", fields: [assistantMemberId], references: [id], onDelete: SetNull)
+  enrollments  Enrollment[]
+  sessions     ClassSession[]
+
+  @@index([courseId, status])
+  @@map("course_groups")
+}
+
+model Enrollment {
+  id              String           @id @default(cuid())
+  organizationId  String
+  groupId         String
+  memberId        String
+  status          EnrollmentStatus @default(enrolled)
+  requestedAt     DateTime         @default(now())
+  enrolledAt      DateTime?
+  decidedByUserId String?
+  /// Costos al inscribirse (se conservan aunque cambie el catálogo).
+  fee             Decimal          @default(0) @db.Decimal(10, 2)
+  wantsBook       Boolean          @default(false)
+  bookPrice       Decimal          @default(0) @db.Decimal(10, 2)
+  tasksAvg        Decimal?         @db.Decimal(4, 2)
+  exercisesAvg    Decimal?         @db.Decimal(4, 2)
+  finalGrade      Decimal?         @db.Decimal(4, 2)
+  passed          Boolean?
+  completedAt     DateTime?
+  notes           String?
+
+  organization Organization      @relation(fields: [organizationId], references: [id])
+  group        CourseGroup       @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  member       Member            @relation(fields: [memberId], references: [id])
+  payments     SchoolPayment[]
+  attendance   ClassAttendance[]
+  submissions  Submission[]
+  grades       Grade[]
+
+  @@unique([groupId, memberId])
+  @@index([memberId, status])
+  @@map("enrollments")
+}
+
+model SchoolPayment {
+  id               String               @id @default(cuid())
+  organizationId   String
+  enrollmentId     String
+  concept          SchoolPaymentConcept
+  amount           Decimal              @db.Decimal(10, 2)
+  method           PaymentMethod        @default(cash)
+  reference        String?
+  paidAt           DateTime             @default(now())
+  receivedByUserId String?
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  enrollment   Enrollment   @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+
+  @@index([enrollmentId])
+  @@map("school_payments")
+}
+
+/// Clase semanal de un grupo.
+model ClassSession {
+  id             String   @id @default(cuid())
+  organizationId String
+  groupId        String
+  week           Int
+  date           DateTime @db.Date
+  topic          String?
+  notes          String?  @db.Text
+
+  organization Organization      @relation(fields: [organizationId], references: [id])
+  group        CourseGroup       @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  attendance   ClassAttendance[]
+
+  @@unique([groupId, week])
+  @@map("class_sessions")
+}
+
+model ClassAttendance {
+  id             String           @id @default(cuid())
+  organizationId String
+  sessionId      String
+  enrollmentId   String
+  status         AttendanceStatus @default(present)
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  session      ClassSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  enrollment   Enrollment   @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, enrollmentId])
+  @@map("class_attendance")
+}
+
+/// Tarea o ejercicio del libro (cuestionario con preguntas de 7 tipos).
+model Assessment {
+  id             String         @id @default(cuid())
+  organizationId String
+  courseId       String
+  kind           AssessmentKind
+  /// Número dentro del libro (tarea 1–7, ejercicio 1–7).
+  number         Int
+  week           Int?
+  title          String
+  instructions   String?        @db.Text
+  maxAttempts    Int            @default(1)
+  /// Tiempo límite en minutos (opcional; se valida en servidor).
+  timeLimitMin   Int?
+  isPublished    Boolean        @default(false)
+  createdAt      DateTime       @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  course       Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  questions    Question[]
+  submissions  Submission[]
+  grades       Grade[]
+
+  @@unique([courseId, kind, number])
+  @@map("assessments")
+}
+
+model Question {
+  id             String       @id @default(cuid())
+  organizationId String
+  assessmentId   String
+  type           QuestionType
+  prompt         String       @db.Text
+  imageUrl       String?
+  videoUrl       String?
+  points         Decimal      @default(1) @db.Decimal(6, 2)
+  sortOrder      Int          @default(0)
+  /// Según el tipo: opciones, respuestas correctas, pares, orden…
+  config         Json         @default("{}")
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  assessment   Assessment   @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@index([assessmentId, sortOrder])
+  @@map("questions")
+}
+
+model Submission {
+  id             String           @id @default(cuid())
+  organizationId String
+  assessmentId   String
+  enrollmentId   String
+  attempt        Int              @default(1)
+  answers        Json             @default("{}")
+  status         SubmissionStatus @default(draft)
+  score          Decimal?         @db.Decimal(6, 2)
+  maxScore       Decimal?         @db.Decimal(6, 2)
+  percent        Decimal?         @db.Decimal(5, 2)
+  /// Tiene preguntas abiertas pendientes de revisar.
+  needsReview    Boolean          @default(false)
+  feedback       String?          @db.Text
+  /// Puntos y comentario por pregunta: { [questionId]: { points, comment } }.
+  perQuestion    Json             @default("{}")
+  startedAt      DateTime         @default(now())
+  submittedAt    DateTime?
+  gradedAt       DateTime?
+  gradedByUserId String?
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  assessment   Assessment   @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  enrollment   Enrollment   @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+
+  @@unique([assessmentId, enrollmentId, attempt])
+  @@index([enrollmentId])
+  @@map("submissions")
+}
+
+/// Calificación (0–10) de un alumno en una tarea o ejercicio; la planilla se arma de aquí.
+model Grade {
+  id             String   @id @default(cuid())
+  organizationId String
+  enrollmentId   String
+  assessmentId   String
+  value          Decimal  @db.Decimal(4, 2)
+  /// true = la capturó/ajustó el maestro; no la reemplazan los envíos automáticos.
+  manual         Boolean  @default(false)
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  enrollment   Enrollment   @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  assessment   Assessment   @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@unique([enrollmentId, assessmentId])
+  @@map("grades")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LIBRO DIGITAL (documentos del libro, secciones por clase y apuntes de cada alumno)
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum DocumentKind {
+  pdf
+  image
+  docx
+}
+
+enum AnnotationKind {
+  highlight
+  text
+  note
+}
+
+/// Archivo del libro digital (PDF, Word o imagen). Se sirve solo a quien lo cursa.
+model CourseDocument {
+  id              String       @id @default(cuid())
+  organizationId  String
+  courseId        String
+  title           String
+  kind            DocumentKind
+  /// Nombre del archivo guardado (privado: no se expone por /api/media).
+  fileName        String
+  mime            String
+  size            Int
+  pageCount       Int          @default(1)
+  /// Word: arreglo JSON con el HTML de cada «página» (secciones del documento).
+  pagesHtml       String?      @db.LongText
+  sortOrder       Int          @default(0)
+  createdByUserId String?
+  createdAt       DateTime     @default(now())
+
+  organization Organization         @relation(fields: [organizationId], references: [id])
+  course       Course               @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  sections     DocumentSection[]
+  annotations  DocumentAnnotation[]
+
+  @@index([courseId, sortOrder])
+  @@map("course_documents")
+}
+
+/// Qué páginas se abren en cada clase (semana). Sin secciones, todo el documento es visible.
+model DocumentSection {
+  id             String @id @default(cuid())
+  organizationId String
+  documentId     String
+  week           Int
+  title          String
+  fromPage       Int
+  toPage         Int
+
+  organization Organization   @relation(fields: [organizationId], references: [id])
+  document     CourseDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId, week])
+  @@map("document_sections")
+}
+
+/// Apunte privado de un alumno sobre el documento: subrayado, texto o nota.
+model DocumentAnnotation {
+  id             String         @id @default(cuid())
+  organizationId String
+  documentId     String
+  memberId       String
+  page           Int
+  kind           AnnotationKind
+  color          String         @default("#facc15") @db.VarChar(9)
+  /// Rectángulos normalizados (0–1) sobre la página: [{x,y,w,h}].
+  rects          Json           @default("[]")
+  text           String?        @db.Text
+  /// Fragmento subrayado (referencia de la nota).
+  quote          String?        @db.Text
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  organization Organization   @relation(fields: [organizationId], references: [id])
+  document     CourseDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  member       Member         @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([documentId, memberId, page])
+  @@map("document_annotations")
+}
+
+/// Diploma de la Escuela de ministerio: se entrega al realizar el Lanzamiento.
+model Diploma {
+  id             String   @id @default(cuid())
+  organizationId String
+  schoolId       String
+  memberId       String
+  serial         String
+  issuedAt       DateTime @default(now())
+  /// Evento «Lanzamiento» en el que se entregó.
+  eventId        String?
+  issuedByUserId String?
+  notes          String?
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  school       School       @relation(fields: [schoolId], references: [id])
+  member       Member       @relation(fields: [memberId], references: [id])
+  event        Event?       @relation(fields: [eventId], references: [id], onDelete: SetNull)
+
+  @@unique([organizationId, serial])
+  @@unique([schoolId, memberId])
+  @@map("diplomas")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FINANZAS: INGRESOS, DONATIVOS, VEHÍCULOS Y NÓMINA SIMPLE
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum IncomeKind {
+  tithe
+  offering
+  donation
+  event
+  school
+  other
+}
+
+/// Cómo llegó el dinero: corte manual de la reunión, transferencia o en línea.
+enum IncomeSource {
+  cash_cut
+  transfer
+  online
+  other
+}
+
+enum DonationStatus {
+  pending
+  paid
+  failed
+  refunded
+}
+
+enum PayrollStatus {
+  draft
+  paid
+}
+
+enum VehicleDocKind {
+  insurance
+  verification
+  registration
+  permit
+  other
+}
+
+/// Ingreso confirmado (diezmo, ofrenda, donativo…). Los cortes de reunión se ligan a la reunión.
+model Income {
+  id              String       @id @default(cuid())
+  organizationId  String
+  kind            IncomeKind
+  source          IncomeSource @default(cash_cut)
+  amount          Decimal      @db.Decimal(12, 2)
+  receivedAt      DateTime     @db.Date
+  gatheringId     String?
+  /// Persona que dio (opcional; los cortes son globales).
+  memberId        String?
+  concept         String?
+  reference       String?
+  notes           String?      @db.Text
+  /// Donativo (transferencia reportada o pago en línea) que originó este ingreso.
+  donationId      String?      @unique
+  createdByUserId String?
+  createdAt       DateTime     @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  gathering    Gathering?   @relation(fields: [gatheringId], references: [id], onDelete: SetNull)
+  member       Member?      @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  donation     Donation?    @relation(fields: [donationId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, receivedAt])
+  @@index([gatheringId])
+  @@map("incomes")
+}
+
+/// Donativo: transferencia que reporta el creyente o pago en línea. Preparado para
+/// pasarelas: `provider` + `externalId` identifican el cobro (como SubscriptionPayment).
+model Donation {
+  id             String         @id @default(cuid())
+  organizationId String
+  memberId       String?
+  donorName      String?
+  email          String?
+  amount         Decimal        @db.Decimal(12, 2)
+  currency       String         @default("MXN") @db.VarChar(3)
+  kind           IncomeKind     @default(donation)
+  /// null = transferencia manual; «mercadopago», «stripe»… para pagos en línea.
+  provider       String?        @db.VarChar(30)
+  externalId     String?
+  /// Folio o referencia de la transferencia.
+  reference      String?
+  status         DonationStatus @default(pending)
+  paidAt         DateTime?
+  notes          String?
+  createdAt      DateTime       @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  member       Member?      @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  income       Income?
+
+  @@unique([provider, externalId])
+  @@index([organizationId, status])
+  @@map("donations")
+}
+
+model Vehicle {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  plate          String?
+  make           String?
+  model          String?
+  year           Int?
+  /// auto, camioneta, van, autobús, moto…
+  kind           String   @default("auto") @db.VarChar(30)
+  capacity       Int?
+  odometer       Int      @default(0)
+  isActive       Boolean  @default(true)
+  notes          String?  @db.Text
+  createdAt      DateTime @default(now())
+
+  organization Organization      @relation(fields: [organizationId], references: [id])
+  logs         VehicleLog[]
+  services     VehicleService[]
+  fuels        VehicleFuel[]
+  documents    VehicleDocument[]
+  expenses     Expense[]
+
+  @@unique([organizationId, name])
+  @@map("vehicles")
+}
+
+/// Bitácora de uso: quién lo llevó, a dónde y con qué kilometraje.
+model VehicleLog {
+  id             String   @id @default(cuid())
+  organizationId String
+  vehicleId      String
+  date           DateTime @db.Date
+  driverMemberId String?
+  driverName     String?
+  purpose        String
+  destination    String?
+  odometerStart  Int?
+  odometerEnd    Int?
+  notes          String?
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  vehicle      Vehicle      @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  driver       Member?      @relation(fields: [driverMemberId], references: [id], onDelete: SetNull)
+
+  @@index([vehicleId, date])
+  @@map("vehicle_logs")
+}
+
+model VehicleService {
+  id              String    @id @default(cuid())
+  organizationId  String
+  vehicleId       String
+  /// service, repair, tires, other
+  kind            String    @default("service") @db.VarChar(20)
+  date            DateTime  @db.Date
+  description     String
+  vendor          String?
+  cost            Decimal   @default(0) @db.Decimal(10, 2)
+  odometer        Int?
+  nextDueDate     DateTime? @db.Date
+  nextDueOdometer Int?
+  expenseId       String?
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  vehicle      Vehicle      @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@index([vehicleId, date])
+  @@map("vehicle_services")
+}
+
+model VehicleFuel {
+  id             String   @id @default(cuid())
+  organizationId String
+  vehicleId      String
+  date           DateTime @db.Date
+  liters         Decimal  @db.Decimal(8, 2)
+  cost           Decimal  @db.Decimal(10, 2)
+  odometer       Int?
+  station        String?
+  expenseId      String?
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  vehicle      Vehicle      @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@index([vehicleId, date])
+  @@map("vehicle_fuels")
+}
+
+/// Seguro, verificación, tarjeta de circulación, permisos… con su vencimiento.
+model VehicleDocument {
+  id             String         @id @default(cuid())
+  organizationId String
+  vehicleId      String
+  kind           VehicleDocKind
+  number         String?
+  provider       String?
+  issuedAt       DateTime?      @db.Date
+  expiresAt      DateTime?      @db.Date
+  cost           Decimal        @default(0) @db.Decimal(10, 2)
+  fileUrl        String?
+  notes          String?
+  expenseId      String?
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  vehicle      Vehicle      @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@index([vehicleId, expiresAt])
+  @@map("vehicle_documents")
+}
+
+/// Nómina simple: un periodo con una línea por empleado.
+model PayrollRun {
+  id              String        @id @default(cuid())
+  organizationId  String
+  label           String
+  periodStart     DateTime      @db.Date
+  periodEnd       DateTime      @db.Date
+  status          PayrollStatus @default(draft)
+  paidAt          DateTime?
+  createdByUserId String?
+  createdAt       DateTime      @default(now())
+
+  organization Organization   @relation(fields: [organizationId], references: [id])
+  entries      PayrollEntry[]
+  expenses     Expense[]
+
+  @@index([organizationId, periodStart])
+  @@map("payroll_runs")
+}
+
+model PayrollEntry {
+  id             String  @id @default(cuid())
+  organizationId String
+  runId          String
+  employeeId     String
+  base           Decimal @db.Decimal(12, 2)
+  bonus          Decimal @default(0) @db.Decimal(12, 2)
+  deductions     Decimal @default(0) @db.Decimal(12, 2)
+  net            Decimal @db.Decimal(12, 2)
+  notes          String?
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  run          PayrollRun   @relation(fields: [runId], references: [id], onDelete: Cascade)
+  employee     Employee     @relation(fields: [employeeId], references: [id])
+
+  @@unique([runId, employeeId])
+  @@map("payroll_entries")
+}
+
+// ── Portal del creyente: contenido, transmisiones y solicitudes ──────────────
+
+/// Publicación de la iglesia (anuncio, devocional, artículo o noticia).
+model Post {
+  id             String   @id @default(cuid())
+  organizationId String
+  title          String   @db.VarChar(160)
+  /// Texto plano con saltos de línea y enlaces simples.
+  body           String   @db.Text
+  /// announcement | devotional | article | news
+  kind           String   @default("announcement") @db.VarChar(20)
+  coverUrl       String?
+  /// all | leaders
+  audience       String   @default("all") @db.VarChar(20)
+  pinned         Boolean  @default(false)
+  isPublished    Boolean  @default(true)
+  publishedAt    DateTime @default(now())
+  authorId       String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId, isPublished, publishedAt])
+  @@map("posts")
+}
+
+/// Transmisión en vivo o grabada que se reproduce incrustada (YouTube o Facebook).
+model Stream {
+  id             String    @id @default(cuid())
+  organizationId String
+  title          String    @db.VarChar(160)
+  description    String?   @db.Text
+  /// youtube | facebook
+  platform       String    @db.VarChar(20)
+  url            String    @db.VarChar(500)
+  scheduledAt    DateTime?
+  /// scheduled | live | ended
+  status         String    @default("scheduled") @db.VarChar(20)
+  isPublished    Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId, isPublished, status])
+  @@map("streams")
+}
+
+/// Solicitud de un creyente para servir en un ministerio; la decide su líder.
+model MinistryJoinRequest {
+  id             String    @id @default(cuid())
+  organizationId String
+  ministryId     String
+  memberId       String
+  message        String?   @db.VarChar(500)
+  /// pending | approved | rejected
+  status         String    @default("pending") @db.VarChar(20)
+  decidedById    String?
+  decidedAt      DateTime?
+  createdAt      DateTime  @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  ministry     Ministry     @relation(fields: [ministryId], references: [id], onDelete: Cascade)
+  member       Member       @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, status])
+  @@index([ministryId, status])
+  @@index([memberId, status])
+  @@map("ministry_join_requests")
+}
+
+// ── Pasarelas de pago en línea (por iglesia) ─────────────────────────────────
+
+/// Credenciales de la pasarela de cada iglesia; los secretos se guardan cifrados (AES-256-GCM).
+model PaymentGateway {
+  id               String   @id @default(cuid())
+  organizationId   String
+  /// stripe | mercadopago
+  provider         String   @db.VarChar(20)
+  isActive         Boolean  @default(false)
+  /// test | live (informativo: lo define la llave que se pegue).
+  mode             String   @default("test") @db.VarChar(10)
+  publicKey        String?  @db.VarChar(255)
+  secretKeyEnc     String   @db.Text
+  webhookSecretEnc String?  @db.Text
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([organizationId, provider])
+  @@map("payment_gateways")
+}
+
+// ── Envío programado de reportes por correo ──────────────────────────────────
+
+/// Un reporte que se arma y se envía solo, por correo, cada semana o cada mes.
+model ReportSchedule {
+  id              String    @id @default(cuid())
+  organizationId  String
+  /// Identificador del catálogo de reportes (attendance, cells, finance…).
+  reportId        String    @db.VarChar(30)
+  /// weekly | monthly
+  frequency       String    @db.VarChar(10)
+  /// 0 = domingo … 6 = sábado (semanal).
+  dayOfWeek       Int       @default(1)
+  /// 1–28 (mensual).
+  dayOfMonth      Int       @default(1)
+  /// Hora local de la iglesia, 0–23.
+  hour            Int       @default(8)
+  /// Correos destinatarios.
+  recipients      Json
+  /// Adjuntar también el CSV.
+  includeCsv      Boolean   @default(false)
+  isActive        Boolean   @default(true)
+  nextRunAt       DateTime?
+  lastRunAt       DateTime?
+  /// sent | error
+  lastStatus      String?   @db.VarChar(10)
+  lastError       String?   @db.VarChar(300)
+  createdByUserId String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([isActive, nextRunAt])
+  @@index([organizationId])
+  @@map("report_schedules")
+}
+
+// ── Conciliación bancaria ────────────────────────────────────────────────────
+
+/// Estado de cuenta importado (CSV) para cotejarlo con ingresos y gastos.
+model BankStatement {
+  id               String    @id @default(cuid())
+  organizationId   String
+  label            String    @db.VarChar(120)
+  fileName         String?   @db.VarChar(200)
+  periodFrom       DateTime? @db.Date
+  periodTo         DateTime? @db.Date
+  uploadedByUserId String?
+  createdAt        DateTime  @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  lines        BankLine[]
+
+  @@index([organizationId, createdAt])
+  @@map("bank_statements")
+}
+
+/// Renglón del estado de cuenta: positivo = depósito, negativo = retiro.
+model BankLine {
+  id              String    @id @default(cuid())
+  organizationId  String
+  statementId     String
+  date            DateTime  @db.Date
+  description     String    @db.VarChar(300)
+  reference       String?   @db.VarChar(100)
+  amount          Decimal   @db.Decimal(12, 2)
+  balance         Decimal?  @db.Decimal(12, 2)
+  /// pending | matched | ignored
+  status          String    @default("pending") @db.VarChar(10)
+  /// income | expense (cuando está conciliado)
+  matchKind       String?   @db.VarChar(10)
+  matchId         String?
+  matchedByUserId String?
+  matchedAt       DateTime?
+  /// Evita duplicar renglones al volver a importar el mismo estado de cuenta.
+  dedupeKey       String    @db.VarChar(64)
+  createdAt       DateTime  @default(now())
+
+  organization Organization  @relation(fields: [organizationId], references: [id])
+  statement    BankStatement @relation(fields: [statementId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, dedupeKey])
+  /// Un ingreso o gasto solo puede conciliarse con un renglón.
+  @@unique([organizationId, matchKind, matchId])
+  @@index([statementId, status])
+  @@map("bank_lines")
+}
+
+/// Asistencia de un servidor a una reunión general en la que su ministerio estuvo en servicio.
+model GatheringServer {
+  id             String           @id @default(cuid())
+  organizationId String
+  gatheringId    String
+  ministryId     String
+  memberId       String
+  status         AttendanceStatus
+  note           String?          @db.VarChar(200)
+  markedByUserId String?
+  markedAt       DateTime         @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  gathering    Gathering    @relation(fields: [gatheringId], references: [id], onDelete: Cascade)
+  ministry     Ministry     @relation(fields: [ministryId], references: [id], onDelete: Cascade)
+  member       Member       @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([gatheringId, ministryId, memberId])
+  @@index([ministryId, memberId])
+  @@index([organizationId, gatheringId])
+  @@map("gathering_servers")
+}
+
+// ── Servidores para eventos ──────────────────────────────────────────────────
+
+/// El organizador del evento pide N servidores a un ministerio; su líder asigna a quién.
+model EventStaffRequest {
+  id              String   @id @default(cuid())
+  organizationId  String
+  eventId         String
+  ministryId      String
+  /// Cuántos servidores se necesitan.
+  quantity        Int
+  /// Qué harán: «Ujieres en la puerta principal».
+  notes           String?  @db.VarChar(300)
+  createdByUserId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  organization Organization           @relation(fields: [organizationId], references: [id])
+  event        Event                  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  ministry     Ministry               @relation(fields: [ministryId], references: [id], onDelete: Cascade)
+  assignments  EventStaffAssignment[]
+
+  @@unique([eventId, ministryId])
+  @@index([ministryId])
+  @@map("event_staff_requests")
+}
+
+/// Quién servirá. assigned = lo asignó el líder (espera su confirmación); offered = se
+/// ofreció (espera al líder); confirmed = servirá; declined / rejected = no.
+model EventStaffAssignment {
+  id              String   @id @default(cuid())
+  organizationId  String
+  requestId       String
+  memberId        String
+  status          String   @db.VarChar(10)
+  decidedByUserId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  organization Organization      @relation(fields: [organizationId], references: [id])
+  request      EventStaffRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  member       Member            @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([requestId, memberId])
+  @@index([memberId, status])
+  @@map("event_staff_assignments")
+}

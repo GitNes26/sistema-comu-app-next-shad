@@ -1,0 +1,9 @@
+-- AlterTable
+ALTER TABLE `schools` ADD COLUMN `diplomaFile` VARCHAR(191) NULL,
+    ADD COLUMN `diplomaMime` VARCHAR(191) NULL,
+    ADD COLUMN `diplomaMode` VARCHAR(12) NOT NULL DEFAULT 'generated',
+    ADD COLUMN `diplomaNameColor` VARCHAR(9) NOT NULL DEFAULT '#1f2937',
+    ADD COLUMN `diplomaNameSize` DOUBLE NOT NULL DEFAULT 0.06,
+    ADD COLUMN `diplomaNameX` DOUBLE NOT NULL DEFAULT 0.5,
+    ADD COLUMN `diplomaNameY` DOUBLE NOT NULL DEFAULT 0.5,
+    ADD COLUMN `diplomaShowSerial` BOOLEAN NOT NULL DEFAULT true;
