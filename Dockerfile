@@ -62,6 +62,7 @@ COPY --from=build /app/public ./public
 COPY --from=build /app/assets ./assets
 COPY --from=build /app/prisma ./prisma
 COPY --from=build /app/prisma.config.ts ./prisma.config.ts
+COPY --from=build /app/scripts ./scripts
 COPY --from=build /app/src ./src
 COPY --from=build /app/tsconfig.json ./tsconfig.json
 COPY --from=build /app/next.config.ts ./next.config.ts
@@ -69,10 +70,9 @@ COPY --from=build /app/package.json ./package.json
 
 EXPOSE 3000
 
-# Producción aplica migraciones versionadas (nunca `db push` ni resets) y el seed
-# idempotente de producción (permisos, roles, menús, plan).
+# Producción aplica migraciones versionadas y el seed idempotente. Solo con DB_RESET="true"
+# borra y recrea la base, una vez por versión (ver scripts/db-bootstrap.mjs).
 CMD ["sh", "-c", "\
   mkdir -p \"$UPLOADS_DIR/$UPLOADS_PROJECT\" && \
-  npx prisma migrate deploy && \
-  npm run db:seed && \
+  node scripts/db-bootstrap.mjs && \
   npm run start"]

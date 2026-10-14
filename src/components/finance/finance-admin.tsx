@@ -482,6 +482,7 @@ function IncomeDialog({ open, onClose, onDone }: { open: boolean; onClose: () =>
       open={open}
       onOpenChange={(o) => !o && onClose()}
       title="Registrar ingreso"
+      description="Diezmos, ofrendas y otros ingresos de la iglesia."
       footer={
         <>
           <Button variant="ghost" onClick={onClose} disabled={saving}>
@@ -644,6 +645,7 @@ function ExpenseDialog({ expense, onClose, onDone }: { expense: ExpenseRowDto | 
       open={expense !== null}
       onOpenChange={(o) => !o && onClose()}
       title={current ? "Editar gasto" : "Registrar gasto"}
+      description="Todo gasto queda en el resumen del mes; los de nómina, eventos y vehículos nacen de su módulo."
       footer={
         <>
           {current && (

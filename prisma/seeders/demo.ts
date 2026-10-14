@@ -7,7 +7,9 @@ import { prisma } from "../../src/lib/db/client"
 // La contraseña común viene de DEMO_PASSWORD (por defecto, un valor solo de desarrollo).
 
 export function isDemoSeedingEnabled() {
-  return process.env.SEED_DEMO === "true" && process.env.NODE_ENV !== "production"
+  // Doble opt-in: SEED_DEMO="true" y, en producción, además un reinicio pedido con DB_RESET="true".
+  if (process.env.SEED_DEMO !== "true") return false
+  return process.env.NODE_ENV !== "production" || process.env.DB_RESET === "true"
 }
 
 const DEMO_PASSWORD = process.env.DEMO_PASSWORD ?? "Demo123"

@@ -332,6 +332,7 @@ function SummaryTab({ event, onChanged }: { event: EventDetailDto; onChanged: ()
         onOpenChange={(o) => !o && setGrowth(null)}
         size="lg"
         title={growth ? `${GROWTH_CHECK_LABEL[growth.check]}: resultado` : "Resultado"}
+        description="Así quedó el camino de la visión de quienes asistieron."
         footer={<Button onClick={() => setGrowth(null)}>Listo</Button>}
       >
         {growth && (

@@ -136,6 +136,21 @@ export function DatePicker({
             endMonth={endMonth}
             defaultMonth={value || undefined}
           />
+          <div className="border-t p-1.5">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="w-full text-primary"
+              disabled={disabledFn(new Date())}
+              onClick={() => {
+                onChange?.(startOfDay(new Date()))
+                setOpen(false)
+              }}
+            >
+              Hoy
+            </Button>
+          </div>
         </PopoverContent>
       </Popover>
 

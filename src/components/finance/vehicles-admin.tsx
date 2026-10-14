@@ -329,6 +329,7 @@ function VehicleDialog({ open, vehicle, onClose, onDone }: { open: boolean; vehi
       open={open}
       onOpenChange={(o) => !o && onClose()}
       title={vehicle ? "Editar vehículo" : "Nuevo vehículo"}
+      description="Datos del vehículo para su bitácora, mantenimiento y documentos."
       footer={
         <>
           <Button variant="ghost" onClick={onClose} disabled={saving}>
@@ -420,6 +421,7 @@ function EntryDialog({ vehicleId, type, odometer, onClose, onDone }: { vehicleId
       open={type !== null}
       onOpenChange={(o) => !o && onClose()}
       title={type ? titles[type] : ""}
+      description="Cada costo registrado genera su gasto ligado al vehículo."
       footer={
         <>
           <Button variant="ghost" onClick={onClose} disabled={saving}>

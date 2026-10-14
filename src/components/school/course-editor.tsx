@@ -282,6 +282,7 @@ function ContentDialog({
       open={item !== null}
       onOpenChange={(o) => !o && onClose()}
       title={current ? "Editar material" : "Agregar material"}
+      description="Lecturas, videos y archivos que verá el alumno en este libro."
       footer={
         <>
           {current && (

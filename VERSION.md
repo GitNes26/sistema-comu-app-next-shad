@@ -30,6 +30,10 @@ Formato: `MAJOR.MINOR.PATCH.REVISION` (X.X.X.X)
 
 ## Historial
 
+### [0.19.0.0] — 2026-10-14
+- **Tipo:** `feat` (Minor)
+- feat: reinicio de base de datos con DB_RESET una vez por version, hora actual y fecha de hoy en los selectores, letra menor en el selector de hora, flechas para desplazar filtros segmentados y leyendas en modales
+
 ### [0.18.0.0] — 2026-10-14
 - **Tipo:** `feat` (Minor)
 - feat: modulo de nomina propio con periodos, conceptos y recibos, flyers de publicaciones con plantillas por tipo, iconos por campo, modal en tres partes, ancho completo, interacciones visibles y busqueda sin mayusculas ni acentos

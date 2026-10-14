@@ -16,7 +16,7 @@ async function main() {
     await seedDemo();
     console.log("✅ Seed de demo completado");
   } else {
-    console.log("ℹ️  Seed de demo omitido (requiere SEED_DEMO=true y NODE_ENV != production)");
+    console.log("ℹ️  Seed de demo omitido (requiere SEED_DEMO=true y NODE_ENV != production, o DB_RESET=true)");
   }
 }
 

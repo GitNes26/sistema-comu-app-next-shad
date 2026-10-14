@@ -32,7 +32,7 @@ const SIZE_MAP: Record<TimePickerSize, {
   xs: {
     container: "h-6 gap-0.5 rounded px-1",
     icon: "size-3",
-    trigger: "h-4 w-16 text-xs",
+    trigger: "h-4 min-w-0 flex-1 text-xs",
     dot: "text-xs",
     clearBtn: "size-5",
     clearIcon: "size-2.5",
@@ -41,7 +41,7 @@ const SIZE_MAP: Record<TimePickerSize, {
   sm: {
     container: "h-7 gap-0.5 rounded-md px-1",
     icon: "size-3.5",
-    trigger: "h-5 w-16 text-xs",
+    trigger: "h-5 min-w-0 flex-1 text-xs",
     dot: "text-xs",
     clearBtn: "size-6",
     clearIcon: "size-3",
@@ -50,56 +50,56 @@ const SIZE_MAP: Record<TimePickerSize, {
   default: {
     container: "h-9 gap-1 rounded-md px-1.5",
     icon: "size-4",
-    trigger: "h-4 w-16 text-sm",
+    trigger: "h-4 min-w-0 flex-1 text-xs",
     dot: "text-sm",
     clearBtn: "size-7",
     clearIcon: "size-3.5",
-    placeholder: "text-sm",
+    placeholder: "text-xs",
   },
   lg: {
     container: "h-10 gap-1.5 rounded-lg px-2",
     icon: "size-5",
-    trigger: "h-7 w-16 text-base",
+    trigger: "h-7 min-w-0 flex-1 text-sm",
     dot: "text-base",
     clearBtn: "size-8",
     clearIcon: "size-4",
-    placeholder: "text-base",
+    placeholder: "text-sm",
   },
   xl: {
     container: "h-11 gap-1.5 rounded-lg px-2",
     icon: "size-5",
-    trigger: "h-8 w-16 text-base",
+    trigger: "h-8 min-w-0 flex-1 text-sm",
     dot: "text-base",
     clearBtn: "size-9",
     clearIcon: "size-4.5",
-    placeholder: "text-base",
+    placeholder: "text-sm",
   },
   "2xl": {
     container: "h-12 gap-2 rounded-xl px-2.5",
     icon: "size-6",
-    trigger: "h-8 w-18 text-lg",
+    trigger: "h-8 min-w-0 flex-1 text-base",
     dot: "text-lg",
     clearBtn: "size-10",
     clearIcon: "size-5",
-    placeholder: "text-lg",
+    placeholder: "text-base",
   },
   "3xl": {
     container: "h-14 gap-2 rounded-xl px-3",
     icon: "size-7",
-    trigger: "h-10 w-20 text-xl",
+    trigger: "h-10 min-w-0 flex-1 text-lg",
     dot: "text-xl",
     clearBtn: "size-11",
     clearIcon: "size-5",
-    placeholder: "text-xl",
+    placeholder: "text-lg",
   },
   "4xl": {
     container: "h-16 gap-2.5 rounded-2xl px-3",
     icon: "size-8",
-    trigger: "h-12 w-22 text-2xl",
+    trigger: "h-12 min-w-0 flex-1 text-xl",
     dot: "text-2xl",
     clearBtn: "size-12",
     clearIcon: "size-6",
-    placeholder: "text-2xl",
+    placeholder: "text-xl",
   },
 }
 
@@ -183,7 +183,7 @@ export function TimePicker({
             id={`${pickerId}-hour`}
             data-slot="time-picker-part"
             className={cn(
-              "border-0 bg-transparent px-1 text-center shadow-none focus-visible:ring-0",
+              "w-full justify-center gap-0 border-0 bg-transparent px-0.5 text-center shadow-none focus-visible:ring-0 px-0.5 desk:px-0.5 desk:pl-0.5 desk:pr-0.5 pl-0.5 pr-0.5 desk:text-xs data-[size=default]:h-full desk:data-[size=default]:h-full [&>svg:last-child]:hidden",
               s.trigger
             )}
             aria-label="Hora"
@@ -209,7 +209,7 @@ export function TimePicker({
           <SelectTrigger
             data-slot="time-picker-part"
             className={cn(
-              "border-0 bg-transparent px-1 text-center shadow-none focus-visible:ring-0",
+              "w-full justify-center gap-0 border-0 bg-transparent px-0.5 text-center shadow-none focus-visible:ring-0 px-0.5 desk:px-0.5 desk:pl-0.5 desk:pr-0.5 pl-0.5 pr-0.5 desk:text-xs data-[size=default]:h-full desk:data-[size=default]:h-full [&>svg:last-child]:hidden",
               s.trigger
             )}
             aria-label="Minuto"
@@ -233,7 +233,7 @@ export function TimePicker({
           <SelectTrigger
             data-slot="time-picker-part"
             className={cn(
-              "border-0 bg-transparent px-1 text-center shadow-none focus-visible:ring-0",
+              "w-full justify-center gap-0 border-0 bg-transparent px-0.5 text-center shadow-none focus-visible:ring-0 px-0.5 desk:px-0.5 desk:pl-0.5 desk:pr-0.5 pl-0.5 pr-0.5 desk:text-xs data-[size=default]:h-full desk:data-[size=default]:h-full [&>svg:last-child]:hidden",
               s.trigger
             )}
             aria-label="Periodo"
@@ -246,13 +246,27 @@ export function TimePicker({
             <SelectItem value="PM">PM</SelectItem>
           </SelectContent>
         </Select>
+        {!disabled && (
+          <button
+            type="button"
+            onClick={() => {
+              const n = new Date()
+              const h = n.getHours()
+              onChange?.(`${String(h).padStart(2, "0")}:${String(n.getMinutes()).padStart(2, "0")}`)
+            }}
+            className="ml-auto shrink-0 rounded px-1.5 py-0.5 text-xs font-medium text-primary hover:bg-primary/10"
+            title="Poner la hora actual"
+          >
+            Ahora
+          </button>
+        )}
         {clearable && value && !disabled && (
           <Button
             type="button"
             variant="ghost"
             size="icon-xs"
             aria-label="Limpiar hora"
-            className={cn("ml-auto", s.clearBtn)}
+            className={cn("shrink-0", s.clearBtn)}
             onClick={() => onChange?.(null)}
           >
             <X className={s.clearIcon} />

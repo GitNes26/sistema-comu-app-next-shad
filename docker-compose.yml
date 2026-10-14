@@ -36,6 +36,7 @@ services:
       UPLOADS_DIR: /app/public/uploads
       UPLOADS_PROJECT: ${UPLOADS_PROJECT:-comu-app}
       SEED_DEMO: "false"
+      DB_RESET: "${DB_RESET:-false}"
       # El superadmin se crea (o se actualiza) en cada arranque con estas credenciales.
       SUPERADMIN_EMAIL: ${SUPERADMIN_EMAIL:?Define SUPERADMIN_EMAIL}
       SUPERADMIN_PASSWORD: ${SUPERADMIN_PASSWORD:?Define SUPERADMIN_PASSWORD}
