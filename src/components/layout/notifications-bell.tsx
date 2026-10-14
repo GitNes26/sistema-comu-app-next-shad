@@ -6,13 +6,19 @@ import { motion, AnimatePresence } from "framer-motion"
 import { formatDistanceToNow } from "date-fns"
 import { es } from "date-fns/locale"
 import {
-  AlertTriangle,
+  Baby,
   Bell,
   BellRing,
   CheckCheck,
-  ClipboardList,
-  ShoppingCart,
+  CircleDollarSign,
+  GraduationCap,
+  HandHeart,
+  HeartHandshake,
+  Megaphone,
+  Radio,
   Sparkles,
+  Ticket,
+  Wallet,
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -30,11 +36,20 @@ import {
 import { useNotificationSse } from "@/hooks/use-notifications"
 import { LiveBadge } from "@/components/shared/live-badge"
 import { SPRING_BOUNCE } from "@/lib/animation-tokens"
+import { noticeGroup, type NoticeGroup } from "@/lib/notifications/kinds"
 
-const ICONS: Record<string, React.ReactNode> = {
-  "sale-complete": <ShoppingCart className="size-3.5" />,
-  "low-stock": <AlertTriangle className="size-3.5" />,
-  "order-received": <ClipboardList className="size-3.5" />,
+const ICONS: Record<NoticeGroup, React.ReactNode> = {
+  event: <Ticket className="size-3.5" />,
+  payment: <CircleDollarSign className="size-3.5" />,
+  school: <GraduationCap className="size-3.5" />,
+  ministry: <HeartHandshake className="size-3.5" />,
+  kids: <Baby className="size-3.5" />,
+  prayer: <HandHeart className="size-3.5" />,
+  care: <Sparkles className="size-3.5" />,
+  content: <Megaphone className="size-3.5" />,
+  stream: <Radio className="size-3.5" />,
+  finance: <Wallet className="size-3.5" />,
+  system: <Bell className="size-3.5" />,
 }
 
 // Campana de notificaciones: badge animado + popover + SSE.
@@ -146,7 +161,7 @@ export function NotificationsBell({ className }: { className?: string } = {}) {
         </div>
         <div className="border-t px-3 py-1.5 text-center">
           <Link
-            href="/admin/notifications"
+            href="/mi/notificaciones"
             className="inline-flex w-full items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-foreground/80 transition-colors hover:bg-accent"
           >
             <Bell className="size-3.5" />
@@ -177,7 +192,7 @@ function NotificationRow({
             : "bg-primary/10 text-primary"
         )}
       >
-        {ICONS[n.icon ?? ""] ?? <Bell className="size-3.5" />}
+        {ICONS[noticeGroup(n.kind)]}
       </span>
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-1.5">

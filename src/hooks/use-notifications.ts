@@ -22,8 +22,6 @@ const SOUND_BY_ICON: Record<string, Parameters<typeof playSound>[0]> = {
 };
 
 export function useNotificationSse(enabled = true, id = "notifications") {
-  const seeded = React.useRef(false);
-
   // El estado también alimenta al badge "En vivo" compartido. La campana y el
   // centro de notificaciones pueden montar el hook a la vez: cada montaje
   // registra su propio id para que el unregister no pise al otro.
@@ -65,6 +63,8 @@ export function useNotificationSse(enabled = true, id = "notifications") {
               description: data.description,
               icon: data.icon,
               href: data.href,
+              kind: (data as { kind?: string }).kind,
+              severity: (data as { severity?: string }).severity,
               read: false,
               createdAt: data.createdAt ?? new Date().toISOString(),
             };
@@ -75,7 +75,10 @@ export function useNotificationSse(enabled = true, id = "notifications") {
                 "notification",
               { volume: 0.7 }
             );
-            notify.info(n.description ? `${n.title}: ${n.description}` : n.title);
+            const text = n.description ? `${n.title}: ${n.description}` : n.title;
+            if (n.severity === "success") notify.success(text);
+            else if (n.severity === "warning") notify.warning(text);
+            else notify.info(text);
           }
         } catch {
           // Ignorar mensajes no JSON
@@ -101,18 +104,5 @@ export function useNotificationSse(enabled = true, id = "notifications") {
       es?.close();
       unregisterSse(id);
     };
-  }, [enabled]);
-
-  // Modo demo: si el SSE no conectó tras los reintentos, siembra ejemplos.
-  React.useEffect(() => {
-    if (!enabled || seeded.current) return;
-    const timer = setTimeout(() => {
-      const { connected, items, seedDemo } = useNotificationStore.getState();
-      if (!connected && items.length === 0) {
-        seedDemo();
-        seeded.current = true;
-      }
-    }, 6_000);
-    return () => clearTimeout(timer);
   }, [enabled]);
 }

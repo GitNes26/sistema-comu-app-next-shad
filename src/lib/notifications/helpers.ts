@@ -23,6 +23,8 @@ export function notificationToPayload(n: Notification): LiveNotificationPayload 
     icon: n.kind ? SEVERITY_ICON[n.kind] : SEVERITY_ICON[n.severity],
     sound,
     href: n.link ?? undefined,
+    kind: n.kind ?? undefined,
+    severity: n.severity ?? undefined,
     read: Boolean(n.readAt),
     createdAt: n.createdAt.toISOString(),
   };

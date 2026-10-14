@@ -5,6 +5,7 @@ import { matchesSearch } from "@/lib/search"
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
 import Link from "next/link"
 import QRCode from "qrcode"
+import { TicketCard } from "@/components/events/ticket-card"
 import {
   ArrowLeft,
   Ban,
@@ -1527,25 +1528,28 @@ function AttendeeView({ event, onChanged }: { event: EventDetailDto; onChanged: 
       )}
 
       {ticket ? (
-        <section className="space-y-3 rounded-2xl border border-primary/40 bg-primary/5 p-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="flex-1 font-heading text-base font-semibold">Tu boleto</h2>
-            <StatusPill tone={ticket.status === "paid" ? "success" : "warning"}>
-              {ticket.status === "paid" ? (event.price > 0 ? "Pagado" : "Confirmado") : `Debes ${money(ticket.balance)}`}
-            </StatusPill>
-          </div>
-          {ticket.seatLabel ? (
-            <p className="text-sm">
-              Tu lugar: <span className="font-semibold">{ticket.seatLabel}</span>
-            </p>
-          ) : event.seating === "seats" ? (
-            <p className="text-sm text-muted-foreground">{mayChoose ? "Elige tu lugar en el plano." : "El personal te asignará un lugar."}</p>
-          ) : null}
-          {ticket.checkedInAt ? (
-            <p className="text-sm text-success-ink">Ya registraste tu entrada.</p>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              <Button onClick={() => setQrOpen(true)}>Mostrar mi QR</Button>
+        <section className="space-y-3">
+          <TicketCard
+            eventName={event.name}
+            kind={event.kind}
+            topic={event.topic}
+            startsAt={event.startsAt}
+            endsAt={event.endsAt}
+            venue={event.venueName ?? event.location}
+            seat={ticket.seatLabel}
+            holder={ticket.holderName}
+            code={ticket.code}
+            price={ticket.price}
+            balance={ticket.balance}
+            status={ticket.status}
+            checkedInAt={ticket.checkedInAt}
+            groupName={event.groupName}
+          />
+          {event.seating === "seats" && !ticket.seatLabel && (
+            <p className="text-center text-sm text-muted-foreground">{mayChoose ? "Elige tu lugar en el plano de abajo." : "El personal te asignará un lugar."}</p>
+          )}
+          {!ticket.checkedInAt && (
+            <div className="flex flex-wrap justify-center gap-2">
               <Button variant="ghost" onClick={() => void cancel()}>
                 Cancelar mi boleto
               </Button>

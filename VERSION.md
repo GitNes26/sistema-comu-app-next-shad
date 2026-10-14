@@ -30,6 +30,10 @@ Formato: `MAJOR.MINOR.PATCH.REVISION` (X.X.X.X)
 
 ## Historial
 
+### [0.22.0.0] — 2026-10-14
+- **Tipo:** `feat` (Minor)
+- feat: boleto con diseno de boleto, campus del alumno con navegacion y avance, mis hijos como lugar seguro, avisos en vivo para boletos pagos calificaciones y ministerios sin notificaciones de demostracion
+
 ### [0.21.0.0] — 2026-10-14
 - **Tipo:** `feat` (Minor)
 - feat: organigrama con ministerios y areas de servicio, niveles jerarquicos nuevos, estructura base y demo con VTR Saetas y Hombres de Reino, circulo de crecimiento, flyers con estructuras distintas y vista previa fija, calendario de la iglesia y calificacion con la interfaz de cada respuesta

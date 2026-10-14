@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto"
 import { prisma } from "@/lib/db"
-import { fireAndForget, notifyChurch } from "@/lib/notifications/church"
+import { fireAndForget, notifyChurch, notifyMembers } from "@/lib/notifications/church"
 import { CrudError } from "@/lib/crud/types"
 import { memberIdOfUser, ministryAccess, type Actor } from "@/lib/ministries/server"
 import {
@@ -334,7 +334,7 @@ export interface EventDetailDto {
   /** Gastos del evento (solo quien lo gestiona); son el mismo registro que ve Finanzas. */
   expenses: ExpenseDto[]
   tickets: TicketDto[] | null
-  myTicket: { id: string; code: string; status: "reserved" | "paid" | "cancelled"; seatCode: string | null; seatLabel: string | null; balance: number; checkedInAt: string | null } | null
+  myTicket: { id: string; code: string; status: "reserved" | "paid" | "cancelled"; seatCode: string | null; seatLabel: string | null; balance: number; checkedInAt: string | null; holderName: string; price: number } | null
   canRegister: boolean
   access: { canManage: boolean; canCheckin: boolean; mayChooseSeat: boolean; staffMayAssign: boolean }
 }
@@ -503,7 +503,7 @@ export async function getEvent(actor: Actor, eventId: string): Promise<EventDeta
     })),
     tickets: a.canView ? dtoTickets : null,
     myTicket: mineDto
-      ? { id: mineDto.id, code: mineDto.code, status: mineDto.status, seatCode: mineDto.seatCode, seatLabel: mineDto.seatLabel, balance: mineDto.balance, checkedInAt: mineDto.checkedInAt }
+      ? { id: mineDto.id, code: mineDto.code, status: mineDto.status, seatCode: mineDto.seatCode, seatLabel: mineDto.seatLabel, balance: mineDto.balance, checkedInAt: mineDto.checkedInAt, holderName: mineDto.name, price: mineDto.price }
       : null,
     canRegister:
       e.status === "published" &&
@@ -867,6 +867,19 @@ export async function createTicket(actor: Actor, eventId: string, input: TicketI
       },
       select: { id: true },
     })
+    // Quien recibe un boleto de parte de la iglesia lo ve al momento en su bandeja.
+    if (memberId) {
+      fireAndForget(
+        notifyMembers(actor.organizationId, [memberId], {
+          kind: "event_ticket",
+          title: `Tienes boleto para ${e.name}`,
+          body: place.seatCode ? `Lugar ${place.seatCode}` : "Muéstralo en la entrada.",
+          link: `/mi/eventos/${eventId}`,
+          severity: "success",
+          excludeUserId: actor.userId,
+        })
+      )
+    }
     return { id: row.id }
   } catch (err) {
     if (isUnique(err)) throw new CrudError("Ese lugar acaba de ocuparse", 409, "seatCode")
@@ -977,6 +990,19 @@ export async function cancelTicket(actor: Actor, eventId: string, ticketId: stri
   if (t.checkedInAt) throw new CrudError("El boleto ya tuvo entrada; no se puede cancelar", 409)
   // Se libera el lugar; los pagos quedan en el historial para su devolución o ajuste.
   await prisma.eventTicket.update({ where: { id: t.id }, data: { status: "cancelled", cancelledAt: new Date(), seatCode: null, sectionId: null } })
+  // Si lo canceló la iglesia, la persona lo sabe; si lo canceló ella misma, no se le avisa de lo que hizo.
+  if (t.memberId && !isOwner) {
+    fireAndForget(
+      notifyMembers(actor.organizationId, [t.memberId], {
+        kind: "event_ticket",
+        title: "Se canceló tu boleto",
+        body: `Evento: ${a.event.name}`,
+        link: `/mi/eventos/${eventId}`,
+        severity: "warning",
+        excludeUserId: actor.userId,
+      })
+    )
+  }
   return { ok: true }
 }
 
@@ -996,6 +1022,19 @@ export async function addPayment(actor: Actor, eventId: string, ticketId: string
     }),
     prisma.eventTicket.update({ where: { id: t.id }, data: { status: ticketStatusFor(Number(t.price), all) } }),
   ])
+  if (t.memberId) {
+    const left = ticketBalance(Number(t.price), all)
+    fireAndForget(
+      notifyMembers(actor.organizationId, [t.memberId], {
+        kind: "event_payment",
+        title: left <= 0 ? `Boleto pagado: ${a.event.name}` : `Recibimos tu abono de ${amount.toFixed(2)}`,
+        body: left <= 0 ? "Quedó liquidado. ¡Te esperamos!" : `Saldo pendiente: ${left.toFixed(2)}`,
+        link: `/mi/eventos/${eventId}`,
+        severity: "success",
+        excludeUserId: actor.userId,
+      })
+    )
+  }
   return { ok: true }
 }
 

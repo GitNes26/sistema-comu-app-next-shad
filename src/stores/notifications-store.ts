@@ -1,8 +1,7 @@
 import { create } from "zustand";
 
 // Estado de notificaciones compartido entre bell, bottom bar y drawer.
-// El flujo SSE (FASE 11) alimenta `push`; mientras no exista el endpoint se muestran
-// notificaciones de demostración para validar el UI.
+// El flujo SSE (/api/notifications/stream) alimenta `setItems` y `push`.
 
 export interface AppNotification {
   id: string;
@@ -10,6 +9,8 @@ export interface AppNotification {
   description?: string;
   icon?: string;
   href?: string;
+  kind?: string;
+  severity?: string;
   read: boolean;
   createdAt: string;
 }
@@ -23,35 +24,7 @@ interface NotificationsState {
   markRead: (id: string) => void;
   markAllRead: () => void;
   setConnected: (connected: boolean) => void;
-  seedDemo: () => void;
 }
-
-const demoNotifications: AppNotification[] = [
-  {
-    id: "demo-1",
-    title: "Venta registrada",
-    description: "#1001 por $245.50 — Caja 1",
-    icon: "sale-complete",
-    read: false,
-    createdAt: new Date(Date.now() - 5 * 60_000).toISOString(),
-  },
-  {
-    id: "demo-2",
-    title: "Bajo inventario",
-    description: "Coca-Cola 600ml quedó con 4 piezas.",
-    icon: "low-stock",
-    read: false,
-    createdAt: new Date(Date.now() - 42 * 60_000).toISOString(),
-  },
-  {
-    id: "demo-3",
-    title: "Nuevo pedido en línea",
-    description: "Pedido #887 de cliente preferente.",
-    icon: "order-received",
-    read: true,
-    createdAt: new Date(Date.now() - 3 * 3_600_000).toISOString(),
-  },
-];
 
 function countUnread(items: AppNotification[]): number {
   return items.filter((n) => !n.read).length;
@@ -104,9 +77,4 @@ export const useNotificationStore = create<NotificationsState>((set) => ({
     }));
   },
   setConnected: (connected) => set({ connected }),
-  seedDemo: () =>
-    set({
-      items: demoNotifications,
-      unread: countUnread(demoNotifications),
-    }),
 }));

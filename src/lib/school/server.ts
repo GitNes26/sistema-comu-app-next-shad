@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db"
+import { fireAndForget, notifyMembers } from "@/lib/notifications/church"
 import { CrudError } from "@/lib/crud/types"
 import { memberIdOfUser, type Actor } from "@/lib/ministries/server"
 import { documentsForEnrollment } from "@/lib/school/documents"
@@ -782,6 +783,17 @@ export async function addPayment(actor: Actor, enrollmentId: string, input: { co
   await prisma.schoolPayment.create({
     data: { organizationId: actor.organizationId, enrollmentId, concept, amount, method, reference: text(input.reference, 80), receivedByUserId: actor.userId },
   })
+  const left = Math.max(0, balance - amount)
+  fireAndForget(
+    notifyMembers(actor.organizationId, [e.memberId], {
+      kind: "school_payment",
+      title: left <= 0 ? "Tu inscripción quedó liquidada" : `Recibimos tu pago de ${amount.toFixed(2)}`,
+      body: left <= 0 ? "No tienes saldo pendiente en la escuela." : `Saldo pendiente: ${left.toFixed(2)}`,
+      link: "/mi/escuela",
+      severity: "success",
+      excludeUserId: actor.userId,
+    })
+  )
   return { ok: true }
 }
 
@@ -1426,6 +1438,16 @@ export async function gradeSubmission(actor: Actor, submissionId: string, input:
     },
   })
   await syncGradeFromSubmissions(s.enrollmentId, s.assessmentId, actor.organizationId)
+  fireAndForget(
+    notifyMembers(actor.organizationId, [s.enrollment.memberId], {
+      kind: "school_graded",
+      title: `Calificaron tu ${s.assessment.kind === "task" ? "tarea" : "ejercicio"} ${s.assessment.number}`,
+      body: `Sacaste ${(percent / 10).toFixed(1)} de 10 en «${s.assessment.title}».`,
+      link: "/mi/escuela",
+      severity: percent >= 70 ? "success" : "info",
+      excludeUserId: actor.userId,
+    })
+  )
   return { ok: true, percent }
 }
 

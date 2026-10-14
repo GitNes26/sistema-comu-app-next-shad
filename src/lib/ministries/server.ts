@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db"
+import { fireAndForget, notifyMembers } from "@/lib/notifications/church"
 import { CrudError } from "@/lib/crud/types"
 import {
   canTransitionRequest,
@@ -377,6 +378,17 @@ export async function addMinistryMember(
     update: { isActive: true, role, positionTitle },
     create: { organizationId: actor.organizationId, ministryId, memberId, role, positionTitle },
   })
+  const ministry = await prisma.ministry.findUnique({ where: { id: ministryId }, select: { name: true } })
+  fireAndForget(
+    notifyMembers(actor.organizationId, [memberId], {
+      kind: "ministry_added",
+      title: `Ahora sirves en ${ministry?.name ?? "un ministerio"}`,
+      body: role === "leader" ? "Eres líder de este ministerio." : "Ya puedes ver sus reuniones y avisos.",
+      link: `/mi/ministerios/${ministryId}`,
+      severity: "success",
+      excludeUserId: actor.userId,
+    })
+  )
   return { id: row.id }
 }
 
@@ -450,6 +462,19 @@ export async function createMeeting(
       createdByUserId: actor.userId,
     },
   })
+  const team = await prisma.ministryMember.findMany({
+    where: { organizationId: actor.organizationId, ministryId, isActive: true },
+    select: { memberId: true },
+  })
+  fireAndForget(
+    notifyMembers(actor.organizationId, team.map((m) => m.memberId), {
+      kind: "ministry_meeting",
+      title: `Nueva reunión: ${title}`,
+      body: startsAt.toLocaleString("es-MX", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }),
+      link: `/mi/ministerios/${ministryId}`,
+      excludeUserId: actor.userId,
+    })
+  )
   return { id: row.id }
 }
 

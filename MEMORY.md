@@ -37,6 +37,12 @@ Hechos duraderos para reanudar trabajo. El detalle vive en [`CONTEXTO_SISTEMA.md
 - Referencia: somoscomunidad.mx (lema «Familia es lo que somos, comunidad es lo que hacemos», «¡Bienvenido a casa!»). Plan completo de brechas en `CONTEXTO_SISTEMA.md`; pendientes de ese análisis: calendario anual/series (NDA), organigrama y categoría ministerio/área, campañas ComuniDAR + recibos PDF, trayectos de Teología con puntos y colegiatura, buscador de grupos en casa, Familia como entidad, música pública y café/librería con Multi-POS.
 - Decisiones: cara pública dentro de COMU-APP; paleta azul real por defecto; recibo de donativo PDF interno (sin CFDI).
 
+## Estructura y esencia (v0.22)
+
+- Nombres de la iglesia: VTR = Jóvenes (pastores Néstor Puentes y Daniela Jiménez), Saetas = Mujeres, HR = Varones, NDA = Noches de Adoración (evento programable, ~cada 2 meses).
+- Montserrat para títulos (`font-heading`); el crecimiento se muestra como círculo de etapas iluminadas.
+- Aplicar migraciones: `org_structure` (ministerios categoría/sigla + jerarquías nuevas) junto con las anteriores.
+
 ## Entorno
 
 - BD local `db_comu_app` (MySQL). `.env` desde `.env.example`. Demo: `SEED_DEMO=true npm run db:seed` (usuarios `demo.*@comuapp.test`).

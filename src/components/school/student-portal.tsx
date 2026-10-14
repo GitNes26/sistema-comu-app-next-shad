@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import { ArrowDown, ArrowLeft, ArrowUp, Ban, BookOpen, Check, ExternalLink, FileText, Loader2, PlayCircle, Timer } from "lucide-react"
+import { ArrowDown, ArrowLeft, ArrowUp, Ban, BookOpen, CalendarCheck, Check, ClipboardCheck, ExternalLink, FileText, GraduationCap, Library, Loader2, PenLine, PlayCircle, Timer, Trophy, Wallet } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
@@ -77,7 +77,9 @@ export function StudentPortal({ enrollmentId, backHref }: { enrollmentId: string
 
   const renderAssessments = (title: string, list: typeof tasks) => (
     <section className="space-y-2">
-      <h3 className="text-sm font-semibold">{title}</h3>
+      <h2 className="flex items-center gap-2 font-heading text-lg font-semibold">
+        {title === "Tareas" ? <ClipboardCheck className="size-5 text-primary" /> : <PenLine className="size-5 text-primary" />} {title}
+      </h2>
       {list.length === 0 ? (
         <p className="text-sm text-muted-foreground">Aún no hay {title.toLowerCase()} publicadas.</p>
       ) : (
@@ -106,139 +108,211 @@ export function StudentPortal({ enrollmentId, backHref }: { enrollmentId: string
     </section>
   )
 
+  const doneCount = data.assessments.filter((a) => a.attemptsUsed > 0).length
+  const progress = data.assessments.length > 0 ? Math.round((doneCount / data.assessments.length) * 100) : 0
+  const attended = data.attendance.filter((a) => a.status === "present").length
+  const nav = [
+    { id: "resumen", label: "Resumen", icon: GraduationCap, count: null as number | null },
+    { id: "asistencia", label: "Asistencia", icon: CalendarCheck, count: attended },
+    { id: "tareas", label: "Tareas", icon: ClipboardCheck, count: tasks.length },
+    { id: "ejercicios", label: "Ejercicios", icon: PenLine, count: exercises.length },
+    { id: "material", label: "Material", icon: Library, count: weeks.length },
+    ...(data.documents.length > 0 || data.course.digitalBookUrl ? [{ id: "libro", label: "Libro digital", icon: BookOpen, count: data.documents.length || null }] : []),
+  ]
+  const R = 38
+  const CIRC = 2 * Math.PI * R
+
   return (
-    <div className="space-y-5">
-      <Button asChild variant="ghost" size="sm" className="-ml-2">
-        <Link href={backHref}>
-          <ArrowLeft className="size-4" />
-          Mi escuela
+    <div className="w-full space-y-5">
+      {/* ── Portada del curso ── */}
+      <header id="resumen" className="relative scroll-mt-4 overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-[color-mix(in_oklab,var(--primary)_55%,black)] p-5 text-primary-foreground sm:p-7">
+        <div aria-hidden className="pointer-events-none absolute -top-16 -right-10 size-64 rounded-full bg-white/10" />
+        <div aria-hidden className="pointer-events-none absolute -bottom-24 left-1/3 size-64 rounded-full bg-white/5" />
+        <Link href={backHref} className="relative inline-flex items-center gap-1.5 text-xs font-medium text-primary-foreground/80 hover:text-primary-foreground">
+          <ArrowLeft className="size-3.5" /> Mi escuela
         </Link>
-      </Button>
-
-      <div className="space-y-1">
-        <h1 className="font-heading text-xl font-semibold tracking-tight">{data.course.name}</h1>
-        <p className="text-sm text-muted-foreground">
-          {data.group.name}
-          {data.group.teacherName ? ` · Maestro: ${data.group.teacherName}` : ""}
-          {data.group.assistantName ? ` · Apoyo: ${data.group.assistantName}` : ""}
-        </p>
-      </div>
-
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        {[
-          { label: "Promedio de tareas", value: e.tasksAvg },
-          { label: "Promedio de ejercicios", value: e.exercisesAvg },
-          { label: "Calificación general", value: e.finalGrade },
-        ].map((t) => (
-          <div key={t.label} className="rounded-2xl border bg-card p-3">
-            <p className={cn("font-heading text-2xl font-semibold tabular-nums", gradeTone(t.value, data.course.passScore))}>{t.value === null ? "—" : t.value.toFixed(1)}</p>
-            <p className="text-xs text-muted-foreground">{t.label}</p>
+        <div className="relative mt-3 flex flex-wrap items-center gap-5">
+          <div className="min-w-0 flex-1 space-y-1">
+            <p className="text-xs font-semibold tracking-[0.18em] uppercase opacity-80">Escuela de Ministerio</p>
+            <h1 className="font-heading text-2xl leading-tight font-semibold text-balance sm:text-3xl">{data.course.name}</h1>
+            <p className="text-sm opacity-90">
+              {data.group.name}
+              {data.group.teacherName ? ` · Maestro: ${data.group.teacherName}` : ""}
+              {data.group.assistantName ? ` · Apoyo: ${data.group.assistantName}` : ""}
+            </p>
           </div>
-        ))}
-        <div className="rounded-2xl border bg-card p-3">
-          <p className="font-heading text-2xl font-semibold tabular-nums">{data.course.passScore.toFixed(1)}</p>
-          <p className="text-xs text-muted-foreground">Mínima para aprobar</p>
+          <div className="relative grid size-24 shrink-0 place-items-center" aria-label={`Avance ${progress}%`}>
+            <svg viewBox="0 0 96 96" className="size-full -rotate-90">
+              <circle cx="48" cy="48" r={R} fill="none" strokeWidth="8" className="stroke-white/20" />
+              <circle cx="48" cy="48" r={R} fill="none" strokeWidth="8" strokeLinecap="round" className="stroke-white transition-[stroke-dashoffset] duration-700" strokeDasharray={CIRC} strokeDashoffset={CIRC * (1 - progress / 100)} />
+            </svg>
+            <span className="absolute text-center leading-tight">
+              <span className="block font-heading text-xl font-semibold tabular-nums">{progress}%</span>
+              <span className="block text-[0.6rem] tracking-wide uppercase opacity-80">avance</span>
+            </span>
+          </div>
         </div>
-      </div>
+      </header>
+
       {e.passed !== null && e.status !== "enrolled" && (
-        <p className={cn("rounded-xl p-3 text-sm", e.passed ? "bg-success/15 text-success-ink" : "bg-destructive/10 text-destructive")}>
+        <p className={cn("flex items-center gap-2 rounded-2xl p-3 text-sm", e.passed ? "bg-success/15 text-success-ink" : "bg-destructive/10 text-destructive")}>
+          <Trophy className="size-4" />
           {e.passed ? "Aprobaste este libro. ¡Felicidades!" : "No alcanzaste la calificación mínima; puedes cursarlo de nuevo."}
         </p>
       )}
-      {e.balance > 0 && <p className="rounded-xl bg-warning/10 p-3 text-sm text-warning-ink">Tienes un saldo de {money(e.balance)} con la escuela.</p>}
+      {e.balance > 0 && (
+        <p className="flex items-center gap-2 rounded-2xl bg-warning/10 p-3 text-sm text-warning-ink">
+          <Wallet className="size-4" /> Tienes un saldo de {money(e.balance)} con la escuela.
+        </p>
+      )}
 
-      <section className="space-y-2">
-        <h2 className="text-sm font-semibold">Asistencia</h2>
-        <ol className="flex flex-wrap gap-1.5">
-          {data.attendance.map((a) => (
-            <li
-              key={a.week}
-              title={a.date ? `Semana ${a.week} · ${a.date}` : `Semana ${a.week}`}
-              className={cn(
-                "grid size-10 place-items-center rounded-lg border text-xs font-medium",
-                a.status === "present" && "border-success/50 bg-success/15 text-success-ink",
-                a.status === "absent" && "border-destructive/40 bg-destructive/10 text-destructive",
-                a.status === "excused" && "border-warning/50 bg-warning/10 text-warning-ink"
-              )}
-            >
-              {a.status === "present" ? <Check className="size-4" /> : a.status === "absent" ? "F" : a.status === "excused" ? "J" : a.week}
-            </li>
-          ))}
-        </ol>
-      </section>
-
-      {data.documents.length > 0 && (
-        <section className="space-y-2">
-          <h2 className="text-sm font-semibold">Libro digital</h2>
-          <ul className="grid gap-2 sm:grid-cols-2">
-            {data.documents.map((d) => (
-              <li key={d.id}>
-                <Link href={`/mi/escuela/libro/${d.id}`} className="press flex items-center gap-3 rounded-2xl border bg-card p-3 hover:border-primary/40">
-                  <BookOpen className="size-5 shrink-0 text-primary" />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-medium">{d.title}</span>
-                    <span className="block text-xs text-muted-foreground">
-                      {d.visible} de {d.total} páginas habilitadas · tus apuntes se guardan aquí
-                    </span>
-                  </span>
-                </Link>
-              </li>
+      <div className="grid gap-5 lg:grid-cols-[15rem_minmax(0,1fr)]">
+        {/* ── Navegación del curso y boleta, siempre a la vista ── */}
+        <aside className="space-y-4 lg:sticky lg:top-4 lg:self-start">
+          <nav aria-label="Secciones del curso" className="flex gap-1 overflow-x-auto rounded-2xl border bg-card p-1.5 lg:flex-col lg:overflow-visible">
+            {nav.map((n) => (
+              <a key={n.id} href={`#${n.id}`} className="press flex shrink-0 items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground">
+                <n.icon className="size-4" />
+                <span className="flex-1 whitespace-nowrap">{n.label}</span>
+                {n.count !== null && <span className="rounded-full bg-muted px-1.5 text-xs tabular-nums">{n.count}</span>}
+              </a>
             ))}
-          </ul>
-        </section>
-      )}
+          </nav>
+          <div className="hidden space-y-3 rounded-2xl border bg-card p-4 lg:block">
+            <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Mi boleta</p>
+            {[
+              { label: "Tareas", value: e.tasksAvg },
+              { label: "Ejercicios", value: e.exercisesAvg },
+              { label: "General", value: e.finalGrade },
+            ].map((t) => (
+              <div key={t.label} className="flex items-baseline justify-between">
+                <span className="text-sm text-muted-foreground">{t.label}</span>
+                <span className={cn("font-heading text-xl font-semibold tabular-nums", gradeTone(t.value, data.course.passScore))}>{t.value === null ? "—" : t.value.toFixed(1)}</span>
+              </div>
+            ))}
+            <p className="border-t pt-2 text-xs text-muted-foreground">Mínima para aprobar: {data.course.passScore.toFixed(1)}</p>
+          </div>
+        </aside>
 
-      {data.course.digitalBookUrl && (
-        <a href={data.course.digitalBookUrl} target="_blank" rel="noopener noreferrer" className="press inline-flex items-center gap-2 rounded-2xl border bg-card p-3 text-sm font-medium hover:border-primary/40">
-          <BookOpen className="size-5 text-primary" />
-          Abrir el libro digital
-          <ExternalLink className="size-4 text-muted-foreground" />
-        </a>
-      )}
+        <div className="min-w-0 space-y-8">
+          {/* Boleta en móvil */}
+          <div className="grid grid-cols-3 gap-2 lg:hidden">
+            {[
+              { label: "Tareas", value: e.tasksAvg },
+              { label: "Ejercicios", value: e.exercisesAvg },
+              { label: "General", value: e.finalGrade },
+            ].map((t) => (
+              <div key={t.label} className="rounded-2xl border bg-card p-3 text-center">
+                <p className={cn("font-heading text-2xl font-semibold tabular-nums", gradeTone(t.value, data.course.passScore))}>{t.value === null ? "—" : t.value.toFixed(1)}</p>
+                <p className="text-xs text-muted-foreground">{t.label}</p>
+              </div>
+            ))}
+          </div>
 
-      {renderAssessments("Tareas", tasks)}
-      {renderAssessments("Ejercicios", exercises)}
+          <section id="asistencia" className="scroll-mt-4 space-y-2">
+            <h2 className="flex items-center gap-2 font-heading text-lg font-semibold">
+              <CalendarCheck className="size-5 text-primary" /> Asistencia
+            </h2>
+            <ol className="flex flex-wrap gap-1.5">
+              {data.attendance.map((a) => (
+                <li
+                  key={a.week}
+                  title={a.date ? `Semana ${a.week} · ${a.date}` : `Semana ${a.week}`}
+                  className={cn(
+                    "grid size-11 place-items-center rounded-xl border text-xs font-medium",
+                    a.status === "present" && "border-success/50 bg-success/15 text-success-ink",
+                    a.status === "absent" && "border-destructive/40 bg-destructive/10 text-destructive",
+                    a.status === "excused" && "border-warning/50 bg-warning/10 text-warning-ink"
+                  )}
+                >
+                  {a.status === "present" ? <Check className="size-4" /> : a.status === "absent" ? "F" : a.status === "excused" ? "J" : a.week}
+                </li>
+              ))}
+            </ol>
+          </section>
 
-      <section className="space-y-2">
-        <h2 className="text-sm font-semibold">Material por semana</h2>
-        {weeks.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Aún no hay material publicado.</p>
-        ) : (
-          weeks.map(([week, items]) => (
-            <details key={week} className="rounded-2xl border bg-card" open={week === 1}>
-              <summary className="cursor-pointer px-4 py-3 text-sm font-medium">Semana {week}</summary>
-              <ul className="space-y-3 border-t p-4">
-                {items.map((c) => {
-                  const embed = c.type === "video" ? embedUrl(c.url) : null
-                  return (
-                    <li key={c.id} className="space-y-2">
-                      <p className="flex items-center gap-2 text-sm font-medium">
-                        {c.type === "video" ? <PlayCircle className="size-4 text-primary" /> : <FileText className="size-4 text-primary" />}
-                        {c.title}
-                      </p>
-                      {c.type === "text" && c.body && <p className="text-sm whitespace-pre-line text-muted-foreground">{c.body}</p>}
-                      {embed && (
-                        <div className="aspect-video overflow-hidden rounded-xl border">
-                          <iframe src={embed} title={c.title} className="size-full" allow="encrypted-media; picture-in-picture" allowFullScreen />
-                        </div>
-                      )}
-                      {c.type === "image" && c.url && (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={c.url} alt={c.title} className="max-h-72 rounded-xl object-contain" />
-                      )}
-                      {c.url && !embed && c.type !== "image" && (
-                        <a href={c.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline">
-                          Abrir <ExternalLink className="size-3.5" />
-                        </a>
-                      )}
-                    </li>
-                  )
-                })}
+          <div id="tareas" className="scroll-mt-4">
+            {renderAssessments("Tareas", tasks)}
+          </div>
+          <div id="ejercicios" className="scroll-mt-4">
+            {renderAssessments("Ejercicios", exercises)}
+          </div>
+
+          <section id="material" className="scroll-mt-4 space-y-2">
+            <h2 className="flex items-center gap-2 font-heading text-lg font-semibold">
+              <Library className="size-5 text-primary" /> Material por semana
+            </h2>
+            {weeks.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Aún no hay material publicado.</p>
+            ) : (
+              weeks.map(([week, items]) => (
+                <details key={week} className="rounded-2xl border bg-card" open={week === 1}>
+                  <summary className="cursor-pointer px-4 py-3 text-sm font-medium">Semana {week}</summary>
+                  <ul className="space-y-3 border-t p-4">
+                    {items.map((c) => {
+                      const embed = c.type === "video" ? embedUrl(c.url) : null
+                      return (
+                        <li key={c.id} className="space-y-2">
+                          <p className="flex items-center gap-2 text-sm font-medium">
+                            {c.type === "video" ? <PlayCircle className="size-4 text-primary" /> : <FileText className="size-4 text-primary" />}
+                            {c.title}
+                          </p>
+                          {c.type === "text" && c.body && <p className="text-sm whitespace-pre-line text-muted-foreground">{c.body}</p>}
+                          {embed && (
+                            <div className="aspect-video overflow-hidden rounded-xl border">
+                              <iframe src={embed} title={c.title} className="size-full" allow="encrypted-media; picture-in-picture" allowFullScreen />
+                            </div>
+                          )}
+                          {c.type === "image" && c.url && (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={c.url} alt={c.title} className="max-h-72 rounded-xl object-contain" />
+                          )}
+                          {c.url && !embed && c.type !== "image" && (
+                            <a href={c.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline">
+                              Abrir <ExternalLink className="size-3.5" />
+                            </a>
+                          )}
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </details>
+              ))
+            )}
+          </section>
+
+          {(data.documents.length > 0 || data.course.digitalBookUrl) && (
+            <section id="libro" className="scroll-mt-4 space-y-2">
+              <h2 className="flex items-center gap-2 font-heading text-lg font-semibold">
+                <BookOpen className="size-5 text-primary" /> Libro digital
+              </h2>
+              <ul className="grid gap-2 sm:grid-cols-2">
+                {data.documents.map((d) => (
+                  <li key={d.id}>
+                    <Link href={`/mi/escuela/libro/${d.id}`} className="press flex items-center gap-3 rounded-2xl border bg-card p-3 hover:border-primary/40">
+                      <BookOpen className="size-5 shrink-0 text-primary" />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-medium">{d.title}</span>
+                        <span className="block text-xs text-muted-foreground">
+                          {d.visible} de {d.total} páginas habilitadas · tus apuntes se guardan aquí
+                        </span>
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+                {data.course.digitalBookUrl && (
+                  <li>
+                    <a href={data.course.digitalBookUrl} target="_blank" rel="noopener noreferrer" className="press flex items-center gap-3 rounded-2xl border bg-card p-3 hover:border-primary/40">
+                      <ExternalLink className="size-5 shrink-0 text-primary" />
+                      <span className="text-sm font-medium">Abrir el libro digital</span>
+                    </a>
+                  </li>
+                )}
               </ul>
-            </details>
-          ))
-        )}
-      </section>
+            </section>
+          )}
+        </div>
+      </div>
 
       <AssessmentRunner enrollmentId={enrollmentId} assessmentId={open} onClose={() => setOpen(null)} onDone={load} />
     </div>

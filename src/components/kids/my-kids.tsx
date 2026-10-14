@@ -1,7 +1,8 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
-import { Baby, MessageCircle, Pencil, Plus, QrCode, ShieldAlert } from "lucide-react"
+import { Baby, BellRing, MessageCircle, Pencil, Plus, QrCode, ShieldAlert, ShieldCheck, UserCheck } from "lucide-react"
+import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { DialogComponent } from "@/components/ui/dialog"
@@ -40,20 +41,40 @@ export function MyKids() {
   }, [load])
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-3">
-        <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary">
-          <Baby className="size-5" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <h1 className="font-heading text-xl font-semibold tracking-tight">Mis hijos</h1>
-          <p className="text-sm text-muted-foreground">Su QR de entrada y salida, y los avisos de Comunidad Kids.</p>
+    <div className="w-full space-y-5">
+      {/* Un lugar seguro: cálido, claro y con la protección a la vista. */}
+      <header className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-warning/20 via-primary/10 to-accent p-5 sm:p-7">
+        <div aria-hidden className="pointer-events-none absolute -top-10 -right-8 size-44 rounded-full bg-warning/25 blur-2xl" />
+        <div aria-hidden className="pointer-events-none absolute -bottom-12 left-10 size-40 rounded-full bg-primary/15 blur-2xl" />
+        <div className="relative flex flex-wrap items-center gap-4">
+          <span className="grid size-14 shrink-0 place-items-center rounded-3xl bg-card text-primary shadow-sm">
+            <Baby className="size-7" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <h1 className="font-heading text-2xl font-semibold tracking-tight">Mis hijos</h1>
+            <p className="text-sm text-muted-foreground">En Comunidad Kids están en buenas manos. Tú sabes siempre dónde están.</p>
+          </div>
+          <Button onClick={() => setForm("new")}>
+            <Plus className="size-4" />
+            Registrar hijo
+          </Button>
         </div>
-        <Button onClick={() => setForm("new")}>
-          <Plus className="size-4" />
-          Registrar hijo
-        </Button>
-      </div>
+        <ul className="relative mt-5 grid gap-2 sm:grid-cols-3">
+          {[
+            { icon: UserCheck, t: "Entrada registrada", d: "Con QR; el personal sabe quién llegó y a qué salón." },
+            { icon: ShieldCheck, t: "Salida protegida", d: "Solo con tu código y la autorización del personal." },
+            { icon: BellRing, t: "Avisos al instante", d: "Te escribimos si te necesitamos o cuando sale." },
+          ].map((s) => (
+            <li key={s.t} className="flex items-start gap-2.5 rounded-2xl bg-card/80 p-3 backdrop-blur">
+              <s.icon className="mt-0.5 size-5 shrink-0 text-primary" />
+              <span className="text-sm leading-snug">
+                <span className="block font-medium">{s.t}</span>
+                <span className="text-xs text-muted-foreground">{s.d}</span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      </header>
 
       {children === null ? (
         <Skeleton className="h-40 w-full" />
@@ -64,9 +85,10 @@ export function MyKids() {
           description="Registra a tus hijos para obtener su QR. Si ya los registró el personal de Kids, aparecerán aquí al vincularte como tutor."
         />
       ) : (
-        <ul className="grid gap-3 sm:grid-cols-2">
+        <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {children.map((c) => (
-            <li key={c.id} className="space-y-3 rounded-2xl border bg-card p-4">
+            <li key={c.id} className={cn("relative space-y-3 overflow-hidden rounded-3xl border bg-card p-4 pl-5", c.current && !c.current.checkOutAt && "border-success/50 bg-success/5")}>
+              <span aria-hidden className={cn("absolute inset-y-0 left-0 w-1.5", c.current && !c.current.checkOutAt ? "bg-success" : "bg-muted")} />
               <div className="flex items-start gap-3">
                 <span className="grid size-14 shrink-0 place-items-center overflow-hidden rounded-2xl bg-muted">
                   {c.imageUrl ? (
