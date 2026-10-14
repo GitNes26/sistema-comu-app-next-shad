@@ -92,6 +92,10 @@ export interface SeriesDto {
   kind: GatheringKindKey
   dayOfWeek: number
   startTime: string
+  endTime: string | null
+  modality: string
+  isPublic: boolean
+  description: string | null
   isActive: boolean
 }
 
@@ -109,6 +113,10 @@ export async function listSeries(actor: Actor): Promise<SeriesDto[]> {
     kind: r.kind,
     dayOfWeek: r.dayOfWeek,
     startTime: r.startTime,
+    endTime: r.endTime,
+    modality: r.modality,
+    isPublic: r.isPublic,
+    description: r.description,
     isActive: r.isActive,
   }))
 }
@@ -122,7 +130,21 @@ export async function saveSeries(actor: Actor, id: string | null, input: Record<
   if (!isValidDay(day)) throw new CrudError("Elige el día", 400, "dayOfWeek")
   if (!isValidTime(input.startTime)) throw new CrudError("Hora inválida (HH:MM)", 400, "startTime")
   const kind: GatheringKindKey = group ? group.kind : isGatheringKind(input.kind) ? input.kind : "general"
-  const data = { name, kind, ministryId: group?.id ?? null, dayOfWeek: day, startTime: input.startTime, ...(input.isActive !== undefined ? { isActive: input.isActive !== false } : {}) }
+  const endTime = input.endTime === null || input.endTime === "" || input.endTime === undefined ? null : isValidTime(input.endTime) ? input.endTime : "invalid"
+  if (endTime === "invalid") throw new CrudError("Hora final inválida (HH:MM)", 400, "endTime")
+  const modality = input.modality === "online" || input.modality === "both" ? input.modality : "in_person"
+  const data = {
+    name,
+    kind,
+    ministryId: group?.id ?? null,
+    dayOfWeek: day,
+    startTime: input.startTime,
+    endTime,
+    modality,
+    isPublic: input.isPublic !== false,
+    description: text(input.description, 200),
+    ...(input.isActive !== undefined ? { isActive: input.isActive !== false } : {}),
+  }
   try {
     if (id) {
       const r = await prisma.gatheringSeries.updateMany({ where: { id, organizationId: actor.organizationId }, data })

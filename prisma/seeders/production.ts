@@ -39,12 +39,14 @@ export const SYSTEM_MENUS: SystemMenuDef[] = [
   { id: "menu-donativos", parentId: "menu-principal", type: "item", label: "Donativos", icon: "HandCoins", href: "/mi/donativos", sortOrder: 6 },
   { id: "menu-noticias", parentId: "menu-principal", type: "item", label: "Noticias", icon: "Newspaper", href: "/mi/contenido", sortOrder: 7 },
   { id: "menu-transmisiones", parentId: "menu-principal", type: "item", label: "Transmisiones", icon: "Tv", href: "/mi/transmisiones", sortOrder: 8 },
+  { id: "menu-oracion", parentId: "menu-principal", type: "item", label: "Oración", icon: "HandHeart", href: "/mi/oracion", sortOrder: 9 },
   { id: "menu-mi-perfil", parentId: "menu-principal", type: "item", label: "Mi perfil", icon: "UserRound", href: "/mi/perfil", sortOrder: 9 },
   { id: "menu-reuniones", parentId: "menu-principal", type: "item", label: "Reuniones", icon: "CalendarDays", href: "/mi/reuniones", sortOrder: 4 },
   { id: "menu-notificaciones", parentId: "menu-principal", type: "item", label: "Notificaciones", icon: "BellRing", href: "/mi/notificaciones", sortOrder: 3 },
 
   { id: "menu-personas", parentId: null, type: "section", label: "Personas", icon: "Users", sortOrder: 2 },
   { id: "menu-creyentes", parentId: "menu-personas", type: "item", label: "Creyentes", icon: "Users", href: "/admin/members", permissionKey: "members.view", sortOrder: 1 },
+  { id: "menu-conexion", parentId: "menu-personas", type: "item", label: "Conexión y oración", icon: "Inbox", href: "/admin/connect", permissionKey: "members.manage", sortOrder: 3 },
   { id: "menu-empleados", parentId: "menu-personas", type: "item", label: "Empleados", icon: "UserCog", href: "/admin/employees", permissionKey: "employees.view", sortOrder: 2 },
   { id: "menu-puestos", parentId: "menu-personas", type: "item", label: "Puestos", icon: "Briefcase", href: "/admin/positions", permissionKey: "employees.view", sortOrder: 3 },
 

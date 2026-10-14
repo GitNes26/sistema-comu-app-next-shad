@@ -87,6 +87,18 @@ const schema = yup.object({
   donationCard: optionalText(40),
   donationLink: optionalUrl,
   donationNote: optionalText(300),
+  publicEnabled: yup.boolean().default(false),
+  publicSlug: yup
+    .string()
+    .trim()
+    .max(40, "Máximo 40 caracteres")
+    .default("")
+    .test("slug", "Usa 3 a 40 letras minúsculas, números o guiones", (v) => !v || /^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$/.test(v)),
+  tagline: optionalText(160),
+  pastorName: optionalText(120),
+  pastorMessage: optionalText(1000),
+  heroImageUrl: yup.string().default(""),
+  mapUrl: optionalUrl,
 })
 type Values = yup.InferType<typeof schema>
 
@@ -119,6 +131,13 @@ function toValues(p: CompanyProfileView | null): Values {
     donationCard: p?.donationCard ?? "",
     donationLink: p?.donationLink ?? "",
     donationNote: p?.donationNote ?? "",
+    publicEnabled: p?.publicEnabled ?? false,
+    publicSlug: p?.publicSlug ?? "",
+    tagline: p?.tagline ?? "",
+    pastorName: p?.pastorName ?? "",
+    pastorMessage: p?.pastorMessage ?? "",
+    heroImageUrl: p?.heroImageUrl ?? "",
+    mapUrl: p?.mapUrl ?? "",
   }
 }
 
@@ -179,6 +198,13 @@ export function CompanyForm() {
         donationCard: nullable(v.donationCard),
         donationLink: nullable(v.donationLink),
         donationNote: nullable(v.donationNote),
+        publicEnabled: v.publicEnabled,
+        publicSlug: nullable(v.publicSlug),
+        tagline: nullable(v.tagline),
+        pastorName: nullable(v.pastorName),
+        pastorMessage: nullable(v.pastorMessage),
+        heroImageUrl: nullable(v.heroImageUrl),
+        mapUrl: nullable(v.mapUrl),
       })
       reset(toValues(res.profile))
       notify.success("Datos de la iglesia guardados")
@@ -322,6 +348,61 @@ export function CompanyForm() {
           {...register(s.key)}
         />
       ))}
+
+      <h3 className="mt-2 font-heading text-sm font-semibold sm:col-span-2">Página pública «¡Bienvenido a casa!»</h3>
+      <div className="sm:col-span-2">
+        <Controller
+          control={control}
+          name="publicEnabled"
+          render={({ field }) => (
+            <SwitchField
+              id="publicEnabled"
+              label="Publicar la página de bienvenida"
+              description="Horarios, eventos, transmisión y «Soy nuevo» visibles sin iniciar sesión."
+              icon={<Globe className="size-4" />}
+              checked={field.value}
+              onCheckedChange={field.onChange}
+            />
+          )}
+        />
+      </div>
+      <InputGroupField
+        id="publicSlug"
+        label="Dirección pública"
+        placeholder="comunidad-torreon"
+        helper="Quedará como /c/tu-direccion. Solo minúsculas, números y guiones."
+        leftIcon={<Link2 className="size-4" />}
+        error={errors.publicSlug?.message}
+        {...register("publicSlug")}
+      />
+      <InputGroupField
+        id="tagline"
+        label="Lema de la iglesia"
+        placeholder="Familia es lo que somos, comunidad es lo que hacemos"
+        error={errors.tagline?.message}
+        {...register("tagline")}
+      />
+      <InputGroupField id="pastorName" label="Pastor o pastora" error={errors.pastorName?.message} {...register("pastorName")} />
+      <InputGroupField
+        id="mapUrl"
+        label="Enlace de «Cómo llegar»"
+        type="url"
+        inputMode="url"
+        placeholder="https://maps.app.goo.gl/…"
+        leftIcon={<MapPin className="size-4" />}
+        error={errors.mapUrl?.message}
+        {...register("mapUrl")}
+      />
+      <TextareaField id="pastorMessage" label="Mensaje del pastor" rows={3} containerClassName="sm:col-span-2" error={errors.pastorMessage?.message} {...register("pastorMessage")} />
+      <div className="sm:col-span-2">
+        <Controller
+          control={control}
+          name="heroImageUrl"
+          render={({ field }) => (
+            <Attachment label="Fotografía de bienvenida (opcional)" value={field.value || null} onChange={(u) => field.onChange(u ?? "")} upload={uploadFile} accept={UPLOAD_IMAGE_ACCEPT} />
+          )}
+        />
+      </div>
 
       <h3 className="mt-2 font-heading text-sm font-semibold sm:col-span-2">Diezmos y ofrendas</h3>
       <div className="sm:col-span-2">

@@ -16,8 +16,8 @@ export type AppSettingsParams = {
 
 export const DEFAULT_APP_SETTINGS: AppSettingsParams = {
   theme: "system",
-  primaryHue: 24,
-  accentHue: 190,
+  primaryHue: 245,
+  accentHue: 85,
   fontFamily: "poppins",
   fontScale: 1,
   density: "comfortable",

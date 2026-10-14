@@ -30,6 +30,10 @@ Formato: `MAJOR.MINOR.PATCH.REVISION` (X.X.X.X)
 
 ## Historial
 
+### [0.20.0.0] — 2026-10-14
+- **Tipo:** `feat` (Minor)
+- feat: cara publica de bienvenida con horarios y modalidad, tarjeta de conexion Soy nuevo hacia consolidacion, bandeja y oracion, tu semana en casa, tonos azul comunidad y dorado y voz de casa
+
 ### [0.19.0.0] — 2026-10-14
 - **Tipo:** `feat` (Minor)
 - feat: reinicio de base de datos con DB_RESET una vez por version, hora actual y fecha de hoy en los selectores, letra menor en el selector de hora, flechas para desplazar filtros segmentados y leyendas en modales

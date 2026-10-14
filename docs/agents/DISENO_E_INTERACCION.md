@@ -5,7 +5,7 @@
 **Cálido, claro y familiar.** COMU-APP es una herramienta de trabajo para pastores, secretaría y servidores, y a la vez el espacio personal de cada creyente. Prioriza lectura, certeza y calidez; la marca se expresa con tema, tipografía y microinteracción, no con ruido ni cards anidadas.
 
 - Superficies por tokens configurables de apariencia (`AppSettings`): matiz primario/acento, tema, fuente, escala, densidad, radio.
-- Valores por defecto: primario ámbar-terracota (hue 24), acento cian (hue 190), fuente Poppins. Cada iglesia los cambia en Ajustes → Apariencia.
+- Valores por defecto: primario **azul comunidad** (hue 245, el del sitio de la iglesia), acento **dorado cálido** (hue 85), fuente Poppins. Cada iglesia los cambia en Ajustes → Apariencia; las que ya tenían valores los conservan.
 - Cards en reposo: `ring-1 ring-foreground/10`; sombra solo en hover con puntero fino u overlay.
 - `primary` para selección/acción; `success`, `warning`, `info`, `destructive` para significado. No hardcodear colores.
 
@@ -84,3 +84,13 @@ Tokens en `src/lib/animation-tokens.ts` y utilidades `.press`, `rise-in`, `fade-
 ## Contenido
 
 Español claro, verbos de acción y consecuencias. Respeta el vocabulario: creyente, ministerio, servidor, célula/hogar de amor, red, reunión/servicio, etapa de la visión, puesto (≠ rol). Empty state: qué falta + cómo resolverlo. Error: qué pasó + siguiente acción.
+
+## Voz y esencia de casa
+
+La interfaz habla como una familia, no como un sistema: **«¡Bienvenido a casa!»**, «Tu semana en casa», «Soy nuevo», «Quiero integrarme», «Necesito oración». Reglas:
+
+- Botones del portal y de la cara pública en **primera persona** («Quiero servir», no «Solicitar servicio»).
+- Lema de la iglesia (`CompanyProfile.tagline`) visible en login, cara pública y pie; por defecto «Familia es lo que somos, comunidad es lo que hacemos».
+- Fotografía y logo son protagonistas: la cara pública abre con la foto de bienvenida (`heroImageUrl`) sobre una superficie oscura «santuario» y el logo circular de la iglesia.
+- Vacíos y confirmaciones cálidos y concretos («Estamos orando por ti»), nunca técnicos.
+- La semana de la iglesia (Dom · Mar · Mié · Vie · Sáb) es el ritmo del portal: `WeekRhythm`.

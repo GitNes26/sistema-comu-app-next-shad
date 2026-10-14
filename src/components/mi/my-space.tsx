@@ -9,6 +9,7 @@ import { MINISTRY_ROLE_LABEL } from "@/lib/ministries/rules"
 import { HIERARCHY_OPTIONS, VISION_STAGE_OPTIONS } from "@/components/admin/crud/crud-config"
 import type { MySpace } from "@/lib/mi/server"
 import { PortalHighlights } from "@/components/portal/portal-highlights"
+import { WeekRhythm } from "@/components/portal/week-rhythm"
 
 // Vista de «Mi espacio». Móvil primero: una sola columna, tarjetas planas.
 
@@ -49,12 +50,13 @@ export function MySpaceView({ space, firstName }: { space: MySpace; firstName: s
     <div className="space-y-4">
       <div>
         <h1 className="font-heading text-2xl font-semibold tracking-tight">
-          {firstName ? `Hola, ${firstName}` : "Bienvenido"}
+          {firstName ? `Bienvenido a casa, ${firstName}` : "Bienvenido a casa"}
         </h1>
         <p className="text-sm text-muted-foreground">Tu espacio en {church.name}.</p>
       </div>
 
       <PortalHighlights />
+      <WeekRhythm />
 
       {!member ? (
         <Card>

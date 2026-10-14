@@ -72,7 +72,7 @@ async function mailChurchContext(email: string): Promise<WelcomeMailContext | un
 }
 
 function emailShell(title: string, content: string, context?: WelcomeMailContext) {
-  const primary = `hsl(${context?.primaryHue ?? 24} 80% 42%)`;
+  const primary = `hsl(${context?.primaryHue ?? 205} 80% 42%)`;
   const accent = `hsl(${context?.accentHue ?? 190} 65% 38%)`;
   const brand = escapeHtml(context?.churchName ?? "COMU-APP");
   const logo = context?.logoUrl
@@ -106,7 +106,7 @@ export async function sendPasswordLink(email: string, token: string, kind: "welc
     text: `${context?.fullName ? `Hola ${context.fullName}.\n\n` : ""}${intro}\nUsuario: ${email}\n\nEnlace de un solo uso (vence en 1 hora):\n${url}\n\nDespués podrás entrar en: ${loginUrl}\n\nSi no esperabas este correo, ignóralo.`,
     html: emailShell(
       title,
-      `<p style="line-height:1.6">${context?.fullName ? `Hola <strong>${escapeHtml(context.fullName)}</strong>, ` : ""}${intro}</p>${capabilities}${identity}<p style="margin:24px 0"><a href="${escapeHtml(url)}" style="display:inline-block;padding:14px 24px;background:hsl(${context?.primaryHue ?? 24} 80% 42%);color:white;text-decoration:none;border-radius:11px;font-weight:700">Confirmar mi cuenta</a></p><p style="font-size:13px;color:#626b76;line-height:1.5">Este enlace de un solo uso vence en 1 hora. Después podrás iniciar sesión en <a href="${escapeHtml(loginUrl)}">${escapeHtml(loginUrl)}</a>.</p>`,
+      `<p style="line-height:1.6">${context?.fullName ? `Hola <strong>${escapeHtml(context.fullName)}</strong>, ` : ""}${intro}</p>${capabilities}${identity}<p style="margin:24px 0"><a href="${escapeHtml(url)}" style="display:inline-block;padding:14px 24px;background:hsl(${context?.primaryHue ?? 205} 80% 42%);color:white;text-decoration:none;border-radius:11px;font-weight:700">Confirmar mi cuenta</a></p><p style="font-size:13px;color:#626b76;line-height:1.5">Este enlace de un solo uso vence en 1 hora. Después podrás iniciar sesión en <a href="${escapeHtml(loginUrl)}">${escapeHtml(loginUrl)}</a>.</p>`,
       context
     ),
   });

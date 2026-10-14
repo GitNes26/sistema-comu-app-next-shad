@@ -42,6 +42,13 @@ export interface CompanyProfileView {
   donationCard: string | null;
   donationLink: string | null;
   donationNote: string | null;
+  publicEnabled: boolean;
+  publicSlug: string | null;
+  tagline: string | null;
+  pastorName: string | null;
+  pastorMessage: string | null;
+  heroImageUrl: string | null;
+  mapUrl: string | null;
 }
 
 export interface MyProfileView {

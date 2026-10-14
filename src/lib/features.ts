@@ -55,6 +55,7 @@ export function enabledFeatures(): FeatureKey[] {
 /** Ruta del menú → funcionalidad (para filtrar ítems de navegación). */
 export const NAV_HREF_TO_FEATURE: Record<string, FeatureKey> = {
   "/admin/members": "members",
+  "/admin/connect": "members",
   "/admin/ministries": "ministries",
   "/admin/cells": "cells",
   "/admin/gatherings": "gatherings",

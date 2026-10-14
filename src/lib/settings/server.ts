@@ -1,6 +1,7 @@
 import { isUniqueViolation, prisma } from "@/lib/db";
 import type { $Enums, Prisma } from "@/generated/prisma/client";
 import { PERMISSIONS } from "@/lib/auth/permission-keys";
+import { isValidSlug, slugify } from "@/lib/connect/rules";
 import { roleAllowedInOrg, roleIdToEnum, ROLE_SCOPE_GATE_MESSAGE } from "@/lib/settings/system-roles";
 
 // Servidor de ajustes: iglesia, perfil, usuarios, roles e invitaciones.
@@ -33,6 +34,13 @@ export interface CompanyProfileInput {
   donationCard?: string | null;
   donationLink?: string | null;
   donationNote?: string | null;
+  publicEnabled?: boolean;
+  publicSlug?: string | null;
+  tagline?: string | null;
+  pastorName?: string | null;
+  pastorMessage?: string | null;
+  heroImageUrl?: string | null;
+  mapUrl?: string | null;
 }
 
 export async function getCompanyProfile(organizationId: string) {
@@ -66,6 +74,13 @@ export async function getCompanyProfile(organizationId: string) {
       donationCard: null,
       donationLink: null,
       donationNote: null,
+      publicEnabled: false,
+      publicSlug: null,
+      tagline: null,
+      pastorName: null,
+      pastorMessage: null,
+      heroImageUrl: null,
+      mapUrl: null,
       createdAt: new Date(0),
       updatedAt: new Date(0),
     }
@@ -86,9 +101,24 @@ export async function upsertCompanyProfile(organizationId: string, input: Compan
   if (!input.tradeName?.trim()) {
     throw new Error("El nombre de la iglesia es obligatorio");
   }
-  const { socialLinks, ...rest } = input;
+  const { socialLinks, publicSlug, ...rest } = input;
+  let slug: string | null | undefined = undefined;
+  if (publicSlug !== undefined) {
+    slug = publicSlug ? slugify(publicSlug) : null;
+    if (slug && !isValidSlug(slug)) {
+      throw new Error("La dirección pública debe tener de 3 a 40 letras minúsculas, números o guiones, y no puede ser una palabra reservada");
+    }
+    if (slug) {
+      const taken = await prisma.companyProfile.findFirst({ where: { publicSlug: slug, NOT: { organizationId } }, select: { id: true } });
+      if (taken) throw new Error("Esa dirección pública ya la usa otra iglesia; elige otra");
+    }
+  }
+  if (rest.publicEnabled && !(slug ?? (await prisma.companyProfile.findUnique({ where: { organizationId }, select: { publicSlug: true } }))?.publicSlug)) {
+    throw new Error("Para activar la página pública elige primero su dirección");
+  }
   const data = {
     ...rest,
+    ...(slug !== undefined ? { publicSlug: slug } : {}),
     tradeName: input.tradeName.trim(),
     ...(socialLinks !== undefined ? { socialLinks: cleanSocialLinks(socialLinks) } : {}),
   };

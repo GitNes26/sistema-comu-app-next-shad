@@ -9,11 +9,11 @@ import packageJson from "../../../package.json";
 
 const BRAND_COPY = {
   name: "COMU-APP",
-  headline: "Tu comunidad, siempre cerca.",
+  headline: "¡Bienvenido a casa!",
   points: [
-    "Tu crecimiento y tu camino dentro de la visión",
-    "Ministerios, células y escuela en un solo lugar",
-    "Mensajes y avisos de tu iglesia",
+    "Familia es lo que somos, comunidad es lo que hacemos",
+    "Tu camino, tu grupo en casa y tu escuela en un solo lugar",
+    "Avisos, oración y reuniones de tu iglesia",
   ],
 } as const;
 

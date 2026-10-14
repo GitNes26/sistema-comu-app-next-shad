@@ -134,8 +134,8 @@
   --foreground: oklch(0.17 0.012 210);
 
   /* Sistema de apariencia: generadas desde app_settings */
-  --primary-hue: 24;
-  --accent-hue: 190;
+  --primary-hue: 245;
+  --accent-hue: 85;
   --font-family: var(--font-poppins);
   --font-scale: 1;
   --radius-base: 0.75;

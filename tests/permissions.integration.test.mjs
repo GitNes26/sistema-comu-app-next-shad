@@ -1797,3 +1797,63 @@ test("servidores para eventos: el organizador pide, el líder asigna, el servido
   assert.equal((await owner(`/api/events/${eventId}/staff/${requestId}`, { method: "DELETE" })).status, 200)
   assert.equal((await act(lupita, { action: "assign", memberIds: [carlosRow.memberId] })).status, 404)
 })
+
+test("cara pública: «Soy nuevo» entra a Consolidación, la oración llega al equipo y todo se aísla", async () => {
+  const owner = await login("demo.owner@comuapp.test")
+  const carlos = await login("demo.creyente@comuapp.test")
+  const slug = "comunidad-demo"
+  const stamp = Date.now()
+  const post = (path, body) => fetch(`${BASE}${path}`, { method: "POST", headers: json, body: JSON.stringify(body) })
+
+  // Encender la página pública (solo quien administra la iglesia).
+  const company = (await (await owner("/api/settings/company")).json()).profile
+  assert.equal(
+    (await carlos("/api/settings/company", { method: "PATCH", headers: json, body: JSON.stringify({ tradeName: "X", publicEnabled: true, publicSlug: slug }) })).status >= 400,
+    true
+  )
+  const on = await owner("/api/settings/company", {
+    method: "PATCH",
+    headers: json,
+    body: JSON.stringify({ tradeName: company.tradeName ?? "Comunidad Torreón (demo)", publicEnabled: true, publicSlug: slug, tagline: "Familia es lo que somos" }),
+  })
+  assert.equal(on.status, 200)
+  assert.equal((await owner("/api/settings/company", { method: "PATCH", headers: json, body: JSON.stringify({ tradeName: "Y", publicSlug: "admin" }) })).status >= 400, true) // reservada
+
+  // La página es pública; una dirección desconocida no existe.
+  assert.equal((await fetch(`${BASE}/c/${slug}`)).status, 200)
+  assert.equal((await fetch(`${BASE}/c/no-existe-${stamp}`)).status, 404)
+
+  // Tarjeta: validaciones, alta, duplicado y campo trampa.
+  assert.equal((await post(`/api/public/${slug}/connect`, { kind: "visitor", name: "A" })).status, 400)
+  assert.equal((await post(`/api/public/${slug}/connect`, { kind: "visitor", name: "María Prueba" })).status, 400) // sin contacto
+  assert.equal((await post(`/api/public/${slug}/connect`, { kind: "visitor", name: "María Prueba", phone: "123" })).status, 400)
+  assert.equal((await post(`/api/public/no-existe-${stamp}/connect`, { kind: "visitor", name: "María Prueba", phone: "8711234567" })).status, 404)
+  const phone = `871${String(stamp).slice(-7)}`
+  const sent = await post(`/api/public/${slug}/connect`, { kind: "visitor", name: `Visita ${stamp}`, phone, message: "Vengo el domingo" })
+  assert.equal(sent.status, 201)
+  const again = await (await post(`/api/public/${slug}/connect`, { kind: "visitor", name: `Visita ${stamp}`, phone })).json()
+  assert.equal(again.duplicate, true)
+  const trap = await post(`/api/public/${slug}/connect`, { kind: "visitor", name: "Robot Prueba", phone: "8719999999", website: "http://spam" })
+  assert.equal(trap.status, 201)
+
+  // Bandeja: solo el equipo; el creyente no.
+  assert.equal((await carlos("/api/connect")).status, 403)
+  const inbox = await (await owner("/api/connect")).json()
+  const card = inbox.cards.find((c) => c.name === `Visita ${stamp}`)
+  assert.ok(card)
+  assert.equal(inbox.cards.some((c) => c.name === "Robot Prueba"), false)
+  assert.equal((await owner("/api/connect", { method: "PATCH", headers: json, body: JSON.stringify({ type: "card", id: card.id, status: "done" }) })).status, 200)
+  assert.equal((await owner("/api/connect", { method: "PATCH", headers: json, body: JSON.stringify({ type: "card", id: card.id, status: "raro" }) })).status, 400)
+
+  // Oración: anónima desde la página y propia desde el portal; cada quien ve la suya.
+  assert.equal((await post(`/api/public/${slug}/connect`, { kind: "prayer", message: `Por mi familia ${stamp}` })).status, 201)
+  const mine = await carlos("/api/prayer", { method: "POST", headers: json, body: JSON.stringify({ body: `Necesito paz ${stamp}`, visibility: "leaders" }) })
+  assert.equal(mine.status, 201)
+  const myList = (await (await carlos("/api/prayer")).json()).prayers
+  assert.ok(myList.some((p) => p.body === `Necesito paz ${stamp}`))
+  assert.equal(myList.some((p) => p.body === `Por mi familia ${stamp}`), false)
+  const team = (await (await owner("/api/connect")).json()).prayers
+  const anon = team.find((p) => p.body === `Por mi familia ${stamp}`)
+  assert.ok(anon)
+  assert.equal((await owner("/api/connect", { method: "PATCH", headers: json, body: JSON.stringify({ type: "prayer", id: anon.id, status: "praying" }) })).status, 200)
+})

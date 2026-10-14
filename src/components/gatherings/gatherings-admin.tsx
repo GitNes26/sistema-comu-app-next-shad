@@ -726,6 +726,10 @@ function SeriesDialog({ series, onClose, onSaved }: { series: SeriesDto | "new" 
   const [groups, setGroups] = useState<{ id: string; name: string }[]>([])
   const [day, setDay] = useState("0")
   const [time, setTime] = useState("")
+  const [endTime, setEndTime] = useState("")
+  const [modality, setModality] = useState("in_person")
+  const [isPublic, setIsPublic] = useState(true)
+  const [description, setDescription] = useState("")
   const [active, setActive] = useState(true)
   const [saving, setSaving] = useState(false)
 
@@ -738,13 +742,17 @@ function SeriesDialog({ series, onClose, onSaved }: { series: SeriesDto | "new" 
       .catch(() => setGroups([]))
     setDay(String(current?.dayOfWeek ?? 0))
     setTime(current?.startTime ?? "")
+    setEndTime(current?.endTime ?? "")
+    setModality(current?.modality ?? "in_person")
+    setIsPublic(current?.isPublic ?? true)
+    setDescription(current?.description ?? "")
     setActive(current?.isActive ?? true)
   }, [series, current])
 
   const save = async () => {
     setSaving(true)
     try {
-      const body = JSON.stringify({ name, ministryId: groupId || null, dayOfWeek: Number(day), startTime: time, isActive: active })
+      const body = JSON.stringify({ name, ministryId: groupId || null, dayOfWeek: Number(day), startTime: time, endTime: endTime || null, modality, isPublic, description, isActive: active })
       if (current) await apiJson(`/api/gatherings/series/${current.id}`, { method: "PUT", body })
       else await apiJson("/api/gatherings/series", { method: "POST", body })
       notify.success("Horario guardado")
@@ -788,7 +796,22 @@ function SeriesDialog({ series, onClose, onSaved }: { series: SeriesDto | "new" 
         <div className="grid grid-cols-2 gap-3">
           <FormCombobox label="Día" required options={DAY_OPTIONS} value={day} onChange={setDay} clearable={false} />
           <TimePicker label="Hora" required value={time || null} onChange={(t) => setTime(t ?? "")} />
+          <TimePicker label="Termina (opcional)" value={endTime || null} onChange={(t) => setEndTime(t ?? "")} />
+          <FormCombobox
+            label="Modalidad"
+            options={[
+              { value: "in_person", label: "Presencial" },
+              { value: "online", label: "En línea" },
+              { value: "both", label: "Presencial y en línea" },
+            ]}
+            value={modality}
+            onChange={setModality}
+            clearable={false}
+            searchable={false}
+          />
         </div>
+        <InputGroupField label="Leyenda (opcional)" placeholder="Ej. Jóvenes · entrada libre" value={description} maxLength={200} onChange={(e) => setDescription(e.target.value)} />
+        <SwitchField label="Mostrar en la página pública y en «Tu semana»" description="Si lo apagas, solo lo ve el equipo." checked={isPublic} onCheckedChange={setIsPublic} />
         {current && <SwitchField label="Activo" description="Un horario inactivo conserva su historial." checked={active} onCheckedChange={setActive} />}
       </div>
     </DialogComponent>
