@@ -1,5 +1,6 @@
 "use client"
 
+import { TextareaField } from "@/components/base/textarea-field"
 import { useCallback, useEffect, useId, useMemo, useState } from "react"
 import Link from "next/link"
 import { Controller, useForm } from "react-hook-form"
@@ -683,10 +684,7 @@ function MeetingDialog({ ministryId, open, onClose, onDone }: { ministryId: stri
           />
         </div>
         <InputGroupField id="location" label="Lugar (opcional)" error={errors.location?.message} {...register("location")} />
-        <div className="space-y-1.5">
-          <Label htmlFor="notes">Notas (opcional)</Label>
-          <Textarea id="notes" rows={3} {...register("notes")} />
-        </div>
+        <TextareaField id="notes" label="Notas (opcional)" rows={3} {...register("notes")} />
       </form>
     </DialogComponent>
   )
@@ -769,10 +767,7 @@ function RequestDialog({ ministryId, open, onClose, onDone }: { ministryId: stri
             )}
           />
         </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="description">Detalle (opcional)</Label>
-          <Textarea id="description" rows={3} {...register("description")} />
-        </div>
+        <TextareaField id="description" label="Detalle (opcional)" rows={3} {...register("description")} />
       </form>
     </DialogComponent>
   )

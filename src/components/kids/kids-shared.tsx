@@ -1,5 +1,6 @@
 "use client"
 
+import { TextareaField } from "@/components/base/textarea-field"
 import { useEffect, useId, useState } from "react"
 import { Controller, useForm } from "react-hook-form"
 import { yupResolver } from "@hookform/resolvers/yup"
@@ -260,10 +261,7 @@ export function ChildFormDialog({
             <FormCombobox label="Sexo" options={GENDER_OPTIONS} value={field.value} onChange={field.onChange} onClear={() => field.onChange("")} placeholder="—" />
           )}
         />
-        <div className="space-y-1.5 sm:col-span-2">
-          <Label htmlFor="indications">Indicaciones para los maestros</Label>
-          <Textarea id="indications" rows={3} placeholder="Alergias, cuidados, a quién no entregarlo…" {...register("indications")} />
-        </div>
+        <TextareaField id="indications" label="Indicaciones para los maestros" containerClassName="sm:col-span-2" rows={3} placeholder="Alergias, cuidados, a quién no entregarlo…" {...register("indications")} />
         <div className="sm:col-span-2">
           <Controller
             control={control}

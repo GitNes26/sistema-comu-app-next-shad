@@ -1,3 +1,5 @@
+import { Prisma } from "@/generated/prisma/client"
+import { normalizeFlyer, type Flyer } from "@/lib/portal/flyer"
 import { prisma } from "@/lib/db"
 import { myStaffAssignments } from "@/lib/events/staffing"
 import { fireAndForget, notifyChurch, notifyMembers, notifyMinistryLeaders } from "@/lib/notifications/church"
@@ -49,6 +51,7 @@ export interface PostDto {
   body: string
   kind: PostKind
   coverUrl: string | null
+  flyer: Flyer | null
   audience: PostAudience
   pinned: boolean
   isPublished: boolean
@@ -61,6 +64,7 @@ const postDto = (p: {
   body: string
   kind: string
   coverUrl: string | null
+  flyer?: unknown
   audience: string
   pinned: boolean
   isPublished: boolean
@@ -71,6 +75,7 @@ const postDto = (p: {
   body: p.body,
   kind: isPostKind(p.kind) ? p.kind : "announcement",
   coverUrl: p.coverUrl,
+  flyer: normalizeFlyer(p.flyer, isPostKind(p.kind) ? p.kind : "announcement"),
   audience: isPostAudience(p.audience) ? p.audience : "all",
   pinned: p.pinned,
   isPublished: p.isPublished,
@@ -107,6 +112,7 @@ function postInput(input: Record<string, unknown>, partial: boolean) {
     body?: string
     kind?: PostKind
     coverUrl?: string | null
+    flyer?: Flyer | null
     audience?: PostAudience
     pinned?: boolean
     isPublished?: boolean
@@ -135,6 +141,10 @@ function postInput(input: Record<string, unknown>, partial: boolean) {
     if (url && !/^(https:\/\/|\/)/.test(url)) throw new CrudError("La imagen debe ser una dirección válida", 400, "coverUrl")
     data.coverUrl = url
   }
+  if (input.flyer !== undefined) {
+    // null o inválido quita el flyer; lo demás se normaliza (colores, tipografía, enlaces).
+    data.flyer = normalizeFlyer(input.flyer, isPostKind(input.kind) ? input.kind : "announcement")
+  }
   if (input.pinned !== undefined) data.pinned = input.pinned === true
   if (input.isPublished !== undefined) data.isPublished = input.isPublished !== false
   if (input.publishedAt !== undefined && input.publishedAt !== null && input.publishedAt !== "") {
@@ -156,6 +166,7 @@ export async function createPost(actor: Actor, input: Record<string, unknown>) {
       body: data.body!,
       kind: data.kind ?? "announcement",
       coverUrl: data.coverUrl ?? null,
+      ...(data.flyer ? { flyer: data.flyer as unknown as Prisma.InputJsonValue } : {}),
       audience: data.audience ?? "all",
       pinned: data.pinned ?? false,
       isPublished: data.isPublished ?? true,
@@ -175,7 +186,11 @@ async function ownPost(actor: Actor, postId: string) {
 export async function updatePost(actor: Actor, postId: string, input: Record<string, unknown>) {
   assertContentManager(actor)
   const before = await ownPost(actor, postId)
-  const row = await prisma.post.update({ where: { id: postId }, data: postInput(input, true) })
+  const { flyer, ...rest } = postInput(input, true)
+  const row = await prisma.post.update({
+    where: { id: postId },
+    data: { ...rest, ...(flyer === undefined ? {} : { flyer: flyer === null ? Prisma.DbNull : (flyer as unknown as Prisma.InputJsonValue) }) },
+  })
   // Solo se avisa cuando pasa de borrador a publicada, no en cada edición.
   if (!before.isPublished && row.isPublished && row.publishedAt <= new Date()) announcePost(actor, row)
   return { ok: true }

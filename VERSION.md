@@ -30,6 +30,10 @@ Formato: `MAJOR.MINOR.PATCH.REVISION` (X.X.X.X)
 
 ## Historial
 
+### [0.18.0.0] — 2026-10-14
+- **Tipo:** `feat` (Minor)
+- feat: modulo de nomina propio con periodos, conceptos y recibos, flyers de publicaciones con plantillas por tipo, iconos por campo, modal en tres partes, ancho completo, interacciones visibles y busqueda sin mayusculas ni acentos
+
 ### [0.17.2.0] — 2026-10-13
 - **Tipo:** `fix` (Patch)
 - fix: el build en Docker no necesita DATABASE_URL (cliente de base de datos perezoso) y se pasa un valor de relleno al compilar

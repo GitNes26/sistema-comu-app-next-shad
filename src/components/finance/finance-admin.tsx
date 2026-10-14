@@ -1,5 +1,6 @@
 "use client"
 
+import { TextareaField } from "@/components/base/textarea-field"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import {
@@ -36,7 +37,7 @@ import { notify } from "@/lib/notify"
 import { swalConfirm, swalError } from "@/lib/swal"
 import { apiJson, errorMessage } from "@/lib/ministries/client"
 import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_LABEL, INCOME_KIND_LABEL, INCOME_SOURCE_LABEL } from "@/lib/finance/rules"
-import type { DonationDto, ExpenseRowDto, FinanceSummaryDto, IncomeDto, PayrollDetailDto, PayrollRunDto } from "@/lib/finance/server"
+import type { DonationDto, ExpenseRowDto, FinanceSummaryDto, IncomeDto } from "@/lib/finance/server"
 import { cn } from "@/lib/utils"
 import { GatewaySettings } from "./gateway-settings"
 import { BankReconciliation } from "./bank-reconciliation"
@@ -134,7 +135,7 @@ export function FinanceAdmin({ canManage, canPayroll, canVehicles }: { canManage
       </TabsContent>
       {canPayroll && (
         <TabsContent value="payroll">
-          <PayrollTab onChanged={refresh} />
+          <PayrollTab />
         </TabsContent>
       )}
     </Tabs>
@@ -672,12 +673,7 @@ function ExpenseDialog({ expense, onClose, onDone }: { expense: ExpenseRowDto | 
         <div className="sm:col-span-2">
           <InputGroupField label="Proveedor" value={vendor} maxLength={150} onChange={(e) => setVendor(e.target.value)} />
         </div>
-        <div className="space-y-1.5 sm:col-span-2">
-          <label htmlFor="fe-notes" className="text-sm font-medium">
-            Notas
-          </label>
-          <Textarea id="fe-notes" rows={2} value={notes} maxLength={500} onChange={(e) => setNotes(e.target.value)} />
-        </div>
+        <TextareaField id="fe-notes" label="Notas" containerClassName="sm:col-span-2" rows={2} value={notes} maxLength={500} onChange={(e) => setNotes(e.target.value)} />
       </div>
     </DialogComponent>
   )
@@ -781,226 +777,22 @@ function DonationsTab({ canManage, onChanged }: { canManage: boolean; onChanged:
 
 // ── Nómina ────────────────────────────────────────────────────────────────────
 
-function PayrollTab({ onChanged }: { onChanged: () => void }) {
-  const [runs, setRuns] = useState<PayrollRunDto[] | null>(null)
-  const [createOpen, setCreateOpen] = useState(false)
-  const [openId, setOpenId] = useState<string | null>(null)
-
-  const load = useCallback(async () => {
-    try {
-      const d = await apiJson<{ runs: PayrollRunDto[] }>("/api/finance/payroll")
-      setRuns(d.runs)
-    } catch (e) {
-      setRuns([])
-      swalError("No se pudo cargar la nómina", errorMessage(e))
-    }
-  }, [])
-  useEffect(() => {
-    void load()
-  }, [load])
-
+/** La nómina tiene su propio módulo (/admin/payroll); aquí solo se enlaza y se ve el estado. */
+function PayrollTab() {
   return (
     <div className="space-y-3 pt-3">
-      <div className="flex justify-end">
-        <Button onClick={() => setCreateOpen(true)}>
-          <Plus className="size-4" />
-          Nueva nómina
+      <div className="flex flex-wrap items-center gap-3 rounded-2xl border bg-card p-4">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          <Users className="size-5" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="font-medium">Nómina del personal</p>
+          <p className="text-sm text-muted-foreground">Periodos, horas extra, festivos, percepciones, deducciones y recibos. Al pagar una nómina se registra su gasto aquí.</p>
+        </div>
+        <Button asChild>
+          <Link href="/admin/payroll">Abrir nómina</Link>
         </Button>
       </div>
-      {runs === null ? (
-        <Skeleton className="h-32 w-full" />
-      ) : runs.length === 0 ? (
-        <EmptyState icon={Users} title="Sin nóminas" description="Genera una nómina con los empleados activos y su sueldo; ajusta bonos y deducciones y márcala como pagada." />
-      ) : (
-        <ul className="space-y-2">
-          {runs.map((r) => (
-            <li key={r.id}>
-              <button type="button" onClick={() => setOpenId(r.id)} className="press flex w-full items-center gap-3 rounded-2xl border bg-card p-3 text-left hover:border-primary/40">
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium">{r.label}</span>
-                  <span className="block text-xs text-muted-foreground">
-                    {fmtDay(r.periodStart)} al {fmtDay(r.periodEnd)} · {r.count} empleado(s)
-                  </span>
-                </span>
-                <StatusPill tone={r.status === "paid" ? "success" : "warning"}>{r.status === "paid" ? "Pagada" : "Borrador"}</StatusPill>
-                <span className="font-heading text-base font-semibold tabular-nums">{money(r.total)}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-      <PayrollCreateDialog open={createOpen} onClose={() => setCreateOpen(false)} onDone={async () => { await load(); onChanged() }} />
-      <PayrollDetailDialog runId={openId} onClose={() => setOpenId(null)} onDone={async () => { await load(); onChanged() }} />
     </div>
-  )
-}
-
-function PayrollCreateDialog({ open, onClose, onDone }: { open: boolean; onClose: () => void; onDone: () => Promise<void> }) {
-  const [label, setLabel] = useState("")
-  const [start, setStart] = useState<Date | null>(null)
-  const [end, setEnd] = useState<Date | null>(null)
-  const [saving, setSaving] = useState(false)
-  useEffect(() => {
-    if (!open) return
-    const now = new Date()
-    setLabel(`Quincena ${now.toLocaleDateString("es-MX", { month: "long", year: "numeric" })}`)
-    setStart(new Date(now.getFullYear(), now.getMonth(), now.getDate() <= 15 ? 1 : 16))
-    setEnd(now.getDate() <= 15 ? new Date(now.getFullYear(), now.getMonth(), 15) : new Date(now.getFullYear(), now.getMonth() + 1, 0))
-  }, [open])
-
-  const save = async () => {
-    setSaving(true)
-    try {
-      await apiJson("/api/finance/payroll", { method: "POST", body: JSON.stringify({ label, periodStart: start ? ymdOfLocal(start) : "", periodEnd: end ? ymdOfLocal(end) : "" }) })
-      notify.success("Nómina generada")
-      onClose()
-      await onDone()
-    } catch (e) {
-      swalError("No se pudo generar", errorMessage(e))
-    } finally {
-      setSaving(false)
-    }
-  }
-  return (
-    <DialogComponent
-      open={open}
-      onOpenChange={(o) => !o && onClose()}
-      title="Nueva nómina"
-      description="Se arma con los empleados activos que tienen sueldo capturado."
-      footer={
-        <>
-          <Button variant="ghost" onClick={onClose} disabled={saving}>
-            Cancelar
-          </Button>
-          <Button onClick={() => void save()} disabled={saving || !label.trim() || !start || !end}>
-            {saving && <Loader2 className="size-4 animate-spin" />}
-            Generar
-          </Button>
-        </>
-      }
-    >
-      <div className="space-y-4">
-        <InputGroupField label="Nombre del periodo" required value={label} maxLength={80} onChange={(e) => setLabel(e.target.value)} />
-        <div className="grid grid-cols-2 gap-3">
-          <DatePicker label="Inicio" required value={start} onChange={setStart} />
-          <DatePicker label="Fin" required value={end} onChange={setEnd} />
-        </div>
-      </div>
-    </DialogComponent>
-  )
-}
-
-function PayrollDetailDialog({ runId, onClose, onDone }: { runId: string | null; onClose: () => void; onDone: () => Promise<void> }) {
-  const [run, setRun] = useState<PayrollDetailDto | null>(null)
-  const [vals, setVals] = useState<Record<string, { base: string; bonus: string; deductions: string }>>({})
-  const [busy, setBusy] = useState(false)
-
-  const load = useCallback(async () => {
-    if (!runId) return
-    try {
-      const d = await apiJson<{ run: PayrollDetailDto }>(`/api/finance/payroll/${runId}`)
-      setRun(d.run)
-      setVals(Object.fromEntries(d.run.entries.map((e) => [e.id, { base: String(e.base), bonus: String(e.bonus), deductions: String(e.deductions) }])))
-    } catch (e) {
-      swalError("No se pudo abrir la nómina", errorMessage(e))
-      onClose()
-    }
-  }, [runId, onClose])
-  useEffect(() => {
-    setRun(null)
-    void load()
-  }, [load])
-
-  const saveEntry = async (id: string) => {
-    try {
-      await apiJson(`/api/finance/payroll/${runId}/entries/${id}`, { method: "PATCH", body: JSON.stringify(vals[id]) })
-      await load()
-    } catch (e) {
-      swalError("No se pudo guardar", errorMessage(e))
-    }
-  }
-  const pay = async () => {
-    const yes = await swalConfirm("¿Marcar la nómina como pagada?", `Se registra un gasto por ${money(run?.total ?? 0)} y ya no se puede editar.`, { confirmText: "Marcar como pagada" })
-    if (!yes) return
-    setBusy(true)
-    try {
-      await apiJson(`/api/finance/payroll/${runId}/pay`, { method: "POST" })
-      notify.success("Nómina pagada y registrada en gastos")
-      await load()
-      await onDone()
-    } catch (e) {
-      swalError("No se pudo pagar", errorMessage(e))
-    } finally {
-      setBusy(false)
-    }
-  }
-  const remove = async () => {
-    const yes = await swalConfirm("¿Eliminar esta nómina en borrador?", undefined, { confirmText: "Eliminar", danger: true })
-    if (!yes) return
-    try {
-      await apiJson(`/api/finance/payroll/${runId}`, { method: "DELETE" })
-      onClose()
-      await onDone()
-    } catch (e) {
-      swalError("No se pudo eliminar", errorMessage(e))
-    }
-  }
-
-  const draft = run?.status === "draft"
-  return (
-    <DialogComponent
-      open={runId !== null}
-      onOpenChange={(o) => !o && onClose()}
-      title={run?.label ?? "Nómina"}
-      description={run ? `${fmtDay(run.periodStart)} al ${fmtDay(run.periodEnd)} · Total ${money(run.total)}` : undefined}
-      className="max-w-[96vw] md:max-w-3xl"
-      footer={
-        run && draft ? (
-          <>
-            <Button variant="ghost" className="mr-auto text-destructive" onClick={() => void remove()} disabled={busy}>
-              <Trash2 className="size-4" />
-              Eliminar
-            </Button>
-            <Button onClick={() => void pay()} disabled={busy}>
-              {busy && <Loader2 className="size-4 animate-spin" />}
-              Marcar como pagada
-            </Button>
-          </>
-        ) : undefined
-      }
-    >
-      {!run ? (
-        <Skeleton className="h-40 w-full" />
-      ) : (
-        <ul className="space-y-2">
-          {run.entries.map((e) => (
-            <li key={e.id} className="space-y-2 rounded-2xl border p-3">
-              <div className="flex items-center gap-2">
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium">{e.name}</span>
-                  <span className="block text-xs text-muted-foreground">{e.position ?? "—"}</span>
-                </span>
-                <span className="font-heading text-base font-semibold tabular-nums">{money(e.net)}</span>
-              </div>
-              {draft && (
-                <div className="grid grid-cols-[1fr_1fr_1fr_auto] items-end gap-2">
-                  <InputGroupField label="Sueldo" inputMode="decimal" value={vals[e.id]?.base ?? ""} onChange={(ev) => setVals((v) => ({ ...v, [e.id]: { ...v[e.id], base: ev.target.value } }))} />
-                  <InputGroupField label="Bono" inputMode="decimal" value={vals[e.id]?.bonus ?? ""} onChange={(ev) => setVals((v) => ({ ...v, [e.id]: { ...v[e.id], bonus: ev.target.value } }))} />
-                  <InputGroupField label="Deducción" inputMode="decimal" value={vals[e.id]?.deductions ?? ""} onChange={(ev) => setVals((v) => ({ ...v, [e.id]: { ...v[e.id], deductions: ev.target.value } }))} />
-                  <Button size="sm" variant="outline" onClick={() => void saveEntry(e.id)}>
-                    Guardar
-                  </Button>
-                </div>
-              )}
-              {!draft && (e.bonus > 0 || e.deductions > 0) && (
-                <p className="text-xs text-muted-foreground">
-                  Sueldo {money(e.base)} · bono {money(e.bonus)} · deducción {money(e.deductions)}
-                </p>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-    </DialogComponent>
   )
 }

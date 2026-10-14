@@ -62,6 +62,7 @@ export const NAV_HREF_TO_FEATURE: Record<string, FeatureKey> = {
   "/admin/school": "school",
   "/admin/content": "content",
   "/admin/finance": "finance",
+  "/admin/payroll": "finance",
   "/admin/vehicles": "vehicles",
   "/admin/employees": "employees",
   "/admin/positions": "employees",

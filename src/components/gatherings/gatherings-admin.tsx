@@ -1,5 +1,6 @@
 "use client"
 
+import { TextareaField } from "@/components/base/textarea-field"
 import { useCallback, useEffect, useId, useMemo, useState } from "react"
 import { Controller, useForm } from "react-hook-form"
 import { yupResolver } from "@hookform/resolvers/yup"
@@ -552,10 +553,7 @@ function GatheringForm({
           </fieldset>
         )}
 
-        <div className="space-y-1.5 sm:col-span-2">
-          <Label htmlFor="gathering-notes">Notas</Label>
-          <Textarea id="gathering-notes" rows={2} {...register("notes")} />
-        </div>
+        <TextareaField id="gathering-notes" label="Notas" containerClassName="sm:col-span-2" rows={2} {...register("notes")} />
       </form>
       <ServiceSheetDialog gatheringId={current?.id ?? null} ministryId={serviceFor} open={serviceFor !== null} onClose={() => setServiceFor(null)} />
     </DialogComponent>

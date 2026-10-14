@@ -1,5 +1,6 @@
 "use client"
 
+import { TextareaField } from "@/components/base/textarea-field"
 import { useCallback, useEffect, useId, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -383,10 +384,7 @@ export function EventFormDialog({
         <div className="sm:col-span-2">
           <InputGroupField id="topic" label="Tema" {...register("topic")} />
         </div>
-        <div className="space-y-1.5 sm:col-span-2">
-          <Label htmlFor="description">Descripción</Label>
-          <Textarea id="description" rows={3} {...register("description")} />
-        </div>
+        <TextareaField id="description" label="Descripción" containerClassName="sm:col-span-2" rows={3} {...register("description")} />
         <div className="sm:col-span-2">
           <Controller
             control={control}

@@ -1,5 +1,6 @@
 "use client"
 
+import { matchesSearch } from "@/lib/search"
 import { notify } from "@/lib/notify"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { AlertTriangle, Ban, Building2, CalendarClock, CreditCard, Loader2, Lock, Receipt, Search, ShieldCheck, Users, Wallet } from "lucide-react"
@@ -131,7 +132,7 @@ export function SubscriptionsManager() {
   const order: Health[] = ["overdue", "blocked", "soon", "none", "ok"]
   const visible = withHealth
     .filter(({ h }) => filter === "all" || h === filter)
-    .filter(({ o }) => !q || o.name.toLowerCase().includes(q.toLowerCase()))
+    .filter(({ o }) => !q || matchesSearch(o.name, q))
     .sort((a, b) => order.indexOf(a.h) - order.indexOf(b.h) || a.o.name.localeCompare(b.o.name))
 
   return (

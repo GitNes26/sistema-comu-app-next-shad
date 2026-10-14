@@ -1,5 +1,6 @@
 "use client"
 
+import { TextareaField } from "@/components/base/textarea-field"
 import { useCallback, useEffect, useId, useState } from "react"
 import Link from "next/link"
 import { Controller, useForm } from "react-hook-form"
@@ -434,10 +435,7 @@ function RegisterDialog({
             )}
           />
         </div>
-        <div className="space-y-1.5 sm:col-span-2">
-          <Label htmlFor="notes">Notas</Label>
-          <Textarea id="notes" rows={3} {...register("notes")} />
-        </div>
+        <TextareaField id="notes" label="Notas" containerClassName="sm:col-span-2" rows={3} {...register("notes")} />
         {!canManage && <p className="text-xs text-muted-foreground sm:col-span-2">Quedará asignada a ti para el seguimiento.</p>}
       </form>
     </DialogComponent>

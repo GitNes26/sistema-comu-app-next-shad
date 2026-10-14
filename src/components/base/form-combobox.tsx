@@ -10,6 +10,8 @@ import { Label } from "@/components/ui/label"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { InfoTooltip } from "@/components/base/info-tooltip"
 import { AlertCircle } from "lucide-react"
+import { matchesAllWords } from "@/lib/search"
+import { inferFieldIcon } from "@/lib/field-icons"
 
 export interface ComboboxOption {
   value: string
@@ -51,6 +53,11 @@ export interface FormComboboxProps {
   renderOption?: (option: ComboboxOption) => React.ReactNode
 }
 
+function FallbackIcon({ label }: { label?: string }) {
+  const Icon = label ? inferFieldIcon(label) : ListFilter
+  return <Icon className="size-4" />
+}
+
 export function FormCombobox({
   options,
   value,
@@ -86,11 +93,9 @@ export function FormCombobox({
   const selected = options.find((o) => o.value === value)
 
   const filtered = React.useMemo(() => {
-    const q = search.trim().toLowerCase()
-    if (!q) return options
-    return options.filter((o) =>
-      `${o.label} ${o.meta ?? ""}`.toLowerCase().includes(q)
-    )
+    if (!search.trim()) return options
+    // Ignora mayúsculas y acentos.
+    return options.filter((o) => matchesAllWords(`${o.label} ${o.meta ?? ""}`, search))
   }, [options, search])
 
   const handleSync = async () => {
@@ -135,7 +140,7 @@ export function FormCombobox({
             )}
           >
             <span className="flex min-w-0 items-center gap-2 truncate">
-              <span className="shrink-0 text-muted-foreground">{icon ?? <ListFilter className="size-4" />}</span>
+              <span className="shrink-0 text-muted-foreground">{icon ?? <FallbackIcon label={label ?? ariaLabel} />}</span>
               {selected ? selected.label : placeholder}
             </span>
             <span className="flex shrink-0 items-center gap-1">

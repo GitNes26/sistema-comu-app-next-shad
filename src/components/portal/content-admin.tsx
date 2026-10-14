@@ -1,18 +1,20 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
-import { Loader2, Megaphone, Pencil, Pin, Plus, Radio, Trash2, Tv } from "lucide-react"
+import { CaseSensitive, Loader2, Megaphone, Palette, Pencil, Pin, Plus, Radio, Trash2, Tv } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
-import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DialogComponent } from "@/components/ui/dialog"
 import { Attachment } from "@/components/base/attachment"
 import { DateTimePicker } from "@/components/base/date-time-picker"
 import { FormCombobox } from "@/components/base/form-combobox"
 import { InputGroupField } from "@/components/base/input-group-field"
+import { TextareaField } from "@/components/base/textarea-field"
+import { SegmentedFilter } from "@/components/base/segmented-filter"
+import { PostFlyer } from "@/components/portal/post-flyer"
+import { contrastRatio, defaultFlyer, FLYER_FONTS, FLYER_MODES, FLYER_PALETTES, type Flyer, type FlyerDesign, type FlyerFont } from "@/lib/portal/flyer"
 import { StatusPill } from "@/components/base/status-pill"
 import { EmptyState } from "@/components/shared/empty-state"
 import { notify } from "@/lib/notify"
@@ -184,6 +186,7 @@ function PostDialog({ value, onClose, onSaved }: { value: PostDto | "new" | null
   const [kind, setKind] = useState<PostKind>("announcement")
   const [audience, setAudience] = useState<PostAudience>("all")
   const [cover, setCover] = useState("")
+  const [flyer, setFlyer] = useState<Flyer | null>(null)
   const [pinned, setPinned] = useState(false)
   const [published, setPublished] = useState(true)
   const [at, setAt] = useState<Date | null>(null)
@@ -197,15 +200,22 @@ function PostDialog({ value, onClose, onSaved }: { value: PostDto | "new" | null
     setKind(p?.kind ?? "announcement")
     setAudience(p?.audience ?? "all")
     setCover(p?.coverUrl ?? "")
+    setFlyer(p?.flyer ?? null)
     setPinned(p?.pinned ?? false)
     setPublished(p?.isPublished ?? true)
     setAt(p ? new Date(p.publishedAt) : null)
   }, [value])
 
+  // Cambiar el tipo cambia la plantilla del flyer, conservando colores y tipografía elegidos.
+  const changeKind = (k: PostKind) => {
+    setKind(k)
+    setFlyer((f) => (f && f.mode === "template" ? { ...f, template: k } : f))
+  }
+
   const save = async () => {
     setSaving(true)
     try {
-      const payload = { title, body, kind, audience, coverUrl: cover || null, pinned, isPublished: published, publishedAt: at ? at.toISOString() : undefined }
+      const payload = { title, body, kind, audience, coverUrl: cover || null, flyer, pinned, isPublished: published, publishedAt: at ? at.toISOString() : undefined }
       if (value === "new") await apiJson("/api/portal/posts", { method: "POST", body: JSON.stringify(payload) })
       else if (value) await apiJson(`/api/portal/posts/${value.id}`, { method: "PATCH", body: JSON.stringify(payload) })
       notify.success("Publicación guardada")
@@ -222,8 +232,11 @@ function PostDialog({ value, onClose, onSaved }: { value: PostDto | "new" | null
     <DialogComponent
       open={value !== null}
       onOpenChange={(o) => !o && onClose()}
-      size="2xl"
+      size="4xl"
+      icon={<Megaphone />}
       title={value === "new" ? "Nueva publicación" : "Editar publicación"}
+      description="Anuncios, devocionales, artículos y noticias, con flyer opcional."
+      bodyClassName="gap-4"
       footer={
         <>
           <Button variant="ghost" onClick={onClose} disabled={saving}>
@@ -236,31 +249,107 @@ function PostDialog({ value, onClose, onSaved }: { value: PostDto | "new" | null
         </>
       }
     >
-      <div className="space-y-4">
-        <InputGroupField label="Título" required value={title} maxLength={160} onChange={(e) => setTitle(e.target.value)} />
-        <div className="space-y-1.5">
-          <Label htmlFor="post-body">Contenido</Label>
-          <Textarea id="post-body" rows={8} value={body} maxLength={8000} onChange={(e) => setBody(e.target.value)} />
-          <p className="text-xs text-muted-foreground">Los enlaces que empiezan con https:// se vuelven clicables.</p>
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,20rem)]">
+        <div className="min-w-0 space-y-4">
+          <InputGroupField label="Título" required value={title} maxLength={160} onChange={(e) => setTitle(e.target.value)} />
+          <TextareaField label="Contenido" rows={8} value={body} maxLength={8000} onChange={(e) => setBody(e.target.value)} hint="Los enlaces que empiezan con https:// se vuelven clicables." />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <FormCombobox label="Tipo" options={opts(POST_KINDS)} value={kind} onChange={(v) => changeKind(v as PostKind)} clearable={false} />
+            <FormCombobox label="¿Quién lo ve?" options={opts(POST_AUDIENCES)} value={audience} onChange={(v) => setAudience(v as PostAudience)} clearable={false} />
+            <DateTimePicker label="Publicar el" value={at} onChange={setAt} className="sm:col-span-2" />
+            <Attachment label="Imagen de portada (opcional)" value={cover || null} onChange={(u) => setCover(u ?? "")} upload={uploadFile} />
+          </div>
+          <div className="flex flex-wrap gap-6">
+            <label className="flex items-center gap-3 text-sm">
+              <Switch checked={published} onCheckedChange={setPublished} />
+              Publicada
+            </label>
+            <label className="flex items-center gap-3 text-sm">
+              <Switch checked={pinned} onCheckedChange={setPinned} />
+              Fijar arriba
+            </label>
+          </div>
         </div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <FormCombobox label="Tipo" options={opts(POST_KINDS)} value={kind} onChange={(v) => setKind(v as PostKind)} clearable={false} />
-          <FormCombobox label="¿Quién lo ve?" options={opts(POST_AUDIENCES)} value={audience} onChange={(v) => setAudience(v as PostAudience)} clearable={false} />
-          <DateTimePicker label="Publicar el" value={at} onChange={setAt} />
-          <Attachment label="Imagen de portada (opcional)" value={cover || null} onChange={(u) => setCover(u ?? "")} upload={uploadFile} />
-        </div>
-        <div className="flex flex-wrap gap-6">
-          <label className="flex items-center gap-3 text-sm">
-            <Switch checked={published} onCheckedChange={setPublished} />
-            Publicada
+
+        <aside className="min-w-0 space-y-3 rounded-2xl border bg-muted/30 p-3">
+          <label className="flex items-center justify-between gap-3 text-sm font-medium">
+            <span className="flex items-center gap-2">
+              <Palette className="size-4 text-muted-foreground" /> Flyer
+            </span>
+            <Switch checked={flyer !== null} onCheckedChange={(on) => setFlyer(on ? defaultFlyer(kind) : null)} />
           </label>
-          <label className="flex items-center gap-3 text-sm">
-            <Switch checked={pinned} onCheckedChange={setPinned} />
-            Fijar arriba
-          </label>
-        </div>
+          {flyer && (
+            <>
+              <SegmentedFilter
+                ariaLabel="Origen del flyer"
+                value={flyer.mode}
+                onChange={(m) => setFlyer(m === "upload" ? { mode: "upload", url: "" } : defaultFlyer(kind))}
+                options={Object.entries(FLYER_MODES).map(([value, label]) => ({ value: value as Flyer["mode"], label }))}
+              />
+              {flyer.mode === "upload" ? (
+                <Attachment label="Tu flyer (imagen)" value={flyer.url || null} onChange={(u) => setFlyer({ mode: "upload", url: u ?? "" })} upload={uploadFile} />
+              ) : (
+                <FlyerDesigner design={flyer} onChange={setFlyer} />
+              )}
+              {(flyer.mode === "template" || flyer.url) && <PostFlyer flyer={flyer} title={title || "Título de la publicación"} body={body || "Aquí va un extracto del contenido."} kind={kind} />}
+            </>
+          )}
+        </aside>
       </div>
     </DialogComponent>
+  )
+}
+
+function FlyerDesigner({ design, onChange }: { design: FlyerDesign; onChange: (d: FlyerDesign) => void }) {
+  const set = <K extends keyof FlyerDesign>(k: K, v: FlyerDesign[K]) => onChange({ ...design, [k]: v })
+  const lowContrast = contrastRatio(design.bg, design.fg) < 3
+  const color = (key: "bg" | "fg" | "accent", label: string) => (
+    <label className="flex flex-col items-center gap-1 text-xs text-muted-foreground">
+      <input type="color" value={design[key]} onChange={(e) => set(key, e.target.value)} className="h-10 w-full min-w-10 cursor-pointer rounded-lg border bg-transparent p-0.5" aria-label={label} />
+      {label}
+    </label>
+  )
+  return (
+    <div className="space-y-3">
+      <div className="space-y-1.5">
+        <p className="flex items-center gap-1.5 text-sm font-medium">
+          <Palette className="size-4 text-muted-foreground" /> Colores
+        </p>
+        <div className="flex flex-wrap gap-1.5">
+          {FLYER_PALETTES.map((p) => (
+            <button
+              key={p.key}
+              type="button"
+              title={p.label}
+              aria-label={`Paleta ${p.label}`}
+              onClick={() => onChange({ ...design, bg: p.bg, fg: p.fg, accent: p.accent })}
+              className="press flex h-9 w-12 overflow-hidden rounded-lg border"
+            >
+              <span className="flex-1" style={{ background: p.bg }} />
+              <span className="w-3" style={{ background: p.accent }} />
+            </button>
+          ))}
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          {color("bg", "Fondo")}
+          {color("fg", "Texto")}
+          {color("accent", "Acento")}
+        </div>
+        {lowContrast && <p className="text-xs text-warning-ink">El texto casi no se distingue del fondo; prueba otro color.</p>}
+      </div>
+      <FormCombobox
+        label="Tipografía"
+        icon={<CaseSensitive className="size-4" />}
+        options={Object.entries(FLYER_FONTS).map(([value, f]) => ({ value, label: f.label }))}
+        value={design.font}
+        onChange={(v) => set("font", v as FlyerFont)}
+        clearable={false}
+        searchable={false}
+      />
+      <InputGroupField label="Subtítulo (opcional)" value={design.subtitle ?? ""} maxLength={160} onChange={(e) => set("subtitle", e.target.value || null)} hint="Si lo dejas vacío se usa un extracto del contenido." />
+      <InputGroupField label="Pie: lugar, fecha o contacto (opcional)" value={design.footer ?? ""} maxLength={120} onChange={(e) => set("footer", e.target.value || null)} />
+      <Attachment label="Imagen del flyer (opcional)" value={design.imageUrl} onChange={(u) => set("imageUrl", u ?? null)} upload={uploadFile} />
+    </div>
   )
 }
 
@@ -322,10 +411,7 @@ function StreamDialog({ value, onClose, onSaved }: { value: StreamDto | "new" | 
       <div className="space-y-4">
         <InputGroupField label="Título" required value={title} maxLength={160} onChange={(e) => setTitle(e.target.value)} />
         <InputGroupField label="Enlace" required inputMode="url" placeholder="https://www.youtube.com/watch?v=…" value={url} maxLength={500} onChange={(e) => setUrl(e.target.value)} />
-        <div className="space-y-1.5">
-          <Label htmlFor="stream-desc">Descripción</Label>
-          <Textarea id="stream-desc" rows={3} value={description} maxLength={2000} onChange={(e) => setDescription(e.target.value)} />
-        </div>
+        <TextareaField label="Descripción" rows={3} value={description} maxLength={2000} onChange={(e) => setDescription(e.target.value)} />
         <div className="grid gap-3 sm:grid-cols-2">
           <FormCombobox label="Estado" options={opts(STREAM_STATUS)} value={status} onChange={(v) => setStatus(v as StreamStatus)} clearable={false} />
           <DateTimePicker label="Fecha y hora" value={at} onChange={setAt} />

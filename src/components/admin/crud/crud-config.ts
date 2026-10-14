@@ -336,6 +336,8 @@ export const CRUD_UI: Record<string, CrudUiConfig> = {
         options: [
           { value: "", label: "No definido" },
           { value: "hourly", label: "Por hora" },
+          { value: "daily", label: "Por día" },
+          { value: "weekly", label: "Semanal" },
           { value: "monthly", label: "Mensual" },
         ],
       },

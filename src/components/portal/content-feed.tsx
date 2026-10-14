@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { StatusPill } from "@/components/base/status-pill"
 import { EmptyState } from "@/components/shared/empty-state"
+import { PostFlyer } from "@/components/portal/post-flyer"
 import { apiJson, errorMessage } from "@/lib/ministries/client"
 import { POST_KINDS } from "@/lib/portal/rules"
 import type { PostDto } from "@/lib/portal/server"
@@ -65,9 +66,15 @@ export function ContentFeed({ canManage }: { canManage: boolean }) {
           {posts.map((p) => (
             <li key={p.id} id={p.id}>
               <article className="overflow-hidden rounded-2xl border bg-card">
-                {p.coverUrl && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={p.coverUrl} alt="" loading="lazy" className="aspect-[16/7] w-full object-cover" />
+                {p.flyer ? (
+                  <div className="p-3 pb-0 sm:mx-auto sm:max-w-md">
+                    <PostFlyer flyer={p.flyer} title={p.title} body={p.body} kind={p.kind} />
+                  </div>
+                ) : (
+                  p.coverUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={p.coverUrl} alt="" loading="lazy" className="aspect-[16/7] w-full object-cover" />
+                  )
                 )}
                 <div className="space-y-2 p-4">
                   <div className="flex flex-wrap items-center gap-2">

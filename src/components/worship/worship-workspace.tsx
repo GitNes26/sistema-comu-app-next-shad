@@ -1,5 +1,6 @@
 "use client"
 
+import { TextareaField } from "@/components/base/textarea-field"
 import { useCallback, useEffect, useId, useMemo, useState } from "react"
 import Link from "next/link"
 import { Controller, useFieldArray, useForm } from "react-hook-form"
@@ -741,14 +742,8 @@ function SongFormDialog({ song, onClose, onSaved }: { song: SongDto | "new" | nu
             <InputGroupField id="bpm" label="BPM" inputMode="numeric" error={errors.bpm?.message} {...register("bpm")} />
           </div>
         </div>
-        <div className="space-y-1.5 sm:col-span-2">
-          <Label htmlFor="lyrics">Letra</Label>
-          <Textarea id="lyrics" rows={8} {...register("lyrics")} />
-        </div>
-        <div className="space-y-1.5 sm:col-span-2">
-          <Label htmlFor="notes">Notas para el ministerio</Label>
-          <Textarea id="notes" rows={2} placeholder="Ej. Empezar suave, subir en el puente" {...register("notes")} />
-        </div>
+        <TextareaField id="lyrics" label="Letra" containerClassName="sm:col-span-2" rows={8} {...register("lyrics")} />
+        <TextareaField id="notes" label="Notas para el ministerio" containerClassName="sm:col-span-2" rows={2} placeholder="Ej. Empezar suave, subir en el puente" {...register("notes")} />
         <div className="sm:col-span-2">
           <Controller
             control={control}

@@ -1,13 +1,8 @@
 import test from "node:test"
 import assert from "node:assert/strict"
-import { balanceOf, expiryStatus, groupSum, kmPerLiter, monthRange, payrollNet, serviceDue } from "../../src/lib/finance/rules.ts"
+import { balanceOf, expiryStatus, groupSum, kmPerLiter, monthRange, serviceDue } from "../../src/lib/finance/rules.ts"
 
 const d = (s) => new Date(`${s}T00:00:00.000Z`)
-
-test("nómina: el neto suma bonos y resta deducciones, sin negativos", () => {
-  assert.equal(payrollNet(5000, 500, 250.5), 5249.5)
-  assert.equal(payrollNet(100, 0, 500), 0)
-})
 
 test("vencimientos: ok, por vencer y vencido", () => {
   const today = d("2026-10-12")

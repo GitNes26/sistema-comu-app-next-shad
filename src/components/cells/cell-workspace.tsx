@@ -1,5 +1,6 @@
 "use client"
 
+import { TextareaField } from "@/components/base/textarea-field"
 import { useCallback, useEffect, useId, useMemo, useState } from "react"
 import Link from "next/link"
 import { Controller, useForm } from "react-hook-form"
@@ -859,10 +860,7 @@ function MeetingDialog({ cell, date, onClose, onSaved }: { cell: CellDetailDto; 
             </ul>
           </fieldset>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="meeting-notes">Notas</Label>
-            <Textarea id="meeting-notes" rows={2} value={notes} maxLength={2000} onChange={(e) => setNotes(e.target.value)} />
-          </div>
+          <TextareaField id="meeting-notes" label="Notas" rows={2} value={notes} maxLength={2000} onChange={(e) => setNotes(e.target.value)} />
           <Attachment label="Evidencia (foto, opcional)" value={evidence || null} onChange={(u) => setEvidence(u ?? "")} upload={uploadFile} accept={UPLOAD_IMAGE_ACCEPT} />
         </div>
       )}

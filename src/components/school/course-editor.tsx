@@ -1,5 +1,6 @@
 "use client"
 
+import { TextareaField } from "@/components/base/textarea-field"
 import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
 import { ArrowDown, ArrowLeft, ArrowUp, Ban, BookOpen, ClipboardList, FileText, ListChecks, Loader2, Plus, Settings2, Trash2, Users } from "lucide-react"
@@ -161,10 +162,7 @@ function SettingsTab({ data, onChanged }: { data: CourseAdminDto; onChanged: () 
         <div className="sm:col-span-2">
           <InputGroupField label="Nombre" required value={v.name} maxLength={120} onChange={(e) => set("name", e.target.value)} />
         </div>
-        <div className="space-y-1.5 sm:col-span-2">
-          <Label htmlFor="cdesc">Descripción</Label>
-          <Textarea id="cdesc" rows={3} value={v.description} maxLength={2000} onChange={(e) => set("description", e.target.value)} />
-        </div>
+        <TextareaField id="cdesc" label="Descripción" containerClassName="sm:col-span-2" rows={3} value={v.description} maxLength={2000} onChange={(e) => set("description", e.target.value)} />
         <InputGroupField label="Orden (grado)" inputMode="numeric" value={v.sortOrder} onChange={(e) => set("sortOrder", e.target.value.replace(/\D/g, ""))} />
         <InputGroupField label="Duración (semanas)" inputMode="numeric" value={v.weeks} onChange={(e) => set("weeks", e.target.value.replace(/\D/g, ""))} />
         <InputGroupField label="Número de tareas" inputMode="numeric" value={v.tasksCount} onChange={(e) => set("tasksCount", e.target.value.replace(/\D/g, ""))} />
@@ -315,10 +313,7 @@ function ContentDialog({
           <InputGroupField label="Título" required value={v.title} maxLength={150} onChange={(e) => setV((c) => ({ ...c, title: e.target.value }))} />
         </div>
         {v.type === "text" ? (
-          <div className="space-y-1.5 sm:col-span-2">
-            <Label htmlFor="cbody">Contenido</Label>
-            <Textarea id="cbody" rows={8} value={v.body} onChange={(e) => setV((c) => ({ ...c, body: e.target.value }))} />
-          </div>
+          <TextareaField id="cbody" label="Contenido" containerClassName="sm:col-span-2" rows={8} value={v.body} onChange={(e) => setV((c) => ({ ...c, body: e.target.value }))} />
         ) : (
           <div className="sm:col-span-2">
             <InputGroupField label="Enlace" required type="url" inputMode="url" placeholder="https://…" value={v.url} onChange={(e) => setV((c) => ({ ...c, url: e.target.value }))} />
@@ -540,10 +535,7 @@ function AssessmentDialog({
             <div className="sm:col-span-4">
               <InputGroupField label="Título" required value={title} maxLength={150} onChange={(e) => setTitle(e.target.value)} />
             </div>
-            <div className="space-y-1.5 sm:col-span-4">
-              <Label htmlFor="ins">Instrucciones</Label>
-              <Textarea id="ins" rows={2} value={instructions} maxLength={4000} onChange={(e) => setInstructions(e.target.value)} />
-            </div>
+            <TextareaField id="ins" label="Instrucciones" containerClassName="sm:col-span-4" rows={2} value={instructions} maxLength={4000} onChange={(e) => setInstructions(e.target.value)} />
             <FormCombobox
               label="Semana"
               options={Array.from({ length: weeks }, (_, i) => ({ value: String(i + 1), label: `Semana ${i + 1}` }))}

@@ -58,6 +58,7 @@ export const SYSTEM_MENUS: SystemMenuDef[] = [
 
   { id: "menu-iglesia", parentId: null, type: "section", label: "Iglesia", icon: "Church", sortOrder: 4 },
   { id: "menu-finanzas", parentId: "menu-iglesia", type: "item", label: "Finanzas", icon: "Wallet", href: "/admin/finance", permissionKey: "finance.view", sortOrder: 5 },
+  { id: "menu-nomina", parentId: "menu-iglesia", type: "item", label: "Nómina", icon: "HandCoins", href: "/admin/payroll", permissionKey: "payroll.manage", sortOrder: 5 },
   { id: "menu-vehiculos", parentId: "menu-iglesia", type: "item", label: "Vehículos", icon: "Car", href: "/admin/vehicles", permissionKey: "vehicles.view", sortOrder: 6 },
   { id: "menu-escuela-gestion", parentId: "menu-iglesia", type: "item", label: "Escuela ministerial", icon: "GraduationCap", href: "/admin/school", permissionKey: "school.view", sortOrder: 4 },
   { id: "menu-eventos-gestion", parentId: "menu-iglesia", type: "item", label: "Gestión de eventos", icon: "Ticket", href: "/admin/events", permissionKey: "events.view", sortOrder: 3 },

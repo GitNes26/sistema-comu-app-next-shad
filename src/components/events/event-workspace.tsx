@@ -1,5 +1,7 @@
 "use client"
 
+import { TextareaField } from "@/components/base/textarea-field"
+import { matchesSearch } from "@/lib/search"
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
 import Link from "next/link"
 import QRCode from "qrcode"
@@ -686,12 +688,7 @@ function ItineraryDialog({
         <div className="sm:col-span-2">
           <InputGroupField label="Lugar o salón" value={location} maxLength={150} onChange={(e) => setLocation(e.target.value)} />
         </div>
-        <div className="space-y-1.5 sm:col-span-2">
-          <label htmlFor="it-notes" className="text-sm font-medium">
-            Notas
-          </label>
-          <Textarea id="it-notes" rows={2} value={notes} maxLength={1000} onChange={(e) => setNotes(e.target.value)} />
-        </div>
+        <TextareaField id="it-notes" label="Notas" containerClassName="sm:col-span-2" rows={2} value={notes} maxLength={1000} onChange={(e) => setNotes(e.target.value)} />
       </div>
     </DialogComponent>
   )
@@ -703,7 +700,7 @@ function TicketsTab({ event, canManage, onChanged }: { event: EventDetailDto; ca
   const [q, setQ] = useState("")
   const [addOpen, setAddOpen] = useState(false)
   const [pay, setPay] = useState<TicketDto | null>(null)
-  const tickets = (event.tickets ?? []).filter((t) => !q.trim() || t.name.toLowerCase().includes(q.trim().toLowerCase()))
+  const tickets = (event.tickets ?? []).filter((t) => !q.trim() || matchesSearch(t.name, q))
 
   const cancel = async (t: TicketDto) => {
     const yes = await swalConfirm(`¿Cancelar el boleto de ${t.name}?`, t.paid > 0 ? `Tiene ${money(t.paid)} pagados; quedan en el historial para su devolución.` : "Se libera su lugar.", {
@@ -1281,12 +1278,7 @@ function ExpenseDialog({ eventId, expense, onClose, onSaved }: { eventId: string
         <div className="sm:col-span-2">
           <Attachment label="Comprobante (opcional)" value={receipt || null} onChange={(u) => setReceipt(u ?? "")} upload={uploadFile} />
         </div>
-        <div className="space-y-1.5 sm:col-span-2">
-          <label htmlFor="exp-notes" className="text-sm font-medium">
-            Notas
-          </label>
-          <Textarea id="exp-notes" rows={2} value={notes} maxLength={500} onChange={(e) => setNotes(e.target.value)} />
-        </div>
+        <TextareaField id="exp-notes" label="Notas" containerClassName="sm:col-span-2" rows={2} value={notes} maxLength={500} onChange={(e) => setNotes(e.target.value)} />
       </div>
     </DialogComponent>
   )
@@ -1356,7 +1348,7 @@ function EntryTab({ event, onChanged }: { event: EventDetailDto; onChanged: () =
     }
   }, [scanning, reader, send])
 
-  const pending = (event.tickets ?? []).filter((t) => t.status !== "cancelled" && !t.checkedInAt && (!q.trim() || t.name.toLowerCase().includes(q.trim().toLowerCase())))
+  const pending = (event.tickets ?? []).filter((t) => t.status !== "cancelled" && !t.checkedInAt && (!q.trim() || matchesSearch(t.name, q)))
 
   return (
     <div className="space-y-4">

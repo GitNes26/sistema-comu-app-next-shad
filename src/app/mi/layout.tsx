@@ -46,7 +46,7 @@ export default async function MiLayout({ children }: { children: React.ReactNode
         <OrganizationContextSync organizationId={organizationId} organizationName={org?.name ?? null} />
         <div className="min-h-svh bg-background">
           <header className="sticky top-0 z-30 border-b bg-background/92 supports-backdrop-filter:bg-background/75 supports-backdrop-filter:backdrop-blur-lg">
-            <div className="mx-auto flex h-[calc(3.5rem+env(safe-area-inset-top))] max-w-3xl items-center gap-2 pt-[env(safe-area-inset-top)] pr-[max(0.75rem,env(safe-area-inset-right))] pl-[max(0.75rem,env(safe-area-inset-left))]">
+            <div className="flex h-[calc(3.5rem+env(safe-area-inset-top))] w-full items-center gap-2 pt-[env(safe-area-inset-top)] pr-[max(0.75rem,env(safe-area-inset-right))] pl-[max(0.75rem,env(safe-area-inset-left))]">
               <Link href="/mi" className="flex min-w-0 items-center gap-2">
                 <Logo size={20} logoUrl={logoUrl} className="rounded-lg" />
                 <span className="truncate font-heading text-sm font-semibold">{churchName}</span>
@@ -79,7 +79,7 @@ export default async function MiLayout({ children }: { children: React.ReactNode
               </div>
             </div>
           </header>
-          <main className="mx-auto max-w-3xl px-3 pb-[max(2rem,env(safe-area-inset-bottom))] pt-5 sm:px-4">{children}</main>
+          <main className="w-full px-3 pb-[max(2rem,env(safe-area-inset-bottom))] pt-5 sm:px-4">{children}</main>
         </div>
       </>
     </SessionGuard>

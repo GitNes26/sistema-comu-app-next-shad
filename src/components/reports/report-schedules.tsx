@@ -1,5 +1,6 @@
 "use client"
 
+import { TextareaField } from "@/components/base/textarea-field"
 import { useCallback, useEffect, useState } from "react"
 import { AlertTriangle, CalendarClock, Loader2, Mail, Pencil, Plus, Send, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -247,10 +248,7 @@ function ScheduleDialog({
           )}
           <FormCombobox label="Hora" options={HOURS} value={hour} onChange={setHour} clearable={false} />
         </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="sched-recipients">Correos (uno por línea o separados por coma, máximo 10)</Label>
-          <Textarea id="sched-recipients" rows={3} inputMode="email" value={recipients} onChange={(e) => setRecipients(e.target.value)} placeholder="pastor@iglesia.org" />
-        </div>
+        <TextareaField id="sched-recipients" label="Correos (uno por línea o separados por coma, máximo 10)" rows={3} inputMode="email" value={recipients} onChange={(e) => setRecipients(e.target.value)} placeholder="pastor@iglesia.org" />
         <label className="flex items-center gap-3 text-sm">
           <Switch checked={includeCsv} onCheckedChange={setIncludeCsv} />
           Adjuntar también el archivo CSV

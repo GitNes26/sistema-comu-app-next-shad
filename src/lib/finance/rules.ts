@@ -1,4 +1,4 @@
-// Reglas puras de Finanzas: nómina, vencimientos de vehículos y resúmenes.
+// Reglas puras de Finanzas: vencimientos de vehículos y resúmenes (la nómina vive en lib/payroll).
 
 const round2 = (n: number) => Math.round(n * 100) / 100
 
@@ -30,16 +30,6 @@ export const EXPENSE_CATEGORY_LABEL: Record<string, string> = {
   transporte: "Transporte",
   ayuda: "Ayuda social",
   otro: "Otro",
-}
-
-/** Neto de una línea de nómina (nunca negativo). */
-export function payrollNet(base: number, bonus: number, deductions: number): number {
-  return Math.max(0, round2(base + bonus - deductions))
-}
-
-/** Monto por periodo según la frecuencia del empleado: el salario capturado es por pago. */
-export function periodAmount(salaryAmount: number): number {
-  return round2(salaryAmount)
 }
 
 export type DocStatus = "ok" | "soon" | "expired" | "none"

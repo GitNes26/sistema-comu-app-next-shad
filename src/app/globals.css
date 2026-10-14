@@ -538,3 +538,52 @@
   0%, 100% { top: 8%; }
   50% { top: 90%; }
 }
+
+/* === Interacción: todo elemento accionable se siente accionable ===
+   cursor: pointer + una animación mínima (elevación sutil al pasar el puntero y
+   un leve hundimiento al presionar). Respeta prefers-reduced-motion. */
+a[href],
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+[role="tab"],
+[role="menuitem"],
+[role="option"],
+[role="switch"],
+[role="checkbox"],
+[role="radio"],
+summary,
+label[for],
+select,
+input[type="checkbox"],
+input[type="radio"],
+input[type="range"],
+input[type="file"] {
+  cursor: pointer;
+}
+button:disabled,
+[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+a[href],
+button,
+[role="button"],
+[role="tab"],
+[role="menuitem"],
+[role="option"],
+summary {
+  transition: transform 140ms var(--ease-out-quart), background-color 160ms, color 160ms, border-color 160ms, opacity 160ms;
+}
+@media (prefers-reduced-motion: no-preference) {
+  button:not(:disabled):active,
+  [role="button"]:not([aria-disabled="true"]):active,
+  [role="tab"]:active,
+  a[href]:active {
+    transform: scale(0.97);
+  }
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  button:not(:disabled):not([role="combobox"]):hover svg,
+  a[href]:hover > svg {
+    transform: translateY(-0.5px);
+  }
+}

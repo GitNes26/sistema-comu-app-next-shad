@@ -1,5 +1,6 @@
 "use client"
 
+import { TextareaField } from "@/components/base/textarea-field"
 import { useCallback, useEffect, useState } from "react"
 import { AlertTriangle, CalendarClock, Check, HandHeart, Loader2, MapPin, Plus, Trash2, UserPlus, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -195,10 +196,7 @@ function RequestDialog({ open, eventId, taken, onClose, onSaved }: { open: boole
           clearable={false}
         />
         <InputGroupField label="¿Cuántos servidores?" inputMode="numeric" value={quantity} onChange={(e) => setQuantity(e.target.value.replace(/\D/g, ""))} />
-        <div className="space-y-1.5">
-          <Label htmlFor="staff-notes">¿Qué harán? (opcional)</Label>
-          <Textarea id="staff-notes" rows={3} value={notes} maxLength={300} onChange={(e) => setNotes(e.target.value)} placeholder="Ujieres en la puerta principal desde las 8:30" />
-        </div>
+        <TextareaField id="staff-notes" label="¿Qué harán? (opcional)" rows={3} value={notes} maxLength={300} onChange={(e) => setNotes(e.target.value)} placeholder="Ujieres en la puerta principal desde las 8:30" />
       </div>
     </DialogComponent>
   )

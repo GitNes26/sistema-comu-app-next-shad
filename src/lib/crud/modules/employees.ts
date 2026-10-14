@@ -32,7 +32,7 @@ const text = (v: unknown, max = 255): string | null => {
   const s = typeof v === "string" ? v.trim() : "";
   return s ? s.slice(0, max) : null;
 };
-const SALARY_TYPES = ["", "hourly", "monthly"];
+const SALARY_TYPES = ["", "hourly", "daily", "weekly", "monthly"];
 const FREQUENCIES = ["weekly", "biweekly", "monthly"];
 const PAY_METHODS = ["cash", "transfer", "check"];
 

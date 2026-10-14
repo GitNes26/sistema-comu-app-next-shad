@@ -1,5 +1,6 @@
 "use client"
 
+import { TextareaField } from "@/components/base/textarea-field"
 import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -257,10 +258,7 @@ function SchoolDialog({ school, onClose, onSaved }: { school: SchoolDto | null; 
     >
       <div className="space-y-4">
         <InputGroupField label="Nombre" required value={name} maxLength={100} onChange={(e) => setName(e.target.value)} />
-        <div className="space-y-1.5">
-          <Label htmlFor="sd">Descripción</Label>
-          <Textarea id="sd" rows={2} value={description} maxLength={1000} onChange={(e) => setDescription(e.target.value)} />
-        </div>
+        <TextareaField id="sd" label="Descripción" rows={2} value={description} maxLength={1000} onChange={(e) => setDescription(e.target.value)} />
         <StaffPicker label="Director" value={director} onChange={setDirector} />
         <StaffPicker label="Subdirector" value={sub} onChange={setSub} />
         <div className="grid grid-cols-2 gap-3">

@@ -39,6 +39,7 @@ Un creyente (`scope: "portal"`) que abre `/admin` es redirigido a `/mi`; el CRUD
 3. **Lógica**: `src/lib/<dominio>/server.ts` (consultas con `organizationId`, transacciones, relaciones cruzadas validadas) y reglas puras.
 4. **API/CRUD**: si es catálogo, `CrudModule` en `src/lib/crud/modules/` + entrada en `CRUD_MODULES` + configuración de UI en `crud-config.ts`; si no, ruta propia con el orden obligatorio.
 5. **Página**: `/admin/<módulo>` (servidor con permiso) + cliente con `PageHeader`, herramientas (`type="search"`, filtros, `ClearFiltersButton`), `DataTable`, estados.
+   El contenedor de la página ocupa **todo el ancho disponible** (sin `mx-auto max-w-*`); consulta la regla de ancho en la guía de diseño. Formularios con icono por campo y modales con encabezado/cuerpo/pie (ver guía de formularios).
 6. **Menú**: ítem en `SYSTEM_MENUS` (seeder) + fallback en `src/lib/nav.ts` con `permissionKey` e ícono; `features.ts` si aplica.
 7. **Pruebas**: regla pura en `tests/unit`, caso de permisos en `tests/permissions.integration.test.mjs`.
 8. **Documentación**: `CONTEXTO_SISTEMA.md`, esta guía si hay convención nueva, `MEMORY.md` solo si es duradero.

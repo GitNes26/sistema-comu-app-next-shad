@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input"
 import { inferInputKind } from "@/lib/input-kind"
 import { Label } from "@/components/ui/label"
 import { InfoTooltip } from "@/components/base/info-tooltip"
-import { AlertCircle, Eye, EyeOff, Hash, KeyRound, Mail, Phone, Type } from "lucide-react"
+import { inferFieldIcon } from "@/lib/field-icons"
+import { AlertCircle, Eye, EyeOff } from "lucide-react"
 
 export interface InputGroupFieldProps
   extends React.ComponentProps<typeof Input> {
@@ -52,15 +53,9 @@ export const InputGroupField = React.forwardRef<
   const inputId = id ?? `field-${autoId}`
   const isPassword = type === "password"
   const [showPassword, setShowPassword] = React.useState(false)
-  const defaultIcon = type === "email"
-    ? <Mail className="size-4" />
-    : type === "tel"
-      ? <Phone className="size-4" />
-      : type === "number"
-        ? <Hash className="size-4" />
-        : type === "password"
-          ? <KeyRound className="size-4" />
-          : <Type className="size-4" />
+  // Todo campo lleva un icono acorde con su dato (dinero, correo, teléfono, fecha…).
+  const FieldIcon = inferFieldIcon(label, { type, inputMode: props.inputMode, name: props.name })
+  const defaultIcon = <FieldIcon className="size-4" />
   const resolvedLeftIcon = leftIcon ?? (leftAddon ? undefined : defaultIcon)
 
   return (

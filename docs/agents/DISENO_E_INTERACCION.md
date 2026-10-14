@@ -41,6 +41,24 @@ En táctil las acciones esenciales son visibles (nada depende de hover).
 - Objetivos de 44–48 px; separa controles destructivos. Tablas → cards mediante `DataTable`.
 - Usa `h-dvh`/`min-h-dvh`, no `100vh`.
 
+## Ancho: siempre todo el espacio disponible (obligatorio)
+
+En escritorio el contenido ocupa el ancho completo del área de trabajo; no se centra en una columna angosta.
+
+- Prohibido `mx-auto max-w-*` en el contenedor de una página o layout (`/admin`, `/mi`, módulos). El ancho lo dicta el shell.
+- Se permiten límites de ancho solo en piezas que lo necesitan para leerse bien: texto corrido de un artículo, un flyer, un formulario de inicio de sesión, un diploma. Nunca en listados, tableros ni tarjetas de página.
+- Reparte el espacio con rejillas responsivas (`md:grid-cols-2 xl:grid-cols-3`, `lg:grid-cols-[minmax(0,1fr)_20rem]`) en vez de dejarlo vacío; las listas largas pasan a varias columnas.
+- Los campos de fecha+hora (`DateTimePicker`) y los combobox llenan el ancho de su celda.
+
+## Todo elemento interactivo lo parece (obligatorio)
+
+Todo lo que se puede tocar o pulsar — botones, enlaces, filas y tarjetas clicables, pestañas, interruptores, casillas, chips, ítems de menú — debe:
+
+- mostrar `cursor: pointer` al pasar el puntero (`not-allowed` si está deshabilitado);
+- dar una **animación minimalista** que lo delate como interactivo: elevación o realce sutil con puntero fino y un leve hundimiento (`scale(.97)`) al presionar, siempre bajo `prefers-reduced-motion: no-preference`.
+
+`globals.css` aplica la base a `a[href]`, `button`, `[role=button|tab|menuitem|option|switch|checkbox|radio]`, `summary`, `label[for]` e inputs de casilla/rango/archivo. Para tarjetas y filas clicables que no sean botón ni enlace usa `.press`; si el elemento es un `div` con `onClick`, conviértelo en `button`/`Link` (accesible y con teclado). No inventes animaciones propias por componente.
+
 ## Safe areas
 
 - `viewport-fit=cover` en el layout raíz.

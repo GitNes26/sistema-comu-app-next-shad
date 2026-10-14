@@ -1075,27 +1075,35 @@ test("finanzas: la tesorería registra y confirma; el creyente solo avisa; la n�
   const expenses2 = (await (await tomas(`/api/finance/expenses?month=${day.slice(0, 7)}`)).json()).expenses
   assert.ok(!expenses2.some((e) => e.vehicleName === name && e.amount === 500))
 
-  // Nómina: se arma con empleados con sueldo, se ajusta, se paga una vez y genera su gasto.
-  const run = await tomas("/api/finance/payroll", {
-    method: "POST",
-    headers: json,
-    body: JSON.stringify({ label: `Prueba ${Date.now()}`, periodStart: day, periodEnd: day }),
-  })
-  assert.equal(run.status, 201)
-  const { id: runId } = await run.json()
-  const runDetail = (await (await tomas(`/api/finance/payroll/${runId}`)).json()).run
-  assert.ok(runDetail.entries.length >= 1)
-  const entry = runDetail.entries[0]
-  assert.equal((await tomas(`/api/finance/payroll/${runId}/entries/${entry.id}`, { method: "PATCH", headers: json, body: JSON.stringify({ bonus: 100, deductions: 40 }) })).status, 200)
-  const adjusted = (await (await tomas(`/api/finance/payroll/${runId}`)).json()).run.entries.find((e) => e.id === entry.id)
-  assert.equal(adjusted.net, entry.base + 60)
-  const paid = await tomas(`/api/finance/payroll/${runId}/pay`, { method: "POST" })
-  assert.equal(paid.status, 200)
-  assert.equal((await tomas(`/api/finance/payroll/${runId}/pay`, { method: "POST" })).status, 409)
-  assert.equal((await tomas(`/api/finance/payroll/${runId}/entries/${entry.id}`, { method: "PATCH", headers: json, body: JSON.stringify({ bonus: 1 }) })).status, 409)
-  assert.equal((await tomas(`/api/finance/payroll/${runId}`, { method: "DELETE" })).status, 409)
-  const payExpense = (await (await tomas(`/api/finance/expenses?month=${day.slice(0, 7)}`)).json()).expenses.find((e) => e.isPayroll && e.concept.includes("Prueba"))
-  assert.ok(payExpense)
+  // Nómina: se configura el pago, se arma el periodo, se captura, se cierra, se paga una vez y genera su gasto.
+  const payrollApi = (who, body) => who("/api/payroll", { method: "POST", headers: json, body: JSON.stringify(body) })
+  assert.equal((await sofia("/api/payroll")).status, 403)
+  assert.equal((await payrollApi(sofia, { action: "period.create", startDate: day, endDate: day })).status, 403)
+  const ws = await (await tomas("/api/payroll")).json()
+  assert.ok(ws.employees.length >= 1)
+  const emp = ws.employees[0]
+  assert.equal((await payrollApi(tomas, { action: "employee.pay", id: emp.id, salaryType: "monthly", salaryAmount: 9000, paymentFrequency: "monthly" })).status, 200)
+  assert.equal((await payrollApi(tomas, { action: "period.create", startDate: "2026-02-30", endDate: day })).status, 400)
+  const created = await payrollApi(tomas, { action: "period.create", startDate: day, endDate: day, employeeIds: [emp.id] })
+  assert.equal(created.status, 201)
+  const { id: runId } = await created.json()
+  let period = (await (await tomas(`/api/payroll?periodId=${runId}`)).json()).period
+  assert.equal(period.status, "draft")
+  const entry = period.entries[0]
+  assert.equal((await payrollApi(tomas, { action: "entry.update", id: entry.id, overtimeHours: 2, perceptions: [{ name: "Bono", calc: "fixed", value: 100 }], deductions: [{ name: "Adelanto", calc: "fixed", value: 40 }] })).status, 200)
+  period = (await (await tomas(`/api/payroll?periodId=${runId}`)).json()).period
+  const adjusted = period.entries[0]
+  assert.equal(adjusted.netPay, Math.round((adjusted.grossPay - 40) * 100) / 100)
+  assert.ok(adjusted.overtimePay > 0)
+  // Pagar exige cerrar primero; cerrada ya no se edita; pagada no se reabre ni se elimina.
+  assert.equal((await payrollApi(tomas, { action: "entry.paid", id: entry.id })).status, 409)
+  assert.equal((await payrollApi(tomas, { action: "period.status", id: runId, status: "closed" })).status, 200)
+  assert.equal((await payrollApi(tomas, { action: "entry.update", id: entry.id, absences: 1 })).status, 409)
+  assert.equal((await payrollApi(tomas, { action: "period.delete", id: runId })).status, 409)
+  assert.equal((await payrollApi(tomas, { action: "period.status", id: runId, status: "paid" })).status, 200)
+  assert.equal((await payrollApi(tomas, { action: "period.status", id: runId, status: "draft" })).status, 409)
+  const payExpenses = (await (await tomas(`/api/finance/expenses?month=${day.slice(0, 7)}`)).json()).expenses.filter((e) => e.isPayroll && e.amount === adjusted.netPay)
+  assert.equal(payExpenses.length >= 1, true)
 })
 
 test("portal del creyente: contenido, transmisiones, perfil propio y solicitudes de ministerio", async () => {

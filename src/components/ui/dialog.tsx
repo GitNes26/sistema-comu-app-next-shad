@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { XIcon } from "lucide-react"
 import { OverlayBackGuard } from "@/hooks/use-overlay-back"
+import { inferDialogIcon } from "@/lib/field-icons"
 
 function Dialog({
   ...props
@@ -193,6 +194,11 @@ function DialogDescription({
   )
 }
 
+function AutoIcon({ title }: { title: string }) {
+  const Icon = inferDialogIcon(title)
+  return <Icon />
+}
+
 type DialogComponentSize = "sm" | "md" | "lg" | "xl" | "2xl" | "3xl" | "4xl" | "full" | "auto"
 
 const DIALOG_SIZE_CLASSES: Record<DialogComponentSize, string> = {
@@ -267,14 +273,18 @@ function DialogComponent({
         data-guide={dataGuide}
       >
         {title || description ? (
-          <DialogHeader>
-            {title ? (
-              <DialogTitle className="flex items-center gap-2">
-                {icon}
-                {title}
-              </DialogTitle>
-            ) : null}
-            {description ? <DialogDescription>{description}</DialogDescription> : null}
+          <DialogHeader className="flex-row items-start gap-3 pr-8">
+            {/* Anatomía: encabezado (icono + nombre + leyenda), cuerpo con scroll y pie de acciones. */}
+            <span
+              aria-hidden
+              className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary [&_svg]:size-5"
+            >
+              {icon ?? (typeof title === "string" ? <AutoIcon title={title} /> : null)}
+            </span>
+            <div className="min-w-0 flex-1 space-y-0.5">
+              {title ? <DialogTitle>{title}</DialogTitle> : null}
+              {description ? <DialogDescription>{description}</DialogDescription> : null}
+            </div>
           </DialogHeader>
         ) : null}
         {children ? <DialogBody className={bodyClassName}>{children}</DialogBody> : null}

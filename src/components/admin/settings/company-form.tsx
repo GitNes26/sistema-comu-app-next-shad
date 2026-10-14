@@ -1,5 +1,6 @@
 "use client"
 
+import { TextareaField } from "@/components/base/textarea-field"
 import { useEffect, useState } from "react"
 import { Controller, useForm } from "react-hook-form"
 import { yupResolver } from "@hookform/resolvers/yup"
@@ -253,11 +254,7 @@ export function CompanyForm() {
           />
         )}
       />
-      <div className="space-y-1.5 sm:col-span-2">
-        <Label htmlFor="description">Descripción</Label>
-        <Textarea id="description" rows={3} aria-invalid={Boolean(errors.description)} {...register("description")} />
-        {errors.description && <p className="text-xs text-destructive">{errors.description.message}</p>}
-      </div>
+      <TextareaField id="description" label="Descripción" error={errors.description?.message} containerClassName="sm:col-span-2" rows={3} aria-invalid={Boolean(errors.description)} {...register("description")} />
 
       <h3 className="mt-2 font-heading text-sm font-semibold sm:col-span-2">Contacto y ubicación</h3>
       <InputGroupField
@@ -369,11 +366,7 @@ export function CompanyForm() {
             error={errors.donationLink?.message}
             {...register("donationLink")}
           />
-          <div className="space-y-1.5 sm:col-span-2">
-            <Label htmlFor="donationNote">Nota para el creyente</Label>
-            <Textarea id="donationNote" rows={2} aria-invalid={Boolean(errors.donationNote)} {...register("donationNote")} />
-            {errors.donationNote && <p className="text-xs text-destructive">{errors.donationNote.message}</p>}
-          </div>
+          <TextareaField id="donationNote" label="Nota para el creyente" error={errors.donationNote?.message} containerClassName="sm:col-span-2" rows={2} aria-invalid={Boolean(errors.donationNote)} {...register("donationNote")} />
         </>
       )}
 

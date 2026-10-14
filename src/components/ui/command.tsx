@@ -16,6 +16,7 @@ import {
   InputGroupAddon,
 } from "@/components/ui/input-group"
 import { SearchIcon, CheckIcon } from "lucide-react"
+import { commandFilter } from "@/lib/search"
 
 function Command({
   className,
@@ -24,6 +25,8 @@ function Command({
   return (
     <CommandPrimitive
       data-slot="command"
+      // Ignora mayúsculas y acentos por defecto.
+      filter={commandFilter}
       className={cn(
         "flex size-full flex-col overflow-hidden rounded-xl! bg-popover p-1 text-popover-foreground",
         className

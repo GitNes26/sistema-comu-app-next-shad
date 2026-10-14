@@ -1,5 +1,6 @@
 "use client"
 
+import { TextareaField } from "@/components/base/textarea-field"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { ArrowLeft, Ban, CircleDollarSign, ClipboardCheck, Download, Loader2, Lock, UserPlus } from "lucide-react"
@@ -732,12 +733,7 @@ function ReviewsDialog({ groupId, open, onClose, onChanged }: { groupId: string;
               </div>
             </div>
           ))}
-          <div className="space-y-1.5">
-            <label htmlFor="fb" className="text-sm font-medium">
-              Retroalimentación general
-            </label>
-            <Textarea id="fb" rows={3} value={feedback} maxLength={2000} onChange={(e) => setFeedback(e.target.value)} />
-          </div>
+          <TextareaField id="fb" label="Retroalimentación general" rows={3} value={feedback} maxLength={2000} onChange={(e) => setFeedback(e.target.value)} />
         </div>
       ) : rows === null ? (
         <Skeleton className="h-32 w-full" />

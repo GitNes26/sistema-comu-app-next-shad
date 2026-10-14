@@ -40,7 +40,7 @@ export function DateTimePicker({
   const time = value ? dateToTime(value) : null
 
   return (
-    <div className={cn("space-y-2", className)}>
+    <div className={cn("w-full space-y-2", className)}>
       {label && (
         <div className="flex items-center gap-1.5">
           <CalendarClock className="size-4 text-muted-foreground" />
@@ -54,7 +54,7 @@ export function DateTimePicker({
       <div
         role="group"
         aria-describedby={error && id ? `${id}-error` : undefined}
-        className="flex flex-col gap-2 sm:flex-row"
+        className="flex w-full flex-col gap-2 sm:flex-row [&>*]:min-w-0 sm:[&>*]:flex-1"
       >
         <DatePicker
           id={id ? `${id}-date` : undefined}

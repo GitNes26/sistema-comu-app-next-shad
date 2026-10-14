@@ -1,4 +1,5 @@
 import { useEffect, useId, useMemo, useState } from "react"
+import { inferFieldIcon } from "@/lib/field-icons"
 import * as yup from "yup"
 import { icons, AlertCircle } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
@@ -146,10 +147,15 @@ function registerAbbreviation(name: string): string {
 const getIcon = (name: string): LucideIcon | undefined =>
   icons[name as keyof typeof icons]
 
-function fieldIcon(type: string, iconKey?: string): React.ReactNode {
+function fieldIcon(type: string, iconKey?: string, label?: string): React.ReactNode {
   if (iconKey) {
     const Ico = getIcon(iconKey)
     if (Ico) return <Ico className="size-4" />
+  }
+  // Sin icono explícito: el dato manda (dinero, correo, teléfono, fecha…) según la etiqueta.
+  if (label && ["text", "number", "select", "code", "textarea"].includes(type)) {
+    const Inferred = inferFieldIcon(label)
+    if (Inferred !== inferFieldIcon("")) return <Inferred className="size-4" />
   }
   const fallback: Record<string, string> = {
     text: "Type",
@@ -213,7 +219,7 @@ function FieldWrapper({
 function FieldLabel({ field, id }: { field: CrudField; id?: string }) {
   return (
     <div className="flex items-center gap-1.5">
-      <span className="text-muted-foreground">{fieldIcon(field.type, field.icon)}</span>
+      <span className="text-muted-foreground">{fieldIcon(field.type, field.icon, field.label)}</span>
       <Label htmlFor={id} className="cursor-pointer leading-none">
         {field.label}
         {field.required && <span className="text-destructive"> *</span>}
@@ -433,7 +439,7 @@ export function CrudForm({
                 id={id}
                 label={field.label}
                 description={field.description}
-                icon={fieldIcon(field.type, field.icon)}
+                icon={fieldIcon(field.type, field.icon, field.label)}
                 checked={Boolean(value)}
                 onCheckedChange={(c) => set(field.key, c)}
                 required={field.required}
@@ -472,7 +478,7 @@ export function CrudForm({
                 value={String(value ?? "")}
                 onChange={(v) => set(field.key, v)}
                 error={error}
-                icon={fieldIcon(field.type, field.icon)}
+                icon={fieldIcon(field.type, field.icon, field.label)}
               />
             </FieldWrapper>
           )
@@ -588,7 +594,7 @@ export function CrudForm({
                 placeholder={field.placeholder}
                 helper={field.help}
                 error={error}
-                icon={fieldIcon(field.type, field.icon)}
+                icon={fieldIcon(field.type, field.icon, field.label)}
               />
             </FieldWrapper>
           )
@@ -658,7 +664,7 @@ export function CrudForm({
               required={field.required}
               error={error}
               helper={error ? undefined : field.help}
-              leftIcon={fieldIcon(field.type, field.icon)}
+              leftIcon={fieldIcon(field.type, field.icon, field.label)}
               type={
                 field.type === "password"
                   ? "password"

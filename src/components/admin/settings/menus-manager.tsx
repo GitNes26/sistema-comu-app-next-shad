@@ -1,5 +1,6 @@
 "use client";
 
+import { matchesSearch } from "@/lib/search"
 import { useCallback, useEffect, useMemo, useState } from "react";
 import * as yup from "yup";
 import {
@@ -99,11 +100,11 @@ export function MenusManager() {
   // Búsqueda: conserva la cadena de ancestros para mantener el contexto.
   const filteredList = useMemo(() => {
     const list = menus ?? [];
-    const q = search.trim().toLowerCase();
+    const q = search.trim();
     if (!q) return list;
     const keep = new Set<string>();
     for (const m of list) {
-      if (m.label.toLowerCase().includes(q) || (m.href ?? "").toLowerCase().includes(q)) keep.add(m.id);
+      if (matchesSearch(m.label, q) || matchesSearch(m.href ?? "", q)) keep.add(m.id);
     }
     let changed = true;
     while (changed) {

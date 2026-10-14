@@ -33,6 +33,10 @@ Si documentación y código difieren, comprueba el comportamiento y actualiza la
 - Formularios: React Hook Form + Yup + `useFocusInvalid`; `InputGroupField`, `FormCombobox`/`OptionSelect`, pickers y `Attachment`. No uses `<select>` ni fechas nativas; hora = `TimePicker`, fecha = `DatePicker`; el teclado coincide con el dato (`tel`, `numeric`/`decimal`, `email`, `url`, `search`). Consulta [`docs/agents/FORMULARIOS_Y_CRUD.md`](docs/agents/FORMULARIOS_Y_CRUD.md).
 - Avisos normales con **notistack** (`@/lib/notify`); **SweetAlert2** (`@/lib/swal`) solo para alertas de gran impacto (confirmar acciones destructivas o irreversibles, errores críticos o bloqueos).
 - Overlays: usa `DialogComponent`; solo el cuerpo desplaza y header/footer permanecen visibles. No armes modales ad hoc.
+- **Modal en tres partes**: encabezado (icono + nombre + leyenda), cuerpo con scroll que crece hasta casi 100 dvh y pie con las acciones finales. Cada campo lleva **icono acorde con su dato** (dinero, correo, teléfono, fecha…; `src/lib/field-icons.ts`) y el texto largo usa `TextareaField`.
+- **Ancho completo**: ninguna página limita su contenido con `mx-auto max-w-*`; `DateTimePicker` y los campos llenan su celda.
+- **Interactivo se nota**: todo elemento accionable tiene `cursor: pointer` y una animación mínima (base en `globals.css`, `.press` para tarjetas).
+- **Búsqueda tolerante**: filtros, buscadores y selectores ignoran mayúsculas y acentos con `matchesSearch` (`src/lib/search.ts`); nunca `toLowerCase().includes()`.
 - Diseño: tokens semánticos, superficies planas, `ring` antes que sombras, tipografía y densidad configurables, animación funcional y `prefers-reduced-motion`. `desk:` significa puntero fino, no simplemente ancho. Consulta [`docs/agents/DISENO_E_INTERACCION.md`](docs/agents/DISENO_E_INTERACCION.md).
 - Safe areas: toda superficie fija al borde usa `env(safe-area-inset-*)`; evita sumar padding dos veces entre shell e hijo. Usa `dvh`.
 - API: autentica, resuelve iglesia efectiva, comprueba scope/permiso/plan, valida entrada, ejecuta lógica en `src/lib`, responde sin filtrar datos sensibles.

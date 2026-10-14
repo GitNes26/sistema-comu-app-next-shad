@@ -98,6 +98,7 @@ export const NAV_SECTIONS: NavSection[] = [
     title: "Iglesia",
     items: [
       { href: "/admin/finance", label: "Finanzas", icon: Wallet, permission: "finance.view", feature: "finance" },
+      { href: "/admin/payroll", label: "Nómina", icon: HandCoins, permission: "payroll.manage", feature: "finance" },
       { href: "/admin/vehicles", label: "Vehículos", icon: Car, permission: "vehicles.view", feature: "vehicles" },
       { href: "/admin/school", label: "Escuela ministerial", icon: GraduationCap, permission: "school.view", feature: "school" },
       { href: "/admin/events", label: "Gestión de eventos", icon: Ticket, permission: "events.view", feature: "events" },

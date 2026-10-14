@@ -1,5 +1,6 @@
 "use client"
 
+import { TextareaField } from "@/components/base/textarea-field"
 import { useCallback, useEffect, useId, useState } from "react"
 import Link from "next/link"
 import { Controller, useForm } from "react-hook-form"
@@ -408,10 +409,7 @@ export function CellFormDialog({
           />
         </div>
         <InputGroupField id="reference" label="Referencias" placeholder="Ej. Portón negro, frente al parque" {...register("reference")} />
-        <div className="space-y-1.5 sm:col-span-2">
-          <Label htmlFor="notes">Notas</Label>
-          <Textarea id="notes" rows={2} {...register("notes")} />
-        </div>
+        <TextareaField id="notes" label="Notas" containerClassName="sm:col-span-2" rows={2} {...register("notes")} />
 
         {!cell && (
           <div className="space-y-2 sm:col-span-2">
