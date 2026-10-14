@@ -18,6 +18,7 @@ import { notify } from "@/lib/notify"
 import { swalConfirm, swalError } from "@/lib/swal"
 import { apiJson, errorMessage } from "@/lib/ministries/client"
 import type { GradebookDto } from "@/lib/school/server"
+import { QuestionReviewCard, ReviewHeader, useRunningTotal, type ReviewData } from "@/components/school/submission-review"
 import { cn } from "@/lib/utils"
 
 // Planilla del grupo: como la hoja de la escuela de ministerio (asistencias,
@@ -639,13 +640,7 @@ interface ReviewRow {
   number: number
   attempt: number
 }
-interface ReviewDetail {
-  id: string
-  studentName: string
-  feedback: string | null
-  assessment: { title: string; kind: string; number: number }
-  questions: { id: string; type: string; prompt: string; points: number; answer: unknown; expected: unknown; awarded: number | null; comment: string }[]
-}
+type ReviewDetail = ReviewData
 
 function ReviewsDialog({ groupId, open, onClose, onChanged }: { groupId: string; open: boolean; onClose: () => void; onChanged: () => Promise<void> }) {
   const [rows, setRows] = useState<ReviewRow[] | null>(null)
@@ -654,6 +649,7 @@ function ReviewsDialog({ groupId, open, onClose, onChanged }: { groupId: string;
   const [comments, setComments] = useState<Record<string, string>>({})
   const [feedback, setFeedback] = useState("")
   const [saving, setSaving] = useState(false)
+  const running = useRunningTotal(detail?.questions ?? [], points)
 
   const load = useCallback(async () => {
     try {
@@ -702,9 +698,9 @@ function ReviewsDialog({ groupId, open, onClose, onChanged }: { groupId: string;
     <DialogComponent
       open={open}
       onOpenChange={(o) => !o && onClose()}
-      title={detail ? `${detail.studentName} · ${detail.assessment.title}` : "Por revisar"}
-      description={detail ? "Califica las preguntas abiertas." : "Envíos con respuestas abiertas."}
-      className="max-w-[96vw] md:max-w-3xl"
+      title={detail ? detail.studentName : "Por revisar"}
+      description={detail ? "Revisa cada respuesta y asigna los puntos de las preguntas abiertas." : "Envíos con respuestas abiertas."}
+      size="3xl"
       footer={
         detail ? (
           <>
@@ -721,17 +717,17 @@ function ReviewsDialog({ groupId, open, onClose, onChanged }: { groupId: string;
     >
       {detail ? (
         <div className="space-y-4">
+          <ReviewHeader data={detail} total={running.total} graded={running.graded} />
           {detail.questions.map((q, i) => (
-            <div key={q.id} className="space-y-2 rounded-2xl border p-3">
-              <p className="text-sm font-medium whitespace-pre-line">
-                {i + 1}. {q.prompt}
-              </p>
-              <p className="rounded-xl bg-muted/60 p-2 text-sm whitespace-pre-line">{typeof q.answer === "string" ? q.answer || "(sin respuesta)" : JSON.stringify(q.answer)}</p>
-              <div className="grid gap-2 sm:grid-cols-[8rem_1fr]">
-                <InputGroupField label={`Puntos (máx. ${q.points})`} inputMode="decimal" value={points[q.id] ?? ""} onChange={(e) => setPoints((p) => ({ ...p, [q.id]: e.target.value }))} />
-                <InputGroupField label="Comentario" value={comments[q.id] ?? ""} maxLength={500} onChange={(e) => setComments((c) => ({ ...c, [q.id]: e.target.value }))} />
-              </div>
-            </div>
+            <QuestionReviewCard
+              key={q.id}
+              q={q}
+              index={i}
+              points={points[q.id] ?? ""}
+              comment={comments[q.id] ?? ""}
+              onPoints={(v) => setPoints((p) => ({ ...p, [q.id]: v }))}
+              onComment={(v) => setComments((cm) => ({ ...cm, [q.id]: v }))}
+            />
           ))}
           <TextareaField id="fb" label="Retroalimentación general" rows={3} value={feedback} maxLength={2000} onChange={(e) => setFeedback(e.target.value)} />
         </div>

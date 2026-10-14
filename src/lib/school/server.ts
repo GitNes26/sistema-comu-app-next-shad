@@ -1342,7 +1342,7 @@ export async function getSubmissionForReview(actor: Actor, submissionId: string)
   const s = await prisma.submission.findFirst({
     where: { id: submissionId, organizationId: actor.organizationId },
     include: {
-      enrollment: { include: { member: { select: { fullName: true } } } },
+      enrollment: { include: { member: { select: { fullName: true } }, group: { select: { name: true, course: { select: { name: true } } } } } },
       assessment: { include: { questions: { orderBy: { sortOrder: "asc" } } } },
     },
   })
@@ -1354,8 +1354,12 @@ export async function getSubmissionForReview(actor: Actor, submissionId: string)
   return {
     id: s.id,
     studentName: s.enrollment.member.fullName,
+    courseName: s.enrollment.group.course.name,
+    groupName: s.enrollment.group.name,
     status: s.status,
     attempt: s.attempt,
+    submittedAt: s.submittedAt?.toISOString() ?? null,
+    maxScore: s.assessment.questions.reduce((sum, q) => sum + Number(q.points), 0),
     feedback: s.feedback,
     assessment: { title: s.assessment.title, kind: s.assessment.kind, number: s.assessment.number },
     questions: s.assessment.questions.map((q) => {

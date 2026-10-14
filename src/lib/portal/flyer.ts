@@ -24,9 +24,32 @@ export const FLYER_TEMPLATES = {
   news: "Noticia · titular con cintillo",
 } as const satisfies Record<PostKind, string>
 
+/** Estructura del flyer (composición), independiente de colores y del tipo de aviso. */
+export const FLYER_LAYOUTS = {
+  poster: "Cartel",
+  quote: "Cita",
+  editorial: "Editorial",
+  headline: "Titular",
+  split: "Dividido",
+  frame: "Marco",
+  type: "Tipográfico",
+  banner: "Banner",
+} as const
+export type FlyerLayout = keyof typeof FLYER_LAYOUTS
+export const isFlyerLayout = (v: unknown): v is FlyerLayout => typeof v === "string" && v in FLYER_LAYOUTS
+
+/** Composición con la que arranca cada tipo de aviso. */
+export const DEFAULT_LAYOUT: Record<PostKind, FlyerLayout> = {
+  announcement: "poster",
+  devotional: "quote",
+  article: "editorial",
+  news: "headline",
+}
+
 export interface FlyerDesign {
   mode: "template"
   template: PostKind
+  layout: FlyerLayout
   bg: string
   fg: string
   accent: string
@@ -63,7 +86,7 @@ const DEFAULTS: Record<PostKind, { palette: string; font: FlyerFont }> = {
 export function defaultFlyer(kind: PostKind): FlyerDesign {
   const d = DEFAULTS[kind]
   const p = FLYER_PALETTES.find((x) => x.key === d.palette)!
-  return { mode: "template", template: kind, bg: p.bg, fg: p.fg, accent: p.accent, font: d.font, imageUrl: null, subtitle: null, footer: null }
+  return { mode: "template", template: kind, layout: DEFAULT_LAYOUT[kind], bg: p.bg, fg: p.fg, accent: p.accent, font: d.font, imageUrl: null, subtitle: null, footer: null }
 }
 
 const HEX = /^#[0-9a-fA-F]{6}$/
@@ -90,6 +113,7 @@ export function normalizeFlyer(input: unknown, fallbackKind: PostKind = "announc
   return {
     mode: "template",
     template: base.template,
+    layout: isFlyerLayout(o.layout) ? o.layout : base.layout,
     bg: typeof o.bg === "string" && HEX.test(o.bg) ? o.bg.toLowerCase() : base.bg,
     fg: typeof o.fg === "string" && HEX.test(o.fg) ? o.fg.toLowerCase() : base.fg,
     accent: typeof o.accent === "string" && HEX.test(o.accent) ? o.accent.toLowerCase() : base.accent,
@@ -102,7 +126,10 @@ export function normalizeFlyer(input: unknown, fallbackKind: PostKind = "announc
 
 /** Extracto del contenido para el flyer cuando no se escribió subtítulo. */
 export function excerpt(body: string, max = 140): string {
-  const flat = body.replace(/https?:\/\/\S+/g, "").replace(/\s+/g, " ").trim()
+  const flat = body
+    .replace(/https?:\/\/([^\s/]+)\S*/g, (_m, host: string) => host.replace(/^www\./, ""))
+    .replace(/\s+/g, " ")
+    .trim()
   return flat.length <= max ? flat : `${flat.slice(0, max - 1).trimEnd()}…`
 }
 

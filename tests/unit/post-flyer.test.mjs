@@ -24,10 +24,15 @@ test("flyer: la plantilla sigue al tipo y se descartan colores, fuentes y enlace
   assert.equal(f.subtitle, "Hola")
   assert.equal(f.footer, null)
   assert.equal(normalizeFlyer({ mode: "template", template: "desconocido" }, "news").template, "news")
+  // La estructura se elige aparte de los colores; una inválida vuelve a la del tipo.
+  assert.equal(normalizeFlyer({ mode: "template", template: "news", layout: "frame" }).layout, "frame")
+  assert.equal(normalizeFlyer({ mode: "template", template: "news", layout: "raro" }).layout, "headline")
 })
 
 test("flyer: extracto sin enlaces y contraste", () => {
-  assert.equal(excerpt("Mira https://x.test/a   esto  hoy"), "Mira esto hoy")
+  // Un enlace no hace desaparecer el texto: se conserva su dominio.
+  assert.equal(excerpt("Mira https://www.x.test/a?b=1   esto  hoy"), "Mira x.test esto hoy")
+  assert.equal(excerpt("https://youtube.com/watch?v=1"), "youtube.com")
   assert.ok(excerpt("a".repeat(300)).length <= 140)
   assert.ok(contrastRatio("#000000", "#ffffff") > 20)
   assert.ok(contrastRatio("#777777", "#7a7a7a") < 1.2)

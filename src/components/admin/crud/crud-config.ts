@@ -156,9 +156,12 @@ export const VISION_STAGE_OPTIONS: SelectOption[] = [
 
 export const HIERARCHY_OPTIONS: SelectOption[] = [
   { value: "believer", label: "Creyente" },
-  { value: "leader", label: "Líder" },
   { value: "disciple", label: "Discípulo" },
+  { value: "servant", label: "Servidor" },
+  { value: "leader", label: "Líder" },
+  { value: "network_leader", label: "Líder de red" },
   { value: "pastor", label: "Pastor" },
+  { value: "senior_pastor", label: "Pastor principal" },
 ]
 
 export const GENDER_OPTIONS: SelectOption[] = [
@@ -185,11 +188,12 @@ export const CRUD_UI: Record<string, CrudUiConfig> = {
     newLabel: "Nuevo ministerio",
     subtitleKeys: ["parentName"],
     detailPath: "/admin/ministries/",
-    description: "Áreas de servicio: líderes, servidores, reuniones y requisiciones de cada una.",
+    description: "Ministerios y áreas de servicio: líderes, servidores, reuniones y requisiciones de cada uno.",
     canDelete: true,
     searchPlaceholder: "Buscar por nombre o descripción…",
     columns: [
       { key: "name", label: "Nombre" },
+      { key: "shortName", label: "Sigla" },
       { key: "parentName", label: "Pertenece a" },
       { key: "leaderNames", label: "Líderes" },
       { key: "memberCount", label: "Servidores", type: "count" },
@@ -197,6 +201,15 @@ export const CRUD_UI: Record<string, CrudUiConfig> = {
     ],
     fields: [
       { key: "name", icon: "HandHeart", label: "Nombre", type: "text", required: true, requiredMessage: "Escribe el nombre", maxLength: 120, placeholder: "Ej. Alabanza" },
+      {
+        key: "category", icon: "Network", label: "Tipo", type: "select", defaultValue: "ministry",
+        options: [
+          { value: "ministry", label: "Ministerio (misión)" },
+          { value: "service", label: "Área de servicio (organización)" },
+        ],
+        help: "Los ministerios cumplen la misión; las áreas de servicio sostienen la organización de la iglesia.",
+      },
+      { key: "shortName", icon: "Tag", label: "Sigla o nombre corto", type: "text", maxLength: 20, placeholder: "Ej. VTR" },
       { key: "parentId", icon: "GitFork", label: "Pertenece a", type: "select", optionsModule: "ministries", optionValue: "id", optionLabel: "name", help: "Para áreas de un ministerio mayor (p. ej. Audio dentro de Producción)." },
       { key: "description", icon: "FileText", label: "Descripción", type: "textarea", full: true, maxLength: 2000 },
       { key: "requirements", icon: "ListChecks", label: "Requisitos para pertenecer", type: "textarea", full: true, maxLength: 2000 },

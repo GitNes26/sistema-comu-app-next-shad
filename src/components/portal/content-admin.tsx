@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
-import { CaseSensitive, Loader2, Megaphone, Palette, Pencil, Pin, Plus, Radio, Trash2, Tv } from "lucide-react"
+import { CaseSensitive, LayoutTemplate, Loader2, Megaphone, Palette, Pencil, Pin, Plus, Radio, Trash2, Tv } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Switch } from "@/components/ui/switch"
@@ -14,7 +14,7 @@ import { InputGroupField } from "@/components/base/input-group-field"
 import { TextareaField } from "@/components/base/textarea-field"
 import { SegmentedFilter } from "@/components/base/segmented-filter"
 import { PostFlyer } from "@/components/portal/post-flyer"
-import { contrastRatio, defaultFlyer, FLYER_FONTS, FLYER_MODES, FLYER_PALETTES, type Flyer, type FlyerDesign, type FlyerFont } from "@/lib/portal/flyer"
+import { contrastRatio, defaultFlyer, FLYER_FONTS, FLYER_LAYOUTS, FLYER_MODES, FLYER_PALETTES, type Flyer, type FlyerDesign, type FlyerFont, type FlyerLayout } from "@/lib/portal/flyer"
 import { StatusPill } from "@/components/base/status-pill"
 import { EmptyState } from "@/components/shared/empty-state"
 import { notify } from "@/lib/notify"
@@ -271,7 +271,7 @@ function PostDialog({ value, onClose, onSaved }: { value: PostDto | "new" | null
           </div>
         </div>
 
-        <aside className="min-w-0 space-y-3 rounded-2xl border bg-muted/30 p-3">
+        <aside className="min-w-0 space-y-3 rounded-2xl border bg-muted/30 p-3 lg:sticky lg:top-0 lg:max-h-[calc(100dvh-11rem)] lg:self-start lg:overflow-y-auto">
           <label className="flex items-center justify-between gap-3 text-sm font-medium">
             <span className="flex items-center gap-2">
               <Palette className="size-4 text-muted-foreground" /> Flyer
@@ -280,6 +280,9 @@ function PostDialog({ value, onClose, onSaved }: { value: PostDto | "new" | null
           </label>
           {flyer && (
             <>
+              {(flyer.mode === "template" || flyer.url) && (
+                <PostFlyer flyer={flyer} title={title || "Título de la publicación"} body={body || "Aquí va un extracto del contenido."} kind={kind} />
+              )}
               <SegmentedFilter
                 ariaLabel="Origen del flyer"
                 value={flyer.mode}
@@ -291,7 +294,6 @@ function PostDialog({ value, onClose, onSaved }: { value: PostDto | "new" | null
               ) : (
                 <FlyerDesigner design={flyer} onChange={setFlyer} />
               )}
-              {(flyer.mode === "template" || flyer.url) && <PostFlyer flyer={flyer} title={title || "Título de la publicación"} body={body || "Aquí va un extracto del contenido."} kind={kind} />}
             </>
           )}
         </aside>
@@ -311,6 +313,24 @@ function FlyerDesigner({ design, onChange }: { design: FlyerDesign; onChange: (d
   )
   return (
     <div className="space-y-3">
+      <div className="space-y-1.5">
+        <p className="flex items-center gap-1.5 text-sm font-medium">
+          <LayoutTemplate className="size-4 text-muted-foreground" /> Estructura
+        </p>
+        <div className="grid grid-cols-4 gap-1.5">
+          {(Object.keys(FLYER_LAYOUTS) as FlyerLayout[]).map((l) => (
+            <button
+              key={l}
+              type="button"
+              onClick={() => set("layout", l)}
+              aria-pressed={design.layout === l}
+              className={`press rounded-lg border px-1 py-1.5 text-center text-[0.7rem] font-medium ${design.layout === l ? "border-primary bg-primary/10 text-primary" : "text-muted-foreground"}`}
+            >
+              {FLYER_LAYOUTS[l]}
+            </button>
+          ))}
+        </div>
+      </div>
       <div className="space-y-1.5">
         <p className="flex items-center gap-1.5 text-sm font-medium">
           <Palette className="size-4 text-muted-foreground" /> Colores

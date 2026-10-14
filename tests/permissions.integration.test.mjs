@@ -608,8 +608,8 @@ test("grupos: quien lidera Jóvenes gestiona solo las reuniones y eventos de su 
   const { ids } = await ministryIds()
   const tomas = await login("demo.tesorero@comuapp.test") // líder de Jóvenes (sin permisos globales)
   const carlos = await login("demo.creyente@comuapp.test")
-  const jovenes = ids["Jóvenes"]
-  const varones = ids["Varones"]
+  const jovenes = ids["VTR (Jóvenes)"]
+  const varones = ids["Hombres de Reino (HR)"]
   assert.ok(jovenes && varones)
 
   // Reuniones: ve y registra las de su grupo; no las de otros ni las generales.
@@ -629,7 +629,7 @@ test("grupos: quien lidera Jóvenes gestiona solo las reuniones y eventos de su 
   // Eventos: solo ve los de su grupo y solo crea para su grupo.
   const events = (await (await tomas("/api/events?scope=all")).json()).events
   assert.ok(events.length >= 1)
-  assert.ok(events.every((e) => e.groupName === "Jóvenes"))
+  assert.ok(events.every((e) => e.groupName === "VTR (Jóvenes)"))
   const payload = { name: `Evento ${Date.now()}`, scope: "internal", startsAt: new Date(Date.now() + 9 * 86400000).toISOString(), price: 0 }
   assert.equal((await tomas("/api/events", { method: "POST", headers: json, body: JSON.stringify({ ...payload, ministryId: jovenes }) })).status, 201)
   assert.equal((await tomas("/api/events", { method: "POST", headers: json, body: JSON.stringify(payload) })).status, 403)

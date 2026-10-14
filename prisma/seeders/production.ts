@@ -35,6 +35,7 @@ export const SYSTEM_MENUS: SystemMenuDef[] = [
   { id: "menu-principal", parentId: null, type: "section", label: "Principal", icon: "LayoutDashboard", sortOrder: 1 },
   { id: "menu-panel", parentId: "menu-principal", type: "item", label: "Panel", icon: "LayoutDashboard", href: "/admin", sortOrder: 1 },
   { id: "menu-mi-espacio", parentId: "menu-principal", type: "item", label: "Mi espacio", icon: "HeartHandshake", href: "/mi", sortOrder: 2 },
+  { id: "menu-calendario", parentId: "menu-principal", type: "item", label: "Calendario", icon: "CalendarDays", href: "/mi/calendario", sortOrder: 5 },
   { id: "menu-eventos", parentId: "menu-principal", type: "item", label: "Eventos", icon: "Ticket", href: "/mi/eventos", sortOrder: 5 },
   { id: "menu-donativos", parentId: "menu-principal", type: "item", label: "Donativos", icon: "HandCoins", href: "/mi/donativos", sortOrder: 6 },
   { id: "menu-noticias", parentId: "menu-principal", type: "item", label: "Noticias", icon: "Newspaper", href: "/mi/contenido", sortOrder: 7 },
@@ -55,6 +56,7 @@ export const SYSTEM_MENUS: SystemMenuDef[] = [
   { id: "menu-mi-escuela", parentId: "menu-servicio", type: "item", label: "Mi escuela", icon: "GraduationCap", href: "/mi/escuela", sortOrder: 2 },
   { id: "menu-mis-hijos", parentId: "menu-servicio", type: "item", label: "Mis hijos", icon: "Baby", href: "/mi/hijos", sortOrder: 3 },
   { id: "menu-ministerios", parentId: "menu-servicio", type: "item", label: "Ministerios", icon: "HandHeart", href: "/admin/ministries", permissionKey: "ministries.view", sortOrder: 4 },
+  { id: "menu-organigrama", parentId: "menu-servicio", type: "item", label: "Organigrama", icon: "Network", href: "/mi/organigrama", sortOrder: 3 },
   { id: "menu-mis-celulas", parentId: "menu-servicio", type: "item", label: "Mis células", icon: "Home", href: "/mi/celulas", sortOrder: 2 },
   { id: "menu-celulas", parentId: "menu-servicio", type: "item", label: "Células y redes", icon: "Network", href: "/admin/cells", permissionKey: "cells.view", sortOrder: 5 },
 

@@ -30,6 +30,10 @@ Formato: `MAJOR.MINOR.PATCH.REVISION` (X.X.X.X)
 
 ## Historial
 
+### [0.21.0.0] — 2026-10-14
+- **Tipo:** `feat` (Minor)
+- feat: organigrama con ministerios y areas de servicio, niveles jerarquicos nuevos, estructura base y demo con VTR Saetas y Hombres de Reino, circulo de crecimiento, flyers con estructuras distintas y vista previa fija, calendario de la iglesia y calificacion con la interfaz de cada respuesta
+
 ### [0.20.0.0] — 2026-10-14
 - **Tipo:** `feat` (Minor)
 - feat: cara publica de bienvenida con horarios y modalidad, tarjeta de conexion Soy nuevo hacia consolidacion, bandeja y oracion, tu semana en casa, tonos azul comunidad y dorado y voz de casa

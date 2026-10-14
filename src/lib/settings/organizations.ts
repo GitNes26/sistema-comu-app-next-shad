@@ -1,4 +1,5 @@
 import type { $Enums } from "@/generated/prisma/client"
+import { seedChurchStructure } from "../../../prisma/seeders/church-structure";
 import { prisma } from "@/lib/db"
 import { hashPassword, normalizeIdentifier } from "@/lib/auth/users"
 import { mailConfigured, sendWelcomeLink } from "@/lib/auth/mail"
@@ -124,7 +125,7 @@ export async function createOrganization(input: CreateOrganizationInput): Promis
         userId: owner.id,
         fullName: owner.fullName,
         email,
-        hierarchy: "pastor",
+        hierarchy: "senior_pastor",
         visionStage: "discipleship",
       },
     })
@@ -133,6 +134,9 @@ export async function createOrganization(input: CreateOrganizationInput): Promis
     })
     return created
   })
+
+  // Estructura base (ministerios y áreas de servicio) para que la iglesia nazca con su organigrama.
+  await seedChurchStructure(org.id).catch((err) => console.error("[church-structure]", err));
 
   const starterPlan = await prisma.subscriptionPlan.findFirst({
     where: { isActive: true },

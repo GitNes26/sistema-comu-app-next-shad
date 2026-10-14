@@ -1,3 +1,4 @@
+import { seedChurchStructure } from "./church-structure"
 import bcrypt from "bcryptjs"
 import type { $Enums } from "../../src/generated/prisma/client"
 import { prisma } from "../../src/lib/db/client"
@@ -25,7 +26,7 @@ type DemoUser = {
 }
 
 const USERS: DemoUser[] = [
-  { email: "demo.owner@comuapp.test", name: "Pastor Principal", level: "owner", roleId: "system-owner", hierarchy: "pastor", stage: "discipleship" },
+  { email: "demo.owner@comuapp.test", name: "Pastor Principal", level: "owner", roleId: "system-owner", hierarchy: "senior_pastor", stage: "discipleship" },
   { email: "demo.admin@comuapp.test", name: "Ana Administradora", level: "admin", roleId: "system-admin", hierarchy: "leader", stage: "leadership" },
   { email: "demo.secretaria@comuapp.test", name: "Sofía Secretaría", level: "servant", roleId: "system-secretary", hierarchy: "believer", stage: "school" },
   { email: "demo.tesorero@comuapp.test", name: "Tomás Tesorero", level: "leader", roleId: "system-treasurer", hierarchy: "leader", stage: "leadership" },
@@ -40,6 +41,15 @@ const EXTRA_MEMBERS: { name: string; stage: $Enums.VisionStage; gender: $Enums.G
   { name: "Diego Montes", stage: "school", gender: "male", phone: "8711000004" },
   { name: "Ruth Villarreal", stage: "launch", gender: "female", phone: "8711000005" },
   { name: "Samuel Quiroz", stage: "leadership", gender: "male", phone: "8711000006" },
+]
+
+/** Personas del padrón con una jerarquía específica (pastores de jóvenes, líderes de red…). */
+const LEADERS: { name: string; hierarchy: $Enums.ChurchHierarchy; stage: $Enums.VisionStage; gender: $Enums.Gender; phone: string; ministry?: string; title?: string }[] = [
+  { name: "Néstor Puentes", hierarchy: "pastor", stage: "discipleship", gender: "male", phone: "8711000101", ministry: "VTR (Jóvenes)", title: "Pastor de jóvenes" },
+  { name: "Daniela Jiménez", hierarchy: "pastor", stage: "discipleship", gender: "female", phone: "8711000102", ministry: "VTR (Jóvenes)", title: "Pastora de jóvenes" },
+  { name: "Josué Rodríguez", hierarchy: "network_leader", stage: "leadership", gender: "male", phone: "8711000103", ministry: "Hombres de Reino (HR)", title: "Líder de Hombres de Reino" },
+  { name: "Norma Limón", hierarchy: "leader", stage: "leadership", gender: "female", phone: "8711000104", ministry: "Escuela de Ministerio", title: "Directora" },
+  { name: "Rosa Martínez", hierarchy: "servant", stage: "school", gender: "female", phone: "8711000105", ministry: "Limpieza y mantenimiento", title: "Encargada" },
 ]
 
 export async function seedDemo() {
@@ -125,54 +135,55 @@ export async function seedDemo() {
     await prisma.memberStageLog.create({ data: { organizationId: org.id, memberId: m.id, stage: e.stage, note: "Demo" } })
   }
 
-  const position =
-    (await prisma.employeePosition.findFirst({ where: { organizationId: org.id, name: "Secretaria" } })) ??
-    (await prisma.employeePosition.create({
-      data: { organizationId: org.id, name: "Secretaria", description: "Atención y registro de la iglesia" },
-    }))
-  const secretary = await prisma.member.findFirst({ where: { organizationId: org.id, email: "demo.secretaria@comuapp.test" } })
-  if (secretary && !(await prisma.employee.findUnique({ where: { memberId: secretary.id } }))) {
-    await prisma.employee.create({
-      data: { organizationId: org.id, memberId: secretary.id, positionId: position.id, locationId: location.id, employeeCode: "EMP-001" },
+  for (const l of LEADERS) {
+    const exists = await prisma.member.findFirst({ where: { organizationId: org.id, fullName: l.name } })
+    if (exists) {
+      await prisma.member.update({ where: { id: exists.id }, data: { hierarchy: l.hierarchy } })
+      continue
+    }
+    const m = await prisma.member.create({
+      data: { organizationId: org.id, locationId: location.id, fullName: l.name, phone: l.phone, gender: l.gender, hierarchy: l.hierarchy, visionStage: l.stage, firstVisitAt: new Date() },
     })
+    await prisma.memberStageLog.create({ data: { organizationId: org.id, memberId: m.id, stage: l.stage, note: "Demo" } })
   }
 
-  // ── Ministerios ───────────────────────────────────────────────────────────
-  // Una persona puede estar en varios ministerios con un papel distinto en cada uno.
-  const MINISTRIES: { name: string; parent?: string; kind?: string }[] = [
-    { name: "Alabanza", kind: "worship" },
-    { name: "Producción" },
-    { name: "Audio", parent: "Producción" },
-    { name: "Iluminación", parent: "Producción" },
-    { name: "Proyección", parent: "Producción" },
-    { name: "Fotografía", parent: "Producción" },
-    { name: "Video", parent: "Producción" },
-    { name: "Transmisión", parent: "Producción" },
-    { name: "Ujieres" },
-    { name: "Hombres de Reino" },
-    { name: "Bienvenida" },
-    { name: "Consolidación", kind: "consolidation" },
-    { name: "Comunidad Kids", kind: "kids" },
-    { name: "Arte" },
-    { name: "Jóvenes", kind: "youth" },
-    { name: "Varones", kind: "group" },
-    { name: "Mujeres", kind: "group" },
-  ];
-  const ministryIds = new Map<string, string>();
-  for (const [index, m] of MINISTRIES.entries()) {
-    const existing = await prisma.ministry.findFirst({ where: { organizationId: org.id, name: m.name } });
-    const row =
-      existing ??
-      (await prisma.ministry.create({
-        data: {
-          organizationId: org.id,
-          name: m.name,
-          kind: m.kind ?? "general",
-          sortOrder: index,
-          parentId: m.parent ? ministryIds.get(m.parent) ?? null : null,
-        },
-      }));
-    ministryIds.set(m.name, row.id);
+  // Empleados: solo administración y limpieza/mantenimiento. Servir en un ministerio
+  // (alabanza, kids…) NO es ser empleado.
+  const ensurePosition = async (name: string, description: string) =>
+    (await prisma.employeePosition.findFirst({ where: { organizationId: org.id, name } })) ??
+    (await prisma.employeePosition.create({ data: { organizationId: org.id, name, description } }))
+  const adminPosition = await ensurePosition("Administración", "Finanzas, secretaría y recursos de la iglesia")
+  const cleaningPosition = await ensurePosition("Limpieza y mantenimiento", "Cuidado y mantenimiento de las instalaciones")
+  const EMPLOYEES = [
+    { email: "demo.admin@comuapp.test", name: null as string | null, position: adminPosition.id, code: "EMP-001" },
+    { email: null as string | null, name: "Rosa Martínez", position: cleaningPosition.id, code: "EMP-002" },
+  ]
+  for (const e of EMPLOYEES) {
+    const person = await prisma.member.findFirst({
+      where: { organizationId: org.id, ...(e.email ? { email: e.email } : { fullName: e.name! }) },
+      select: { id: true },
+    })
+    if (person && !(await prisma.employee.findUnique({ where: { memberId: person.id } }))) {
+      await prisma.employee.create({
+        data: { organizationId: org.id, memberId: person.id, positionId: e.position, locationId: location.id, employeeCode: e.code },
+      })
+    }
+  }
+
+  // ── Ministerios y áreas de servicio ───────────────────────────────────────
+  // La estructura completa vive en church-structure.ts (idempotente, renombra los
+  // nombres anteriores). Una persona puede estar en varios con un papel distinto.
+  const ministryIds = await seedChurchStructure(org.id);
+  for (const l of LEADERS) {
+    if (!l.ministry) continue
+    const person = await prisma.member.findFirst({ where: { organizationId: org.id, fullName: l.name }, select: { id: true } })
+    const ministryId = ministryIds.get(l.ministry)
+    if (!person || !ministryId) continue
+    await prisma.ministryMember.upsert({
+      where: { ministryId_memberId: { ministryId, memberId: person.id } },
+      update: { role: "leader", positionTitle: l.title ?? null, isActive: true },
+      create: { organizationId: org.id, ministryId, memberId: person.id, role: "leader", positionTitle: l.title ?? null },
+    })
   }
   const memberByEmail = async (email: string) =>
     (await prisma.member.findFirst({ where: { organizationId: org.id, email }, select: { id: true } }))?.id;
@@ -186,7 +197,7 @@ export async function seedDemo() {
     { email: "demo.tesorero@comuapp.test", ministry: "Producción", role: "leader", title: "Coordinador general" },
     { email: "demo.secretaria@comuapp.test", ministry: "Audio", role: "assistant" },
     { email: "demo.celula@comuapp.test", ministry: "Alabanza", role: "leader", title: "Director de alabanza" },
-    { email: "demo.tesorero@comuapp.test", ministry: "Jóvenes", role: "leader", title: "Pastor de jóvenes" },
+    { email: "demo.tesorero@comuapp.test", ministry: "VTR (Jóvenes)", role: "leader", title: "Pastor de jóvenes" },
     { email: "demo.creyente@comuapp.test", ministry: "Alabanza", role: "servant" },
     { email: "demo.secretaria@comuapp.test", ministry: "Alabanza", role: "assistant" },
     { email: "demo.admin@comuapp.test", ministry: "Comunidad Kids", role: "leader", title: "Directora de Kids" },
@@ -503,7 +514,7 @@ export async function seedDemo() {
   }
 
   // ── Jóvenes como grupo: sus reuniones llevan su dueño ─────────────────────────
-  const youthId = ministryIds.get("Jóvenes");
+  const youthId = ministryIds.get("VTR (Jóvenes)");
   if (youthId) {
     await prisma.gatheringSeries.updateMany({ where: { organizationId: org.id, kind: "youth", ministryId: null }, data: { ministryId: youthId } });
     await prisma.gathering.updateMany({ where: { organizationId: org.id, kind: "youth", ministryId: null }, data: { ministryId: youthId } });

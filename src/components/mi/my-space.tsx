@@ -10,6 +10,7 @@ import { HIERARCHY_OPTIONS, VISION_STAGE_OPTIONS } from "@/components/admin/crud
 import type { MySpace } from "@/lib/mi/server"
 import { PortalHighlights } from "@/components/portal/portal-highlights"
 import { WeekRhythm } from "@/components/portal/week-rhythm"
+import { GrowthRing } from "@/components/mi/growth-ring"
 
 // Vista de «Mi espacio». Móvil primero: una sola columna, tarjetas planas.
 
@@ -96,7 +97,22 @@ export function MySpaceView({ space, firstName }: { space: MySpace; firstName: s
               <CardDescription>Las etapas de la visión de la iglesia.</CardDescription>
             </CardHeader>
             <CardContent>
-              <ol className="space-y-1">
+              <div className="grid items-center gap-6 md:grid-cols-[18rem_minmax(0,1fr)]">
+                <GrowthRing stages={VISION_STAGE_OPTIONS.map((s) => ({ value: s.value, label: s.label }))} currentIndex={currentIndex} />
+                <div className="space-y-3">
+                  {currentIndex >= 0 && <p className="font-heading text-lg font-semibold">{VISION_STAGE_OPTIONS[currentIndex].label}</p>}
+                  {currentIndex >= 0 && <p className="text-sm text-muted-foreground">{STAGE_HINT[VISION_STAGE_OPTIONS[currentIndex].value]}</p>}
+                  {currentIndex >= 0 && currentIndex < VISION_STAGE_OPTIONS.length - 1 && (
+                    <p className="rounded-xl bg-primary/8 p-3 text-sm">
+                      <span className="font-medium text-primary">Lo que sigue: </span>
+                      {VISION_STAGE_OPTIONS[currentIndex + 1].label}. {STAGE_HINT[VISION_STAGE_OPTIONS[currentIndex + 1].value]}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <details className="group mt-5">
+                <summary className="cursor-pointer text-sm font-medium text-primary">Ver todas las etapas</summary>
+              <ol className="mt-3 space-y-1">
                 {VISION_STAGE_OPTIONS.map((stage, index) => {
                   const done = index < currentIndex
                   const current = index === currentIndex
@@ -133,6 +149,7 @@ export function MySpaceView({ space, firstName }: { space: MySpace; firstName: s
                   )
                 })}
               </ol>
+              </details>
               <div className="mt-4 flex flex-wrap gap-2">
                 <StatusPill tone={member.baptizedWater ? "success" : "neutral"} dot={false}>
                   <Droplets className="mr-1 size-3.5" />

@@ -11,6 +11,8 @@ export interface MinistryDto {
   parentId: string | null;
   parentName: string | null;
   kind: string;
+  category: string;
+  shortName: string | null;
   description: string | null;
   requirements: string | null;
   imageUrl: string | null;
@@ -43,6 +45,8 @@ function serialize(m: Row): MinistryDto {
     parentId: m.parentId,
     parentName: m.parent?.name ?? null,
     kind: m.kind,
+    category: m.category,
+    shortName: m.shortName,
     description: m.description,
     requirements: m.requirements,
     imageUrl: m.imageUrl,
@@ -119,6 +123,8 @@ export const ministriesModule: CrudModule<MinistryDto> = {
         name,
         parentId,
         kind: text(data.kind, 30) ?? "general",
+        category: data.category === "service" ? "service" : "ministry",
+        shortName: text(data.shortName, 20),
         description: text(data.description, 2000),
         requirements: text(data.requirements, 2000),
         imageUrl: text(data.imageUrl, 500),
@@ -144,6 +150,8 @@ export const ministriesModule: CrudModule<MinistryDto> = {
         ...(name ? { name } : {}),
         ...(parentId !== undefined ? { parentId } : {}),
         ...(data.kind !== undefined ? { kind: text(data.kind, 30) ?? "general" } : {}),
+        ...(data.category !== undefined ? { category: data.category === "service" ? "service" : "ministry" } : {}),
+        ...(data.shortName !== undefined ? { shortName: text(data.shortName, 20) } : {}),
         ...(data.description !== undefined ? { description: text(data.description, 2000) } : {}),
         ...(data.requirements !== undefined ? { requirements: text(data.requirements, 2000) } : {}),
         ...(data.imageUrl !== undefined ? { imageUrl: text(data.imageUrl, 500) } : {}),

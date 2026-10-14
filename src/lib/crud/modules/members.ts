@@ -39,7 +39,7 @@ export interface MemberDto {
 const GENDERS = ["male", "female"] as const;
 const MARITAL = ["single", "married", "free_union", "separated", "divorced", "widowed"] as const;
 const STAGES = ["win", "consolidate", "encounter", "school", "launch", "leadership", "discipleship"] as const;
-const HIERARCHIES = ["believer", "leader", "disciple", "pastor"] as const;
+const HIERARCHIES = ["believer", "disciple", "servant", "leader", "network_leader", "pastor", "senior_pastor"] as const;
 
 const text = (v: unknown, max = 255): string | null => {
   const s = typeof v === "string" ? v.trim() : "";

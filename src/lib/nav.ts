@@ -69,6 +69,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { href: "/mi", label: "Mi espacio", icon: HeartHandshake },
       { href: "/mi/reuniones", label: "Reuniones", icon: CalendarDays },
       { href: "/mi/donativos", label: "Donativos", icon: HandCoins },
+      { href: "/mi/calendario", label: "Calendario", icon: CalendarDays },
       { href: "/mi/eventos", label: "Eventos", icon: Ticket },
       { href: "/mi/contenido", label: "Noticias", icon: Newspaper },
       { href: "/mi/transmisiones", label: "Transmisiones", icon: Tv },
@@ -91,6 +92,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { href: "/mi/ministerios", label: "Mis ministerios", icon: HeartHandshake },
       { href: "/mi/celulas", label: "Mis células", icon: Home },
+      { href: "/mi/organigrama", label: "Organigrama", icon: Network },
       { href: "/mi/escuela", label: "Mi escuela", icon: GraduationCap },
       { href: "/mi/hijos", label: "Mis hijos", icon: Baby },
       { href: "/admin/ministries", label: "Ministerios", icon: HandHeart, permission: "ministries.view", feature: "ministries" },

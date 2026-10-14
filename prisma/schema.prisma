@@ -29,9 +29,12 @@ enum OrgRole {
 /// Jerarquía eclesiástica (no es un rol del sistema: describe a la persona).
 enum ChurchHierarchy {
   believer
-  leader
   disciple
+  servant
+  leader
+  network_leader
   pastor
+  senior_pastor
 }
 
 /// Etapas de la visión de crecimiento (ciclo).
@@ -758,6 +761,10 @@ model Ministry {
   name           String
   /// Especialización futura: "general" | "worship" | "kids" | "consolidation"…
   kind           String   @default("general") @db.VarChar(30)
+  /// ministry (fundamental para la misión) | service (área de servicio que sostiene la organización)
+  category       String   @default("ministry") @db.VarChar(10)
+  /// Sigla o nombre corto (VTR, HR…).
+  shortName      String?  @db.VarChar(20)
   description    String?  @db.Text
   /// Requisitos para pertenecer (texto libre).
   requirements   String?  @db.Text
