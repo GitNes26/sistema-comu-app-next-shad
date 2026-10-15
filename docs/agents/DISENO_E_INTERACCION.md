@@ -98,3 +98,8 @@ La interfaz habla como una familia, no como un sistema: **«¡Bienvenido a casa!
 - Fotografía y logo son protagonistas: la cara pública abre con la foto de bienvenida (`heroImageUrl`) sobre una superficie oscura «santuario» y el logo circular de la iglesia.
 - Vacíos y confirmaciones cálidos y concretos («Estamos orando por ti»), nunca técnicos.
 - La semana de la iglesia (Dom · Mar · Mié · Vie · Sáb) es el ritmo del portal: `WeekRhythm`.
+
+## Portal /mi: encabezado y tablero
+
+- Toda página de `/mi` abre con `PageHero` (`src/components/mi/page-hero.tsx`): icono, título y leyenda sobre banda cálida. La flecha de regreso la pone el layout; no se duplica en la página.
+- «Mi espacio» es un tablero: portada con avatar y datos, ritmo de la semana, camino con hitos, ministerios como tarjetas, accesos rápidos y datos de la iglesia.

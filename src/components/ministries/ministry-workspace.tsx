@@ -179,18 +179,33 @@ export function MinistryWorkspace({
 
   return (
     <div className="space-y-4">
-      <Button asChild variant="ghost" size="sm" className="-ml-2">
-        <Link href={backHref}>
-          <ArrowLeft className="size-4" />
-          {backLabel}
-        </Link>
-      </Button>
+      {!backHref.startsWith("/mi") && (
+        <Button asChild variant="ghost" size="sm" className="-ml-2">
+          <Link href={backHref}>
+            <ArrowLeft className="size-4" />
+            {backLabel}
+          </Link>
+        </Button>
+      )}
 
-      <Card>
+      <Card className="overflow-hidden">
+        <div className="flex flex-wrap items-center gap-2 bg-gradient-to-br from-primary/20 via-accent to-warning/10 px-5 py-3 text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-card/80 px-2.5 py-1 ring-1 ring-border">
+            <Users className="size-3.5" /> {members.length} servidor(es)
+          </span>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-card/80 px-2.5 py-1 ring-1 ring-border">
+            <CalendarDays className="size-3.5" /> {upcoming.length} reunión(es) próxima(s)
+          </span>
+          {ministry.children.length > 0 && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-card/80 px-2.5 py-1 ring-1 ring-border">
+              <HeartHandshake className="size-3.5" /> {ministry.children.length} equipo(s)
+            </span>
+          )}
+        </div>
         <CardContent className="space-y-3 p-5">
           <div className="flex flex-wrap items-start gap-3">
-            <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary">
-              <HandHeart className="size-6" />
+            <span className="grid size-14 shrink-0 place-items-center rounded-3xl bg-primary/10 text-primary">
+              <HandHeart className="size-7" />
             </span>
             <div className="min-w-0 flex-1">
               <h1 className="font-heading text-xl font-semibold tracking-tight">{ministry.name}</h1>

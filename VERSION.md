@@ -30,6 +30,10 @@ Formato: `MAJOR.MINOR.PATCH.REVISION` (X.X.X.X)
 
 ## Historial
 
+### [0.26.0.0] — 2026-10-15
+- **Tipo:** `feat` (Minor)
+- feat: Mi espacio como tablero con portada, hitos y accesos rapidos, Mis ministerios con tarjetas y cifras, encabezado comun en las paginas del portal
+
 ### [0.25.1.0] — 2026-10-15
 - **Tipo:** `fix` (Patch)
 - fix: un solo lugar para hogar de amor y familia sin duplicados, flecha de regreso en paginas sin sidebar y panel de bienvenida redisenado con lo de hoy y accesos por zonas
