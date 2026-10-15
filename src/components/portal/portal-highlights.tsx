@@ -24,7 +24,7 @@ const SHORTCUTS = [
 
 const fmt = (iso: string) => new Date(iso).toLocaleString("es-MX", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })
 
-export function PortalHighlights() {
+export function PortalHighlights({ compact = false }: { compact?: boolean } = {}) {
   const [home, setHome] = useState<PortalHomeDto | null>(null)
   const [failed, setFailed] = useState(false)
 
@@ -35,7 +35,7 @@ export function PortalHighlights() {
   }, [])
 
   return (
-    <div className="space-y-4">
+    <div className={compact ? "space-y-3" : "space-y-4"}>
       {home?.live && (
         <Link href="/mi/transmisiones" className="press flex items-center gap-3 rounded-2xl border border-destructive/40 bg-destructive/5 p-4">
           <span className="grid size-10 shrink-0 place-items-center rounded-full bg-destructive text-destructive-foreground">
@@ -49,16 +49,16 @@ export function PortalHighlights() {
         </Link>
       )}
 
-      <nav aria-label="Accesos rápidos" className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+      {!compact && <nav aria-label="Accesos rápidos" className="grid grid-cols-3 gap-2 sm:grid-cols-6">
         {SHORTCUTS.map((s) => (
           <Link key={s.href} href={s.href} className="press flex flex-col items-center gap-1.5 rounded-2xl border bg-card px-2 py-3 text-center text-xs font-medium hover:border-primary/40">
             <s.icon className="size-5 text-primary" />
             {s.label}
           </Link>
         ))}
-      </nav>
+      </nav>}
 
-      {!home && !failed && <Skeleton className="h-32 w-full" />}
+      {!home && !failed && <Skeleton className={compact ? "h-24 w-full" : "h-32 w-full"} />}
 
       {home && home.pendingJoinRequests > 0 && (
         <Link href="/mi/ministerios" className="press flex items-center gap-3 rounded-2xl border bg-card p-4 text-sm">

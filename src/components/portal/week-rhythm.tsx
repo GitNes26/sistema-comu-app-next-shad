@@ -20,7 +20,7 @@ interface Slot {
 const DAYS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"]
 const isModality = (v: string): v is Modality => v in MODALITY
 
-export function WeekRhythm() {
+export function WeekRhythm({ compact = false }: { compact?: boolean } = {}) {
   const [slots, setSlots] = useState<Slot[] | null>(null)
   useEffect(() => {
     apiJson<{ slots: Slot[] }>("/api/portal/week")
@@ -37,7 +37,7 @@ export function WeekRhythm() {
       <h2 className="flex items-center gap-2 font-heading text-base font-semibold">
         <CalendarDays className="size-5 text-primary" /> Tu semana en casa
       </h2>
-      <ol className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+      <ol className={cn("mt-3 grid gap-2", !compact && "sm:grid-cols-2 xl:grid-cols-3")}>
         {days.map((day) => (
           <li key={day.d} className={cn("rounded-xl p-3", day.d === today ? "bg-primary/8 ring-1 ring-primary/30" : "bg-muted/40")}>
             <p className={cn("text-xs font-semibold tracking-wide uppercase", day.d === today ? "text-primary" : "text-muted-foreground")}>

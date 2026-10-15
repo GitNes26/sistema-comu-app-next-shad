@@ -30,6 +30,10 @@ Formato: `MAJOR.MINOR.PATCH.REVISION` (X.X.X.X)
 
 ## Historial
 
+### [0.27.0.0] — 2026-10-15
+- **Tipo:** `feat` (Minor)
+- feat: Mi espacio con columna lateral para novedades, agenda y semana en casa compactas, y Mi camino con mas protagonismo
+
 ### [0.26.0.0] — 2026-10-15
 - **Tipo:** `feat` (Minor)
 - feat: Mi espacio como tablero con portada, hitos y accesos rapidos, Mis ministerios con tarjetas y cifras, encabezado comun en las paginas del portal
