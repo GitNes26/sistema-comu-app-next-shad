@@ -208,6 +208,7 @@ function SchoolDialog({ school, onClose, onSaved }: { school: SchoolDto | null; 
   const [sub, setSub] = useState<PickedPerson | null>(null)
   const [passScore, setPassScore] = useState("7")
   const [fee, setFee] = useState("0")
+  const [pts, setPts] = useState({ attendance: "30", assignments: "10", payments: "10", toPass: "30" })
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
@@ -218,6 +219,7 @@ function SchoolDialog({ school, onClose, onSaved }: { school: SchoolDto | null; 
     setSub(school.subdirectorMemberId ? { id: school.subdirectorMemberId, fullName: school.subdirectorName ?? "Subdirector" } : null)
     setPassScore(String(school.passScore))
     setFee(String(school.enrollmentFee))
+    setPts({ attendance: String(school.points.attendance), assignments: String(school.points.assignments), payments: String(school.points.payments), toPass: String(school.points.toPass) })
   }, [school])
 
   const save = async () => {
@@ -226,7 +228,7 @@ function SchoolDialog({ school, onClose, onSaved }: { school: SchoolDto | null; 
     try {
       await apiJson(`/api/school/programs/${school.id}`, {
         method: "PUT",
-        body: JSON.stringify({ name, description, directorMemberId: director?.id ?? null, subdirectorMemberId: sub?.id ?? null, passScore, enrollmentFee: fee }),
+        body: JSON.stringify({ name, description, directorMemberId: director?.id ?? null, subdirectorMemberId: sub?.id ?? null, passScore, enrollmentFee: fee, ...(school.kind === "university" ? { pointsAttendance: pts.attendance, pointsAssignments: pts.assignments, pointsPayments: pts.payments, pointsToPass: pts.toPass } : {}) }),
       })
       notify.success("Programa guardado")
       onClose()
@@ -265,6 +267,18 @@ function SchoolDialog({ school, onClose, onSaved }: { school: SchoolDto | null; 
           <InputGroupField label="Calificación mínima (0–10)" inputMode="decimal" value={passScore} onChange={(e) => setPassScore(e.target.value)} />
           <InputGroupField label="Inscripción por defecto" inputMode="decimal" value={fee} onChange={(e) => setFee(e.target.value)} />
         </div>
+        {school?.kind === "university" && (
+          <div className="space-y-2 rounded-2xl border p-3">
+            <p className="text-sm font-medium">Acreditación por puntos</p>
+            <p className="text-xs text-muted-foreground">Cada curso suma puntos por asistencia, tareas y pagos; se aprueba con el mínimo.</p>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <InputGroupField label="Asistencia" inputMode="numeric" value={pts.attendance} onChange={(e) => setPts({ ...pts, attendance: e.target.value.replace(/\D/g, "") })} />
+              <InputGroupField label="Tareas" inputMode="numeric" value={pts.assignments} onChange={(e) => setPts({ ...pts, assignments: e.target.value.replace(/\D/g, "") })} />
+              <InputGroupField label="Pagos" inputMode="numeric" value={pts.payments} onChange={(e) => setPts({ ...pts, payments: e.target.value.replace(/\D/g, "") })} />
+              <InputGroupField label="Mínimo para aprobar" inputMode="numeric" value={pts.toPass} onChange={(e) => setPts({ ...pts, toPass: e.target.value.replace(/\D/g, "") })} />
+            </div>
+          </div>
+        )}
       </div>
     </DialogComponent>
   )

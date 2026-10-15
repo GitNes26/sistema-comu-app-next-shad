@@ -78,6 +78,7 @@ export function Gradebook({ groupId, backHref }: { groupId: string; backHref: st
   const canTeach = book.access.canTeach
   const canManage = book.access.canManage
   const closed = g.status === "closed"
+  const byPoints = g.schoolKind === "university"
   const tasks = Array.from({ length: g.tasksCount }, (_, i) => i + 1)
   const exercises = Array.from({ length: g.exercisesCount }, (_, i) => i + 1)
   const weeks = Array.from({ length: g.weeks }, (_, i) => i + 1)
@@ -88,11 +89,13 @@ export function Gradebook({ groupId, backHref }: { groupId: string; backHref: st
   const attendancePct = held > 0 && marks.length > 0 ? Math.round((marks.filter((m) => m === "present" || m === "excused").length / marks.length) * 100) : null
   const finals = active.map((r) => r.finalGrade).filter((v): v is number => v !== null)
   const avgFinal = finals.length > 0 ? Math.round((finals.reduce((s, v) => s + v, 0) / finals.length) * 10) / 10 : null
+  const pts = active.map((r) => r.points).filter((v): v is number => v !== null)
+  const avgPoints = pts.length > 0 ? Math.round(pts.reduce((s, v) => s + v, 0) / pts.length) : null
   const nextWeek = weeks.find((w) => !sessionByWeek.has(w)) ?? null
   const attention = active
     .map((r) => {
       const absences = Object.values(r.attendance).filter((a) => a === "absent").length
-      const low = r.finalGrade !== null && r.finalGrade < g.passScore
+      const low = byPoints ? r.points !== null && held > 0 && r.points < g.pointsToPass : r.finalGrade !== null && r.finalGrade < g.passScore
       return { r, absences, low }
     })
     .filter((x) => x.absences >= 2 || x.low)
@@ -180,7 +183,9 @@ export function Gradebook({ groupId, backHref }: { groupId: string; backHref: st
         {[
           { icon: Users, label: "Alumnos", value: String(active.length), tone: "" },
           { icon: CalendarCheck, label: "Asistencia", value: attendancePct === null ? "—" : `${attendancePct}%`, tone: attendancePct !== null && attendancePct < 70 ? "text-warning-ink" : "" },
-          { icon: GraduationCap, label: "Promedio general", value: avgFinal === null ? "—" : avgFinal.toFixed(1), tone: avgFinal !== null && avgFinal < g.passScore ? "text-destructive" : "" },
+          byPoints
+            ? { icon: GraduationCap, label: "Puntos promedio", value: avgPoints === null ? "—" : String(avgPoints), tone: avgPoints !== null && avgPoints < g.pointsToPass ? "text-destructive" : "" }
+            : { icon: GraduationCap, label: "Promedio general", value: avgFinal === null ? "—" : avgFinal.toFixed(1), tone: avgFinal !== null && avgFinal < g.passScore ? "text-destructive" : "" },
           { icon: ClipboardCheck, label: "Por revisar", value: String(book.pendingReviews), tone: book.pendingReviews > 0 ? "text-primary" : "" },
         ].map((k) => (
           <div key={k.label} className="flex items-center gap-3 rounded-2xl border bg-card p-3">
@@ -290,7 +295,7 @@ export function Gradebook({ groupId, backHref }: { groupId: string; backHref: st
                         <span className="block text-xs text-muted-foreground">
                           {absences >= 2 ? `${absences} faltas` : ""}
                           {absences >= 2 && low ? " · " : ""}
-                          {low ? `Promedio ${fmt(r.finalGrade)}` : ""}
+                          {low ? (byPoints ? `${r.points} de ${g.pointsToPass} pts` : `Promedio ${fmt(r.finalGrade)}`) : ""}
                         </span>
                       </span>
                     </button>
@@ -329,7 +334,14 @@ export function Gradebook({ groupId, backHref }: { groupId: string; backHref: st
                             {present} asistencia(s) · tareas {fmt(r.tasksAvg) || "—"} · ejercicios {fmt(r.exercisesAvg) || "—"}
                           </span>
                         </span>
-                        <span className={cn("font-heading text-2xl font-semibold tabular-nums", r.finalGrade !== null && (r.finalGrade >= g.passScore ? "text-success-ink" : "text-destructive"))}>{fmt(r.finalGrade) || "—"}</span>
+                        {byPoints ? (
+                          <span className={cn("text-right font-heading text-2xl leading-none font-semibold tabular-nums", r.points !== null && (r.points >= g.pointsToPass ? "text-success-ink" : "text-destructive"))}>
+                            {r.points ?? "—"}
+                            <span className="block text-[0.6rem] font-normal text-muted-foreground">pts</span>
+                          </span>
+                        ) : (
+                          <span className={cn("font-heading text-2xl font-semibold tabular-nums", r.finalGrade !== null && (r.finalGrade >= g.passScore ? "text-success-ink" : "text-destructive"))}>{fmt(r.finalGrade) || "—"}</span>
+                        )}
                       </span>
                       <span className="flex flex-wrap gap-1" aria-label="Asistencia por semana">
                         {weeks.map((w) => {

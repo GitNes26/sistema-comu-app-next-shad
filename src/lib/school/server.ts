@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/db"
+import { issueCredential, credentialNameFor } from "@/lib/school/credentials"
+import { computePoints, DEFAULT_POINTS, type PointsConfig, type PointsResult } from "@/lib/school/points"
 import { fireAndForget, notifyMembers } from "@/lib/notifications/church"
 import { CrudError } from "@/lib/crud/types"
 import { memberIdOfUser, type Actor } from "@/lib/ministries/server"
@@ -134,6 +136,9 @@ export interface CourseDto {
   enrollmentFee: number
   bookPrice: number
   digitalBookUrl: string | null
+  /** Año del trayecto y credencial que otorga (escuela universitaria). */
+  year: number | null
+  credential: string | null
   isActive: boolean
   /** Para quien consulta: aprobado antes, o puede inscribirse ahora. */
   passed: boolean
@@ -159,6 +164,8 @@ export interface SchoolDto {
   directorMemberId: string | null
   subdirectorMemberId: string | null
   passScore: number
+  /** Acreditación por puntos (solo escuela universitaria). */
+  points: PointsConfig
   enrollmentFee: number
   isActive: boolean
   courses: CourseDto[]
@@ -244,6 +251,7 @@ export async function getOverview(actor: Actor): Promise<SchoolOverviewDto> {
       directorMemberId: s.directorMemberId,
       subdirectorMemberId: s.subdirectorMemberId,
       passScore: Number(s.passScore),
+      points: { attendance: s.pointsAttendance, assignments: s.pointsAssignments, payments: s.pointsPayments, toPass: s.pointsToPass },
       enrollmentFee: Number(s.enrollmentFee),
       isActive: s.isActive,
       canManage: Boolean(actor.canManageSchool) || (memberId !== null && (s.directorMemberId === memberId || s.subdirectorMemberId === memberId)),
@@ -260,6 +268,8 @@ export async function getOverview(actor: Actor): Promise<SchoolOverviewDto> {
         enrollmentFee: c.enrollmentFee !== null ? Number(c.enrollmentFee) : Number(s.enrollmentFee),
         bookPrice: Number(c.bookPrice),
         digitalBookUrl: null,
+        year: c.year,
+        credential: c.credential,
         isActive: c.isActive,
         passed: history.some((e) => e.group.courseId === c.id && e.passed === true),
         groups: c.groups.map((g) => ({
@@ -304,6 +314,13 @@ export async function saveSchool(actor: Actor, schoolId: string, input: Record<s
   if (passScore !== undefined && (passScore === null || passScore > 10)) throw new CrudError("La calificación mínima va de 0 a 10", 400, "passScore")
   const fee = input.enrollmentFee === undefined ? undefined : money(input.enrollmentFee)
   if (fee === null) throw new CrudError("Costo inválido", 400, "enrollmentFee")
+  const pts: Record<string, number> = {}
+  for (const [field, key] of [["pointsAttendance", "pointsAttendance"], ["pointsAssignments", "pointsAssignments"], ["pointsPayments", "pointsPayments"], ["pointsToPass", "pointsToPass"]] as const) {
+    if (input[field] === undefined || input[field] === "") continue
+    const n = Number(input[field])
+    if (!Number.isInteger(n) || n < 0 || n > 100) throw new CrudError("Los puntos son enteros de 0 a 100", 400, field)
+    pts[key] = n
+  }
   const ids: Record<string, string | null> = {}
   for (const key of ["directorMemberId", "subdirectorMemberId"] as const) {
     if (input[key] === undefined) continue
@@ -316,7 +333,7 @@ export async function saveSchool(actor: Actor, schoolId: string, input: Record<s
   }
   await prisma.school.update({
     where: { id: schoolId },
-    data: { name, description: input.description !== undefined ? text(input.description, 1000) : undefined, passScore: passScore ?? undefined, enrollmentFee: fee ?? undefined, ...ids },
+    data: { name, description: input.description !== undefined ? text(input.description, 1000) : undefined, passScore: passScore ?? undefined, enrollmentFee: fee ?? undefined, ...pts, ...ids },
   })
   return { id: schoolId }
 }
@@ -344,6 +361,8 @@ export async function saveCourse(actor: Actor, schoolId: string, id: string | nu
     enrollmentFee: fee,
     bookPrice: book,
     digitalBookUrl: text(input.digitalBookUrl, 500),
+    year: input.year === undefined || input.year === "" || input.year === null ? null : int(input.year, 1, 10, 1),
+    credential: text(input.credential, 120),
     ...(input.isActive !== undefined ? { isActive: input.isActive !== false } : {}),
   }
   try {
@@ -401,6 +420,8 @@ export async function getCourseAdmin(actor: Actor, courseId: string): Promise<Co
       enrollmentFee: c.enrollmentFee !== null ? Number(c.enrollmentFee) : Number(c.school.enrollmentFee),
       bookPrice: Number(c.bookPrice),
       digitalBookUrl: c.digitalBookUrl,
+      year: c.year,
+      credential: c.credential,
       isActive: c.isActive,
       passed: false,
       schoolId: c.schoolId,
@@ -783,6 +804,7 @@ export async function addPayment(actor: Actor, enrollmentId: string, input: { co
   await prisma.schoolPayment.create({
     data: { organizationId: actor.organizationId, enrollmentId, concept, amount, method, reference: text(input.reference, 80), receivedByUserId: actor.userId },
   })
+  await recalcEnrollment(enrollmentId)
   const left = Math.max(0, balance - amount)
   fireAndForget(
     notifyMembers(actor.organizationId, [e.memberId], {
@@ -834,10 +856,22 @@ export async function searchStaff(actor: Actor, q: string) {
 // ── Notas ────────────────────────────────────────────────────────────────────
 
 /** Recalcula promedios y calificación general de una inscripción. */
+const schoolPoints = (s: { pointsAttendance: number; pointsAssignments: number; pointsPayments: number; pointsToPass: number }): PointsConfig => ({
+  attendance: s.pointsAttendance,
+  assignments: s.pointsAssignments,
+  payments: s.pointsPayments,
+  toPass: s.pointsToPass,
+})
+
 async function recalcEnrollment(enrollmentId: string) {
   const e = await prisma.enrollment.findUnique({
     where: { id: enrollmentId },
-    include: { group: { include: { course: { include: { school: true } } } }, grades: { include: { assessment: { select: { kind: true, number: true } } } } },
+    include: {
+      group: { include: { course: { include: { school: true } }, sessions: { select: { id: true } } } },
+      grades: { include: { assessment: { select: { kind: true, number: true } } } },
+      payments: { select: { amount: true } },
+      attendance: { select: { status: true } },
+    },
   })
   if (!e) return null
   const course = e.group.course
@@ -853,8 +887,24 @@ async function recalcEnrollment(enrollmentId: string) {
   const exercisesAvg = pick("exercise", course.exercisesCount)
   // Si el libro no tiene tareas o ejercicios, la general es el promedio de lo que sí tiene.
   const final = finalGrade(tasksAvg ?? exercisesAvg, exercisesAvg ?? tasksAvg)
-  const passed = isPassing(final, Number(course.school.passScore))
-  await prisma.enrollment.update({ where: { id: e.id }, data: { tasksAvg, exercisesAvg, finalGrade: final, passed } })
+  let passed = isPassing(final, Number(course.school.passScore))
+  let points: number | null = null
+  if (course.school.kind === "university") {
+    // Acreditación por puntos: asistencia + tareas + pagos; se aprueba con el mínimo.
+    const r = computePoints(
+      {
+        attended: e.attendance.filter((a) => a.status === "present" || a.status === "excused").length,
+        held: e.group.sessions.length || course.weeks,
+        grade: final,
+        paid: e.payments.reduce((s, p) => s + Number(p.amount), 0),
+        due: Number(e.fee) + (e.wantsBook ? Number(e.bookPrice) : 0),
+      },
+      schoolPoints(course.school)
+    )
+    points = r.total
+    passed = r.passed
+  }
+  await prisma.enrollment.update({ where: { id: e.id }, data: { tasksAvg, exercisesAvg, finalGrade: final, passed, points } })
   return { tasksAvg, exercisesAvg, final, passed }
 }
 
@@ -916,6 +966,7 @@ export interface GradebookDto {
     tasksCount: number
     exercisesCount: number
     passScore: number
+    pointsToPass: number
     teacherName: string | null
     assistantName: string | null
     startDate: string | null
@@ -936,6 +987,7 @@ export interface GradebookDto {
     exercisesAvg: number | null
     finalGrade: number | null
     passed: boolean | null
+    points: number | null
     balance: number
   }[]
   requests: { enrollmentId: string; name: string; requestedAt: string; wantsBook: boolean }[]
@@ -985,6 +1037,7 @@ export async function getGradebook(actor: Actor, groupId: string): Promise<Grade
         exercisesAvg: num(e.exercisesAvg),
         finalGrade: num(e.finalGrade),
         passed: e.passed,
+        points: e.points,
         balance: a.canManage ? enrollmentBalance(Number(e.fee), Number(e.bookPrice), e.wantsBook, e.payments.map((p) => Number(p.amount))) : 0,
       }
     })
@@ -1000,6 +1053,7 @@ export async function getGradebook(actor: Actor, groupId: string): Promise<Grade
       tasksCount: g.course.tasksCount,
       exercisesCount: g.course.exercisesCount,
       passScore: Number(g.course.school.passScore),
+      pointsToPass: g.course.school.pointsToPass,
       teacherName: g.teacher?.fullName ?? null,
       assistantName: g.assistant?.fullName ?? null,
       startDate: ymd(g.startDate),
@@ -1048,6 +1102,7 @@ export async function saveSession(
       })
     }
   })
+  if (a.group.course.school.kind === "university") for (const enrollmentId of valid) await recalcEnrollment(enrollmentId)
   return { ok: true }
 }
 
@@ -1065,6 +1120,15 @@ export async function closeGroup(actor: Actor, groupId: string) {
     if (passed) {
       const row = await prisma.enrollment.findUnique({ where: { id: e.id }, select: { memberId: true } })
       if (row) await onCoursePassed(actor.organizationId, row.memberId, a.group.course.name, a.group.course.school.kind, actor.userId)
+      if (row && a.group.course.school.kind === "university") {
+        const pts = await prisma.enrollment.findUnique({ where: { id: e.id }, select: { points: true } })
+        await issueCredential(actor.organizationId, {
+          memberId: row.memberId,
+          schoolId: a.group.course.schoolId,
+          course: { id: a.group.course.id, credential: a.group.course.credential, year: a.group.course.year },
+          points: pts?.points ?? null,
+        })
+      }
     }
   }
   await prisma.courseGroup.update({ where: { id: groupId }, data: { status: "closed" } })
@@ -1102,6 +1166,8 @@ export interface StudentPortalDto {
   course: { id: string; name: string; description: string | null; weeks: number; digitalBookUrl: string | null; passScore: number; tasksCount: number; exercisesCount: number }
   group: { id: string; name: string; teacherName: string | null; assistantName: string | null; startDate: string | null; endDate: string | null; status: string }
   contents: { id: string; week: number; title: string; type: string; url: string | null; body: string | null }[]
+  /** Acreditación por puntos (solo escuela universitaria). */
+  points: (PointsResult & { toPass: number; credential: string | null }) | null
   assessments: StudentAssessmentDto[]
   attendance: { week: number; date: string | null; status: "present" | "absent" | "excused" | null }[]
   /** Libro digital: documentos con las páginas habilitadas hasta la última clase. */
@@ -1168,6 +1234,23 @@ export async function getStudentPortal(actor: Actor, enrollmentId: string): Prom
       status: e.group.status,
     },
     contents: contents.map((c) => ({ id: c.id, week: c.week, title: c.title, type: c.type, url: c.url, body: c.body })),
+    points:
+      course.school.kind === "university"
+        ? {
+            ...computePoints(
+              {
+                attended: attendance.filter((x) => x.status === "present" || x.status === "excused").length,
+                held: sessions.length || course.weeks,
+                grade: num(e.finalGrade),
+                paid: e.payments.reduce((s, p) => s + Number(p.amount), 0),
+                due: Number(e.fee) + (e.wantsBook ? Number(e.bookPrice) : 0),
+              },
+              schoolPoints(course.school)
+            ),
+            toPass: course.school.pointsToPass,
+            credential: credentialNameFor(course),
+          }
+        : null,
     assessments: assessments.map((a) => {
       const mine = subs.filter((s) => s.assessmentId === a.id)
       const grade = grades.find((g) => g.assessmentId === a.id)
@@ -1533,3 +1616,64 @@ export async function updateCourse(actor: Actor, courseId: string, input: Record
 }
 
 export { QUESTION_TYPES }
+
+// ── Mi trayecto (escuela universitaria) ──────────────────────────────────────
+
+export interface TrackStepDto {
+  courseId: string
+  year: number | null
+  name: string
+  credential: string | null
+  /** none = sin cursar · enrolled = cursando · requested = en trámite · completed = aprobado · failed = no aprobado */
+  status: "none" | "requested" | "enrolled" | "completed" | "failed"
+  points: number | null
+  pointsToPass: number
+  earnedAt: string | null
+  enrollmentId: string | null
+}
+export interface TrackDto {
+  schoolName: string
+  steps: TrackStepDto[]
+  earned: { name: string; serial: string; issuedAt: string; points: number | null }[]
+}
+
+/** El trayecto del programa universitario con el avance de la persona; null si no hay cursos. */
+export async function getMyTrack(actor: Actor): Promise<TrackDto | null> {
+  const school = await prisma.school.findFirst({
+    where: { organizationId: actor.organizationId, kind: "university", isActive: true },
+    include: { courses: { where: { isActive: true }, orderBy: [{ year: "asc" }, { sortOrder: "asc" }, { name: "asc" }] } },
+  })
+  if (!school || school.courses.length === 0) return null
+  const memberId = await memberIdOfUser(actor.organizationId, actor.userId)
+  const [enrollments, creds] = memberId
+    ? await Promise.all([
+        prisma.enrollment.findMany({
+          where: { organizationId: actor.organizationId, memberId, group: { course: { schoolId: school.id } } },
+          include: { group: { select: { courseId: true } } },
+          orderBy: { requestedAt: "desc" },
+        }),
+        prisma.credential.findMany({ where: { organizationId: actor.organizationId, memberId, schoolId: school.id }, orderBy: { issuedAt: "asc" } }),
+      ])
+    : [[], []]
+  const rank: Record<string, number> = { completed: 4, enrolled: 3, requested: 2, failed: 1 }
+  const steps: TrackStepDto[] = school.courses.map((c) => {
+    const mine = enrollments.filter((e) => e.group.courseId === c.id && rank[e.status] !== undefined).sort((a, b) => rank[b.status] - rank[a.status])[0]
+    const cred = creds.find((x) => x.courseId === c.id)
+    return {
+      courseId: c.id,
+      year: c.year,
+      name: c.name,
+      credential: credentialNameFor(c),
+      status: (mine?.status as TrackStepDto["status"] | undefined) ?? "none",
+      points: mine?.points ?? null,
+      pointsToPass: school.pointsToPass,
+      earnedAt: cred?.issuedAt.toISOString() ?? null,
+      enrollmentId: mine?.id ?? null,
+    }
+  })
+  return {
+    schoolName: school.name,
+    steps,
+    earned: creds.map((x) => ({ name: x.name, serial: x.serial, issuedAt: x.issuedAt.toISOString(), points: x.points })),
+  }
+}

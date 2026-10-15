@@ -96,5 +96,31 @@ export async function seedChurchStructure(organizationId: string): Promise<Map<s
     }
     ids.set(n.name, row.id)
   }
+  await seedTheologyTrack(organizationId)
   return ids
+}
+
+/** Los seis años del trayecto de Teología con su credencial (idempotente). */
+export const THEOLOGY_TRACK = [
+  { year: 1, name: "Estudios Bíblicos", credential: "Certificado en Estudios Bíblicos" },
+  { year: 2, name: "Formación Ministerial", credential: "Asociado Ministerial" },
+  { year: 3, name: "Teología · Diplomado", credential: "Diplomado en Teología" },
+  { year: 4, name: "Teología · Licenciatura", credential: "Licenciatura en Teología" },
+  { year: 5, name: "Teología · Maestría", credential: "Maestría en Teología" },
+  { year: 6, name: "Teología · Doctorado", credential: "Doctorado en Teología" },
+] as const
+
+export async function seedTheologyTrack(organizationId: string) {
+  const school =
+    (await prisma.school.findFirst({ where: { organizationId, kind: "university" } })) ??
+    (await prisma.school.create({
+      data: { organizationId, kind: "university", name: "Teología", description: "Seis años de estudios bíblicos y teológicos, con acreditación por puntos." },
+    }))
+  for (const step of THEOLOGY_TRACK) {
+    const exists = await prisma.course.findFirst({ where: { schoolId: school.id, name: step.name }, select: { id: true } })
+    if (exists) continue
+    await prisma.course.create({
+      data: { organizationId, schoolId: school.id, name: step.name, year: step.year, credential: step.credential, sortOrder: step.year, weeks: 8, tasksCount: 7, exercisesCount: 0 },
+    })
+  }
 }

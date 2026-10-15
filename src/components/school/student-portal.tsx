@@ -23,6 +23,44 @@ import { cn } from "@/lib/utils"
 const money = (n: number) => n.toLocaleString("es-MX", { style: "currency", currency: "MXN" })
 const gradeTone = (g: number | null, pass: number) => (g === null ? "text-muted-foreground" : g >= pass ? "text-success-ink" : "text-destructive")
 
+/** Desglose de puntos de la acreditación (escuela universitaria). */
+function PointsCard({ p }: { p: NonNullable<StudentPortalDto["points"]> }) {
+  const rows = [
+    { label: "Asistencia", value: p.attendance },
+    { label: "Tareas", value: p.assignments },
+    { label: "Pagos", value: p.payments },
+  ]
+  const pct = Math.min(100, Math.round((p.total / Math.max(1, p.max)) * 100))
+  const minPct = Math.round((p.toPass / Math.max(1, p.max)) * 100)
+  return (
+    <div className="space-y-3 rounded-2xl border bg-card p-4">
+      <div className="flex items-baseline justify-between">
+        <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Mis puntos</p>
+        <p className="font-heading text-xl font-semibold tabular-nums">
+          {p.total}
+          <span className="text-sm font-normal text-muted-foreground"> / {p.max}</span>
+        </p>
+      </div>
+      <div className="relative h-3 overflow-hidden rounded-full bg-muted" role="progressbar" aria-valuenow={p.total} aria-valuemin={0} aria-valuemax={p.max} aria-label="Puntos acumulados">
+        <div className={cn("h-full rounded-full transition-all duration-700", p.passed ? "bg-success" : "bg-primary")} style={{ width: `${pct}%` }} />
+        <span aria-hidden className="absolute inset-y-0 w-0.5 bg-foreground/60" style={{ left: `${minPct}%` }} />
+      </div>
+      <p className="text-xs text-muted-foreground">
+        {p.passed ? "Ya alcanzaste el mínimo para aprobar" : `Te faltan ${Math.max(0, p.toPass - p.total)} para el mínimo (${p.toPass})`}
+        {p.credential ? ` · Obtienes: ${p.credential}` : ""}
+      </p>
+      <ul className="space-y-1.5 text-sm">
+        {rows.map((r) => (
+          <li key={r.label} className="flex justify-between">
+            <span className="text-muted-foreground">{r.label}</span>
+            <span className="font-medium tabular-nums">{r.value} pts</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
 function embedUrl(url: string | null): string | null {
   if (!url) return null
   const yt = /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]{11})/.exec(url)
@@ -178,6 +216,11 @@ export function StudentPortal({ enrollmentId, backHref }: { enrollmentId: string
               </a>
             ))}
           </nav>
+          {data.points && (
+            <div className="hidden lg:block">
+              <PointsCard p={data.points} />
+            </div>
+          )}
           <div className="hidden space-y-3 rounded-2xl border bg-card p-4 lg:block">
             <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Mi boleta</p>
             {[
@@ -195,6 +238,11 @@ export function StudentPortal({ enrollmentId, backHref }: { enrollmentId: string
         </aside>
 
         <div className="min-w-0 space-y-8">
+          {data.points && (
+            <div className="lg:hidden">
+              <PointsCard p={data.points} />
+            </div>
+          )}
           {/* Boleta en móvil */}
           <div className="grid grid-cols-3 gap-2 lg:hidden">
             {[

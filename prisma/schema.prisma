@@ -249,6 +249,7 @@ model Organization {
   prayerRequests        PrayerRequest[]
   connectionCards       ConnectionCard[]
   donationCampaigns     DonationCampaign[]
+  credentials           Credential[]
 
   @@map("organizations")
 }
@@ -535,6 +536,7 @@ model Member {
   ministryJoinRequests  MinistryJoinRequest[]
   prayerRequests        PrayerRequest[]
   connectionCards       ConnectionCard[]
+  credentials           Credential[]
 
   @@unique([organizationId, memberCode])
   @@unique([organizationId, userId])
@@ -1929,11 +1931,18 @@ model School {
   diplomaNameSize     Float      @default(0.06)
   diplomaNameColor    String     @default("#1f2937") @db.VarChar(9)
   diplomaShowSerial   Boolean    @default(true)
+  /// Acreditación por puntos (escuela universitaria): asistencia, tareas y pagos suman;
+  /// se aprueba el curso con `pointsToPass` o más.
+  pointsAttendance    Int        @default(30)
+  pointsAssignments   Int        @default(10)
+  pointsPayments      Int        @default(10)
+  pointsToPass        Int        @default(30)
   isActive            Boolean    @default(true)
   createdAt           DateTime   @default(now())
   updatedAt           DateTime   @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id])
+  credentials  Credential[]
   director     Member?      @relation("SchoolDirector", fields: [directorMemberId], references: [id], onDelete: SetNull)
   subdirector  Member?      @relation("SchoolSubdirector", fields: [subdirectorMemberId], references: [id], onDelete: SetNull)
   diplomas     Diploma[]
@@ -1961,6 +1970,10 @@ model Course {
   bookPrice      Decimal  @default(0) @db.Decimal(10, 2)
   /// Libro digital dentro de la plataforma (enlace configurable).
   digitalBookUrl String?
+  /// Año del trayecto (1 a 6 en Teología); null = sin año.
+  year           Int?
+  /// Credencial que se obtiene al aprobar (p. ej. «Certificado en Estudios Bíblicos»).
+  credential     String?  @db.VarChar(120)
   isActive       Boolean  @default(true)
   createdAt      DateTime @default(now())
 
@@ -1970,6 +1983,7 @@ model Course {
   documents    CourseDocument[]
   groups       CourseGroup[]
   assessments  Assessment[]
+  credentials  Credential[]
 
   @@unique([schoolId, name])
   @@index([schoolId, sortOrder])
@@ -2039,6 +2053,8 @@ model Enrollment {
   finalGrade      Decimal?         @db.Decimal(4, 2)
   passed          Boolean?
   completedAt     DateTime?
+  /// Puntos acumulados (solo escuelas con acreditación por puntos).
+  points          Int?
   notes           String?
 
   organization Organization      @relation(fields: [organizationId], references: [id])
@@ -2402,6 +2418,8 @@ model Donation {
   reference      String?
   /// Campaña a la que se dirige (ComuniDAR, un proyecto…); null = general.
   campaignId     String?
+  /// Folio del recibo (R-2026-0001); se asigna al confirmar el donativo.
+  receiptFolio   String?        @db.VarChar(20)
   status         DonationStatus @default(pending)
   paidAt         DateTime?
   notes          String?
@@ -2413,6 +2431,7 @@ model Donation {
   income       Income?
 
   @@unique([provider, externalId])
+  @@unique([organizationId, receiptFolio])
   @@index([organizationId, status])
   @@map("donations")
 }
@@ -2950,4 +2969,30 @@ model DonationCampaign {
 
   @@index([organizationId, status])
   @@map("donation_campaigns")
+}
+
+/// Credencial que obtiene una persona al aprobar un curso del trayecto (Teología:
+/// Certificado, Asociado, Diplomado, Licenciatura, Maestría, Doctorado).
+model Credential {
+  id             String   @id @default(cuid())
+  organizationId String
+  schoolId       String
+  courseId       String
+  memberId       String
+  /// Año del trayecto en que se obtuvo.
+  year           Int?
+  name           String   @db.VarChar(120)
+  serial         String   @db.VarChar(30)
+  points         Int?
+  issuedAt       DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  school       School       @relation(fields: [schoolId], references: [id])
+  course       Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  member       Member       @relation(fields: [memberId], references: [id])
+
+  @@unique([memberId, courseId])
+  @@unique([organizationId, serial])
+  @@index([schoolId, memberId])
+  @@map("credentials")
 }

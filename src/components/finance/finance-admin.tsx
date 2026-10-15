@@ -22,6 +22,7 @@ import {
   TrendingUp,
   Users,
   X,
+  FileText,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -773,6 +774,11 @@ function DonationsTab({ canManage, onChanged }: { canManage: boolean; onChanged:
                 </span>
                 <span className="tabular-nums">{money(d.amount)}</span>
                 <StatusPill tone={d.status === "paid" ? "success" : "neutral"}>{d.status === "paid" ? "Confirmado" : d.status === "failed" ? "Rechazado" : "Reembolsado"}</StatusPill>
+                {d.status === "paid" && (
+                  <a href={`/api/finance/donations/${d.id}/receipt`} target="_blank" rel="noopener noreferrer" className="press inline-flex h-8 items-center gap-1 rounded-lg border px-2 text-xs font-medium" aria-label="Descargar recibo en PDF">
+                    <FileText className="size-3.5" /> Recibo
+                  </a>
+                )}
               </li>
             ))}
           </ul>

@@ -138,6 +138,8 @@ function SettingsTab({ data, onChanged }: { data: CourseAdminDto; onChanged: () 
     bookPrice: String(c.bookPrice),
     digitalBookUrl: c.digitalBookUrl ?? "",
     imageUrl: c.imageUrl ?? "",
+    year: c.year == null ? "" : String(c.year),
+    credential: c.credential ?? "",
     isActive: c.isActive,
   })
   const [saving, setSaving] = useState(false)
@@ -169,6 +171,12 @@ function SettingsTab({ data, onChanged }: { data: CourseAdminDto; onChanged: () 
         <InputGroupField label="Número de ejercicios" inputMode="numeric" value={v.exercisesCount} onChange={(e) => set("exercisesCount", e.target.value.replace(/\D/g, ""))} />
         <InputGroupField label="Costo de inscripción" inputMode="decimal" value={v.enrollmentFee} onChange={(e) => set("enrollmentFee", e.target.value)} helper="Se aplica a quienes se inscriban desde ahora." />
         <InputGroupField label="Libro de texto (opcional)" inputMode="decimal" value={v.bookPrice} onChange={(e) => set("bookPrice", e.target.value)} helper="Se vende aparte de la inscripción." />
+        {c.schoolKind === "university" && (
+          <>
+            <InputGroupField label="Año del trayecto" inputMode="numeric" value={v.year} placeholder="1 a 6" onChange={(e) => set("year", e.target.value.replace(/\D/g, "").slice(0, 2))} helper="Ordena el curso en el trayecto (1 = primer año)." />
+            <InputGroupField label="Credencial que otorga" value={v.credential} maxLength={120} placeholder="Ej. Certificado en Estudios Bíblicos" onChange={(e) => set("credential", e.target.value)} helper="Si lo dejas vacío se usa la del año (Certificado, Asociado, Diplomado…)." />
+          </>
+        )}
         <div className="sm:col-span-2">
           <InputGroupField label="Libro digital (enlace, opcional)" type="url" inputMode="url" placeholder="https://…" value={v.digitalBookUrl} onChange={(e) => set("digitalBookUrl", e.target.value)} />
         </div>

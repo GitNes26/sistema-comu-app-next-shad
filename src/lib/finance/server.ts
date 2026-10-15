@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db"
 import { openCampaignOrThrow } from "@/lib/finance/campaigns"
+import { ensureReceiptFolio } from "@/lib/finance/receipt"
 import { fireAndForget, notifyMembers, notifyPermission } from "@/lib/notifications/church"
 import { CrudError } from "@/lib/crud/types"
 import { memberIdOfUser, type Actor } from "@/lib/ministries/server"
@@ -438,12 +439,14 @@ export async function decideDonation(actor: Actor, id: string, input: { decision
       },
     }),
   ])
+  // El recibo nace con la confirmación: folio consecutivo del año.
+  await ensureReceiptFolio(actor.organizationId, d.id, new Date()).catch((err) => console.error("[receipt]", err))
   fireAndForget(
     notifyMembers(actor.organizationId, [d.memberId], {
       kind: "donation_paid",
       severity: "success",
       title: "¡Gracias por tu aportación!",
-      body: "La tesorería confirmó tu transferencia.",
+      body: "La tesorería confirmó tu transferencia. Ya puedes descargar tu recibo.",
       link: "/mi/donativos",
     })
   )

@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
-import { Copy, CreditCard, ExternalLink, HandCoins, Loader2 } from "lucide-react"
+import { Copy, CreditCard, ExternalLink, FileText, HandCoins, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { FormCombobox } from "@/components/base/form-combobox"
@@ -246,6 +246,11 @@ export function MyDonations() {
                 <StatusPill tone={d.status === "paid" ? "success" : d.status === "pending" ? "warning" : "neutral"}>
                   {d.status === "paid" ? "Confirmado" : d.status === "pending" ? "En revisión" : "No confirmado"}
                 </StatusPill>
+                {d.status === "paid" && (
+                  <a href={`/api/finance/donations/${d.id}/receipt`} target="_blank" rel="noopener noreferrer" className="press inline-flex h-8 items-center gap-1 rounded-lg border px-2 text-xs font-medium" aria-label="Descargar recibo en PDF">
+                    <FileText className="size-3.5" /> Recibo
+                  </a>
+                )}
               </li>
             ))}
           </ul>

@@ -21,6 +21,8 @@ Regla: el avance de etapa lo produce un hecho (asistencia verificada, grupo cerr
 3. Transferencia: avisa → tesorería **confirma** → nace el `Income` (con `campaignId`) → la meta avanza. En línea: el webhook confirma solo, idempotente.
 4. La persona recibe «¡Gracias!»; nadie ve lo que otro dio. Lo reunido sale de los ingresos ligados a la campaña (una sola fuente de verdad con Finanzas).
 
+Recibo: al confirmar, el donativo recibe folio y la persona puede descargar su **recibo en PDF** desde «Mis avisos»; tesorería lo ve en el historial. Es un comprobante interno (no CFDI).
+
 ## 3. Eventos y boletos
 
 Organizador crea el evento y su público → publica → las personas **apartan** boleto (o se les asigna) → eligen asiento si hay plano → pagan (abonos) → **entrada por QR** → al finalizar se aplican los checks del camino. Avisos: boleto asignado/cancelado, abonos, saldo liquidado. El boleto mostrado es el comprobante (evento, fecha, hora, lugar, asiento, titular, folio, importe, QR).
@@ -28,6 +30,8 @@ Organizador crea el evento y su público → publica → las personas **apartan*
 ## 4. Escuela (alumno ↔ maestro)
 
 Solicitud o inscripción → aprobación → clases con **pase de lista** → tareas y ejercicios (calificación automática + abiertas por revisar) → calificación publicada (aviso) → cierre del grupo (aprobado/no aprobado) → diploma al finalizar el Lanzamiento. El maestro trabaja desde el **Aula** (siguiente clase, quién necesita atención, por revisar); el alumno, desde su **Campus** (avance, material, boleta).
+
+**Teología (trayecto de 6 años)**: el alumno cursa un año a la vez; cada curso suma **puntos** (asistencia, tareas, pagos) y se aprueba con el mínimo; al cerrar el grupo se emite la **credencial** del año. El avance se ve en «Mi trayecto».
 
 ## 5. Kids
 

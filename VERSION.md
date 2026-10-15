@@ -30,6 +30,10 @@ Formato: `MAJOR.MINOR.PATCH.REVISION` (X.X.X.X)
 
 ## Historial
 
+### [0.24.0.0] — 2026-10-15
+- **Tipo:** `feat` (Minor)
+- feat: recibos de donativo en PDF con folio e importe con letra, trayecto de Teologia por puntos con credenciales por ano, mi trayecto y puntos en campus y aula
+
 ### [0.23.0.0] — 2026-10-15
 - **Tipo:** `feat` (Minor)
 - feat: campanas de donativos para ComuniDAR con meta y vigencia, aula del maestro con siguiente clase y alumnos en atencion, flujos documentados y arranque de base de datos que no tumba el contenedor

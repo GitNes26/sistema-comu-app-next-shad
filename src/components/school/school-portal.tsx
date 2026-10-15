@@ -1,5 +1,6 @@
 "use client"
 
+import { TrackPanel } from "@/components/school/track-panel"
 import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
 import { BookOpen, Check, ClipboardList, GraduationCap, Loader2, School as SchoolIcon, Settings2 } from "lucide-react"
@@ -66,6 +67,8 @@ export function SchoolPortal({ adminHref }: { adminHref?: string }) {
       )}
 
       {data.journey && data.diplomas.length === 0 && <DiplomaJourney journey={data.journey} />}
+
+      {data.schools.some((s) => s.kind === "university" && s.courses.length > 0) && <TrackPanel />}
 
       {data.diplomas.length > 0 && (
         <section className="space-y-2">
