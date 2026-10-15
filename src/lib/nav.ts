@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import {
+  MapPinned,
   Inbox,
   Baby,
   BadgeDollarSign,
@@ -74,6 +75,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { href: "/mi/contenido", label: "Noticias", icon: Newspaper },
       { href: "/mi/transmisiones", label: "Transmisiones", icon: Tv },
       { href: "/mi/oracion", label: "Oración", icon: HandHeart },
+      { href: "/mi/familia", label: "Mi familia", icon: Users },
       { href: "/mi/perfil", label: "Mi perfil", icon: UserRound },
       { href: "/mi/notificaciones", label: "Notificaciones", icon: BellRing },
     ],
@@ -83,6 +85,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { href: "/admin/members", label: "Creyentes", icon: Users, permission: "members.view", feature: "members" },
       { href: "/admin/connect", label: "Conexión y oración", icon: Inbox, permission: "members.manage", feature: "members" },
+      { href: "/admin/families", label: "Familias", icon: Users, permission: "members.manage", feature: "members" },
       { href: "/admin/employees", label: "Empleados", icon: UserCog, permission: "employees.view", feature: "employees" },
       { href: "/admin/positions", label: "Puestos", icon: Briefcase, permission: "employees.view", feature: "employees" },
     ],
@@ -92,6 +95,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { href: "/mi/ministerios", label: "Mis ministerios", icon: HeartHandshake },
       { href: "/mi/celulas", label: "Mis células", icon: Home },
+      { href: "/mi/hogares", label: "Hogares de amor", icon: MapPinned },
       { href: "/mi/organigrama", label: "Organigrama", icon: Network },
       { href: "/mi/escuela", label: "Mi escuela", icon: GraduationCap },
       { href: "/mi/hijos", label: "Mis hijos", icon: Baby },

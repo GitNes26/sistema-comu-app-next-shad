@@ -30,6 +30,10 @@ Formato: `MAJOR.MINOR.PATCH.REVISION` (X.X.X.X)
 
 ## Historial
 
+### [0.25.0.0] — 2026-10-15
+- **Tipo:** `feat` (Minor)
+- feat: buscador de hogares de amor publico y del portal sin duplicar celulas, familias del padron, catalogo de la escuela con tarjetas de portada y pagina de cada libro
+
 ### [0.24.0.0] — 2026-10-15
 - **Tipo:** `feat` (Minor)
 - feat: recibos de donativo en PDF con folio e importe con letra, trayecto de Teologia por puntos con credenciales por ano, mi trayecto y puntos en campus y aula

@@ -67,6 +67,8 @@ export interface CardInput {
   email: string | null
   message: string | null
   interest: string | null
+  /** Hogar de amor (célula) elegido en el buscador. */
+  cellId: string | null
 }
 export type CardResult = { ok: true; value: CardInput } | { ok: false; field: string; error: string }
 
@@ -89,9 +91,11 @@ export function validateCard(input: Record<string, unknown>): CardResult {
   if (isPrayer && !clean(input.message, 1500)) return { ok: false, field: "message", error: "Cuéntanos por qué quieres que oremos" }
   if (!isPrayer && !phone && !email) return { ok: false, field: "phone", error: "Déjanos un teléfono o un correo para escribirte" }
   let interest = clean(input.interest, 80)
-  if (input.kind === "group" && !(interest && interest in GROUP_INTERESTS)) interest = "any"
+  const cellId = input.kind === "group" ? clean(input.cellId, 40) : null
+  // Sin hogar elegido el interés es el tipo de grupo (texto libre del tipo de célula).
+  if (input.kind === "group" && !interest) interest = "any"
   if (input.kind !== "group") interest = input.kind === "school" ? interest : null
-  return { ok: true, value: { kind: input.kind, name, phone, email, message: clean(input.message, isPrayer ? 1500 : 1000), interest } }
+  return { ok: true, value: { kind: input.kind, name, phone, email, message: clean(input.message, isPrayer ? 1500 : 1000), interest, cellId } }
 }
 
 /** «Domingo · 10:00 – 12:00». */

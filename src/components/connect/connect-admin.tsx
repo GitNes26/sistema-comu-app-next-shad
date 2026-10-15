@@ -85,7 +85,7 @@ export function ConnectAdmin() {
                     <p className="truncate font-heading font-semibold">{c.name}</p>
                     <p className="flex items-center gap-1 text-xs text-muted-foreground">
                       <Sparkles className="size-3" /> {CARD_KINDS[c.kind as CardKind] ?? c.kind}
-                      {c.interest && c.kind === "group" ? ` · ${GROUP_INTERESTS[c.interest as keyof typeof GROUP_INTERESTS] ?? c.interest}` : ""}
+                      {c.kind === "group" && c.cellName ? ` · Hogar: ${c.cellName}` : c.interest && c.kind === "group" ? ` · ${GROUP_INTERESTS[c.interest as keyof typeof GROUP_INTERESTS] ?? c.interest}` : ""}
                       {c.interest && c.kind === "school" ? ` · ${c.interest}` : ""}
                     </p>
                   </div>

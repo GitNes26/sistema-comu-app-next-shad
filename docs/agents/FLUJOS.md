@@ -37,6 +37,10 @@ Solicitud o inscripción → aprobación → clases con **pase de lista** → ta
 
 Registro del niño con tutores → QR → **entrada** registra salón (aviso al tutor) → mensajes y alertas → **salida** solo con el permiso `kids.authorize_exit` (aviso al tutor). Datos de menores: acceso mínimo y por relación.
 
+## 5b. Hogares de amor (grupos en casa = células)
+
+Un solo módulo (Células). Quien busca: **buscador** por ubicación o colonia → «Quiero unirme» → tarjeta con el hogar elegido + aviso a su líder → el líder da la bienvenida y lo integra (alta con aviso). Una persona pertenece a un solo hogar; cambiar es un traspaso. **Familia** es otra cosa: agrupa parentescos del padrón y no define reuniones.
+
 ## 6. Ministerios y servicio
 
 Persona solicita servir → líder acepta (alta con aviso) → reuniones del ministerio (aviso a su equipo) → asistencia. Eventos y reuniones generales piden **servidores** a ministerios; el líder asigna y la persona confirma.

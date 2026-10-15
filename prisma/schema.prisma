@@ -250,6 +250,7 @@ model Organization {
   connectionCards       ConnectionCard[]
   donationCampaigns     DonationCampaign[]
   credentials           Credential[]
+  families              Family[]
 
   @@map("organizations")
 }
@@ -537,6 +538,7 @@ model Member {
   prayerRequests        PrayerRequest[]
   connectionCards       ConnectionCard[]
   credentials           Credential[]
+  familyLinks           FamilyMember[]
 
   @@unique([organizationId, memberCode])
   @@unique([organizationId, userId])
@@ -1363,15 +1365,16 @@ model Cell {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  organization  Organization   @relation(fields: [organizationId], references: [id])
-  type          CellType?      @relation(fields: [typeId], references: [id], onDelete: SetNull)
-  network       CellNetwork?   @relation(fields: [networkId], references: [id], onDelete: SetNull)
-  host          Member?        @relation("CellHost", fields: [hostMemberId], references: [id], onDelete: SetNull)
-  ownerMinistry Ministry?      @relation("CellOwner", fields: [ministryId], references: [id], onDelete: SetNull)
-  members       CellMember[]
-  meetings      CellMeeting[]
-  transfersOut  CellTransfer[] @relation("TransferFrom")
-  transfersIn   CellTransfer[] @relation("TransferTo")
+  organization    Organization     @relation(fields: [organizationId], references: [id])
+  type            CellType?        @relation(fields: [typeId], references: [id], onDelete: SetNull)
+  network         CellNetwork?     @relation(fields: [networkId], references: [id], onDelete: SetNull)
+  host            Member?          @relation("CellHost", fields: [hostMemberId], references: [id], onDelete: SetNull)
+  ownerMinistry   Ministry?        @relation("CellOwner", fields: [ministryId], references: [id], onDelete: SetNull)
+  members         CellMember[]
+  meetings        CellMeeting[]
+  transfersOut    CellTransfer[]   @relation("TransferFrom")
+  transfersIn     CellTransfer[]   @relation("TransferTo")
+  connectionCards ConnectionCard[]
 
   @@unique([organizationId, name])
   @@index([organizationId, isActive])
@@ -2927,6 +2930,8 @@ model ConnectionCard {
   message        String?   @db.Text
   /// Detalle según el tipo (p. ej. tipo de grupo, curso).
   interest       String?   @db.VarChar(80)
+  /// Hogar de amor (célula) que la persona eligió en el buscador.
+  cellId         String?
   /// new | contacted | done
   status         String    @default("new") @db.VarChar(10)
   memberId       String?
@@ -2936,6 +2941,7 @@ model ConnectionCard {
 
   organization Organization @relation(fields: [organizationId], references: [id])
   member       Member?      @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  cell         Cell?        @relation(fields: [cellId], references: [id], onDelete: SetNull)
 
   @@index([organizationId, status, createdAt])
   @@map("connection_cards")
@@ -2995,4 +3001,43 @@ model Credential {
   @@unique([organizationId, serial])
   @@index([schoolId, memberId])
   @@map("credentials")
+}
+
+/// Familia: las personas del padrón que viven o caminan juntas (cónyuges, hijos, parientes).
+/// No es un hogar de amor (la célula): una familia puede asistir a varias reuniones y a
+/// ministerios distintos. Sirve para felicitar, ubicar tutores y acompañar a la casa completa.
+model Family {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String   @db.VarChar(120)
+  notes          String?  @db.VarChar(500)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization   @relation(fields: [organizationId], references: [id])
+  members      FamilyMember[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId, isActive])
+  @@map("families")
+}
+
+model FamilyMember {
+  id             String   @id @default(cuid())
+  organizationId String
+  familyId       String
+  memberId       String
+  /// head | spouse | child | relative
+  relation       String   @default("relative") @db.VarChar(10)
+  createdAt      DateTime @default(now())
+
+  family Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  /// Una persona pertenece a una sola familia.
+  @@unique([organizationId, memberId])
+  @@unique([familyId, memberId])
+  @@index([familyId])
+  @@map("family_members")
 }

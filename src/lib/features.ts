@@ -56,6 +56,7 @@ export function enabledFeatures(): FeatureKey[] {
 export const NAV_HREF_TO_FEATURE: Record<string, FeatureKey> = {
   "/admin/members": "members",
   "/admin/connect": "members",
+  "/admin/families": "members",
   "/admin/ministries": "ministries",
   "/admin/cells": "cells",
   "/admin/gatherings": "gatherings",

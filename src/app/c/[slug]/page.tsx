@@ -59,7 +59,7 @@ export default async function PublicChurchPage({ params }: Props) {
               <Link href={`${base}/conectar?tipo=visitor`} className="press inline-flex min-h-12 items-center gap-2 rounded-full bg-white px-6 text-base font-semibold text-slate-900">
                 <Sparkles className="size-5" /> Soy nuevo
               </Link>
-              <Link href={`${base}/conectar?tipo=group`} className="press inline-flex min-h-12 items-center gap-2 rounded-full border border-white/40 px-6 text-base font-medium hover:bg-white/10">
+              <Link href={`${base}/hogares`} className="press inline-flex min-h-12 items-center gap-2 rounded-full border border-white/40 px-6 text-base font-medium hover:bg-white/10">
                 <HeartHandshake className="size-5" /> Quiero integrarme
               </Link>
               <Link href={`${base}/conectar?tipo=prayer`} className="press inline-flex min-h-12 items-center gap-2 rounded-full border border-white/40 px-6 text-base font-medium hover:bg-white/10">

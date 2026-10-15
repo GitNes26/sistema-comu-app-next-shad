@@ -3,6 +3,7 @@ import { CrudError } from "@/lib/crud/types"
 import { fireAndForget, notifyMembers, notifyMinistryLeaders, notifyPermission } from "@/lib/notifications/church"
 import { memberIdOfUser, type Actor } from "@/lib/ministries/server"
 import { listOpenCampaigns, type CampaignDto } from "@/lib/finance/campaigns"
+import { notifyCellLeaders } from "@/lib/cells/finder"
 import {
   CARD_KINDS,
   digitsOf,
@@ -209,6 +210,14 @@ export async function submitConnection(slug: string, ip: string, input: Record<s
   if (dup) return { ok: true as const, duplicate: true }
 
   let memberId: string | null = null
+  let cellId: string | null = null
+  let interest = card.interest
+  if (card.kind === "group" && card.cellId) {
+    const cell = await prisma.cell.findFirst({ where: { id: card.cellId, organizationId, isActive: true }, select: { id: true, type: { select: { name: true } } } })
+    if (!cell) throw new CrudError("Ese hogar de amor ya no está disponible", 404, "cellId")
+    cellId = cell.id
+    interest = cell.type?.name ?? interest
+  }
   if (card.kind === "visitor") {
     memberId = await registerVisitor(organizationId, card)
   }
@@ -220,10 +229,12 @@ export async function submitConnection(slug: string, ip: string, input: Record<s
       phone: card.phone,
       email: card.email,
       message: card.message,
-      interest: card.interest,
+      interest,
+      cellId,
       memberId,
     },
   })
+  if (cellId) await notifyCellLeaders(organizationId, cellId, card.name)
   fireAndForget(
     notifyPermission(organizationId, "members.manage", {
       kind: "connection_card",
@@ -310,6 +321,8 @@ export interface CardDto {
   email: string | null
   message: string | null
   interest: string | null
+  cellId: string | null
+  cellName: string | null
   status: CardStatus
   memberId: string | null
   handledNote: string | null
@@ -320,6 +333,7 @@ export async function listCards(actor: Actor): Promise<CardDto[]> {
   assertTeam(actor)
   const rows = await prisma.connectionCard.findMany({
     where: { organizationId: actor.organizationId },
+    include: { cell: { select: { name: true } } },
     orderBy: [{ status: "asc" }, { createdAt: "desc" }],
     take: 200,
   })
@@ -331,6 +345,8 @@ export async function listCards(actor: Actor): Promise<CardDto[]> {
     email: r.email,
     message: r.message,
     interest: r.interest,
+    cellId: r.cellId,
+    cellName: r.cell?.name ?? null,
     status: isCardStatus(r.status) ? r.status : "new",
     memberId: r.memberId,
     handledNote: r.handledNote,

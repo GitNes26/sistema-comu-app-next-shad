@@ -40,6 +40,7 @@ export const SYSTEM_MENUS: SystemMenuDef[] = [
   { id: "menu-donativos", parentId: "menu-principal", type: "item", label: "Donativos", icon: "HandCoins", href: "/mi/donativos", sortOrder: 6 },
   { id: "menu-noticias", parentId: "menu-principal", type: "item", label: "Noticias", icon: "Newspaper", href: "/mi/contenido", sortOrder: 7 },
   { id: "menu-transmisiones", parentId: "menu-principal", type: "item", label: "Transmisiones", icon: "Tv", href: "/mi/transmisiones", sortOrder: 8 },
+  { id: "menu-mi-familia", parentId: "menu-principal", type: "item", label: "Mi familia", icon: "Users", href: "/mi/familia", sortOrder: 9 },
   { id: "menu-oracion", parentId: "menu-principal", type: "item", label: "Oración", icon: "HandHeart", href: "/mi/oracion", sortOrder: 9 },
   { id: "menu-mi-perfil", parentId: "menu-principal", type: "item", label: "Mi perfil", icon: "UserRound", href: "/mi/perfil", sortOrder: 9 },
   { id: "menu-reuniones", parentId: "menu-principal", type: "item", label: "Reuniones", icon: "CalendarDays", href: "/mi/reuniones", sortOrder: 4 },
@@ -47,6 +48,7 @@ export const SYSTEM_MENUS: SystemMenuDef[] = [
 
   { id: "menu-personas", parentId: null, type: "section", label: "Personas", icon: "Users", sortOrder: 2 },
   { id: "menu-creyentes", parentId: "menu-personas", type: "item", label: "Creyentes", icon: "Users", href: "/admin/members", permissionKey: "members.view", sortOrder: 1 },
+  { id: "menu-familias", parentId: "menu-personas", type: "item", label: "Familias", icon: "Users", href: "/admin/families", permissionKey: "members.manage", sortOrder: 4 },
   { id: "menu-conexion", parentId: "menu-personas", type: "item", label: "Conexión y oración", icon: "Inbox", href: "/admin/connect", permissionKey: "members.manage", sortOrder: 3 },
   { id: "menu-empleados", parentId: "menu-personas", type: "item", label: "Empleados", icon: "UserCog", href: "/admin/employees", permissionKey: "employees.view", sortOrder: 2 },
   { id: "menu-puestos", parentId: "menu-personas", type: "item", label: "Puestos", icon: "Briefcase", href: "/admin/positions", permissionKey: "employees.view", sortOrder: 3 },
@@ -56,6 +58,7 @@ export const SYSTEM_MENUS: SystemMenuDef[] = [
   { id: "menu-mi-escuela", parentId: "menu-servicio", type: "item", label: "Mi escuela", icon: "GraduationCap", href: "/mi/escuela", sortOrder: 2 },
   { id: "menu-mis-hijos", parentId: "menu-servicio", type: "item", label: "Mis hijos", icon: "Baby", href: "/mi/hijos", sortOrder: 3 },
   { id: "menu-ministerios", parentId: "menu-servicio", type: "item", label: "Ministerios", icon: "HandHeart", href: "/admin/ministries", permissionKey: "ministries.view", sortOrder: 4 },
+  { id: "menu-hogares", parentId: "menu-servicio", type: "item", label: "Hogares de amor", icon: "MapPinned", href: "/mi/hogares", sortOrder: 3 },
   { id: "menu-organigrama", parentId: "menu-servicio", type: "item", label: "Organigrama", icon: "Network", href: "/mi/organigrama", sortOrder: 3 },
   { id: "menu-mis-celulas", parentId: "menu-servicio", type: "item", label: "Mis células", icon: "Home", href: "/mi/celulas", sortOrder: 2 },
   { id: "menu-celulas", parentId: "menu-servicio", type: "item", label: "Células y redes", icon: "Network", href: "/admin/cells", permissionKey: "cells.view", sortOrder: 5 },

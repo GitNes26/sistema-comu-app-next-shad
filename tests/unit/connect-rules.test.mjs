@@ -26,8 +26,11 @@ test("tarjeta: nombre y un medio de contacto; teléfono y correo válidos", () =
 })
 
 test("tarjeta: grupo siempre trae interés válido; oración puede ser anónima pero lleva texto", () => {
-  assert.equal(validateCard({ kind: "group", name: "Ana", phone: "8714274445", interest: "inventado" }).value.interest, "any")
-  assert.equal(validateCard({ kind: "group", name: "Ana", phone: "8714274445", interest: "women" }).value.interest, "women")
+  // El interés es el tipo de hogar de amor (texto libre del catálogo); vacío = cualquiera.
+  assert.equal(validateCard({ kind: "group", name: "Ana", phone: "8714274445" }).value.interest, "any")
+  assert.equal(validateCard({ kind: "group", name: "Ana", phone: "8714274445", interest: "Matrimonios", cellId: "c1" }).value.interest, "Matrimonios")
+  assert.equal(validateCard({ kind: "group", name: "Ana", phone: "8714274445", cellId: "c1" }).value.cellId, "c1")
+  assert.equal(validateCard({ kind: "visitor", name: "Ana", phone: "8714274445", cellId: "c1" }).value.cellId, null)
   assert.equal(validateCard({ kind: "prayer", message: "" }).ok, false)
   const anon = validateCard({ kind: "prayer", message: "Por mi salud" })
   assert.equal(anon.ok, true)

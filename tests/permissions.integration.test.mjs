@@ -1857,3 +1857,50 @@ test("cara pública: «Soy nuevo» entra a Consolidación, la oración llega al 
   assert.ok(anon)
   assert.equal((await owner("/api/connect", { method: "PATCH", headers: json, body: JSON.stringify({ type: "prayer", id: anon.id, status: "praying" }) })).status, 200)
 })
+
+test("hogares de amor y familias: el buscador público no expone direcciones y las familias son de quien administra el padrón", async () => {
+  const owner = await login("demo.owner@comuapp.test")
+  const carlos = await login("demo.creyente@comuapp.test")
+  const slug = "comunidad-demo"
+
+  // Buscador público: solo tipo, colonia, día y hora; nunca la calle ni personas.
+  const res = await fetch(`${BASE}/api/public/${slug}/cells?lat=25.54&lng=-103.41`)
+  assert.equal(res.status, 200)
+  const body = await res.json()
+  assert.ok(Array.isArray(body.cells))
+  for (const c of body.cells) {
+    assert.equal("street" in c, false)
+    assert.equal("hostName" in c, false)
+    assert.equal("members" in c, false)
+  }
+  assert.equal((await fetch(`${BASE}/api/public/no-existe-${Date.now()}/cells`)).status, 404)
+
+  // Solicitar unirse: la tarjeta queda ligada al hogar elegido.
+  if (body.cells[0]) {
+    const sent = await fetch(`${BASE}/api/public/${slug}/connect`, {
+      method: "POST",
+      headers: json,
+      body: JSON.stringify({ kind: "group", cellId: body.cells[0].id, name: `Vecino ${Date.now()}`, phone: `871${String(Date.now()).slice(-7)}` }),
+    })
+    assert.equal(sent.status, 201)
+    const inbox = await (await owner("/api/connect")).json()
+    assert.ok(inbox.cards.some((c) => c.cellId === body.cells[0].id))
+  }
+  assert.equal((await fetch(`${BASE}/api/public/${slug}/connect`, { method: "POST", headers: json, body: JSON.stringify({ kind: "group", cellId: "no-existe", name: "Ana Prueba", phone: "8711234567" }) })).status, 404)
+
+  // Familias: administra quien gestiona el padrón; el creyente solo ve la suya.
+  assert.equal((await carlos("/api/families")).status, 403)
+  const stamp = Date.now()
+  const created = await owner("/api/families", { method: "POST", headers: json, body: JSON.stringify({ name: `Familia Prueba ${stamp}` }) })
+  assert.equal(created.status, 201)
+  const { id } = await created.json()
+  assert.equal((await owner("/api/families", { method: "POST", headers: json, body: JSON.stringify({ name: `Familia Prueba ${stamp}` }) })).status, 409)
+  const people = (await (await owner("/api/families/people?q=Carlos")).json()).people
+  assert.ok(people.length >= 1)
+  assert.equal((await owner(`/api/families/${id}/members`, { method: "POST", headers: json, body: JSON.stringify({ memberId: people[0].id, relation: "head" }) })).status, 201)
+  const mine = await (await carlos("/api/families/mine")).json()
+  assert.equal(mine.family?.name, `Familia Prueba ${stamp}`)
+  assert.equal(mine.family.members.every((m) => m.phone === null), true) // sin teléfonos
+  assert.equal((await owner(`/api/families/${id}`, { method: "DELETE" })).status, 200)
+  assert.equal((await carlos("/api/families/mine")).status, 200)
+})

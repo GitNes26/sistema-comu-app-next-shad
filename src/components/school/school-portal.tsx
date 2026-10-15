@@ -1,5 +1,6 @@
 "use client"
 
+import { CourseCard } from "@/components/school/course-card"
 import { TrackPanel } from "@/components/school/track-panel"
 import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
@@ -139,43 +140,10 @@ export function SchoolPortal({ adminHref }: { adminHref?: string }) {
           {s.courses.length === 0 ? (
             <p className="rounded-2xl border bg-muted/40 p-4 text-sm text-muted-foreground">Aún no se publican libros en este programa.</p>
           ) : (
-            <ol className="grid gap-3 sm:grid-cols-2">
+            <ol className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {s.courses.map((c, i) => (
-                <li key={c.id} className={cn("space-y-3 rounded-2xl border bg-card p-4", c.passed && "border-success/40")}>
-                  <div className="flex items-start gap-3">
-                    <span className="grid size-9 shrink-0 place-items-center rounded-full bg-muted text-sm font-semibold tabular-nums">{s.kind === "ministry" ? i + 1 : <BookOpen className="size-4" />}</span>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold">{c.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {c.weeks} semanas · inscripción {money(c.enrollmentFee)}
-                        {c.bookPrice > 0 ? ` · libro ${money(c.bookPrice)} (opcional)` : ""}
-                      </p>
-                    </div>
-                    {c.passed && <StatusPill tone="success">Aprobado</StatusPill>}
-                  </div>
-                  {c.description && <p className="text-xs text-muted-foreground">{c.description}</p>}
-                  {c.groups.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">Sin grupos abiertos por ahora.</p>
-                  ) : (
-                    <ul className="space-y-1.5">
-                      {c.groups.map((g) => {
-                        const full = g.capacity !== null && g.enrolled >= g.capacity
-                        return (
-                          <li key={g.id} className="flex items-center gap-2 rounded-xl bg-muted/50 p-2 text-xs">
-                            <span className="min-w-0 flex-1">
-                              <span className="block font-medium">{g.name}</span>
-                              <span className="block text-muted-foreground">
-                                {[g.teacherName ? `Maestro: ${g.teacherName}` : null, fmtDate(g.startDate) ? `Inicia ${fmtDate(g.startDate)}` : null, g.capacity ? `${g.enrolled}/${g.capacity}` : null].filter(Boolean).join(" · ")}
-                              </span>
-                            </span>
-                            <Button size="sm" variant="outline" disabled={full || Boolean(s.blockedReason)} onClick={() => setRequest({ course: c, group: g, school: s })}>
-                              {full ? "Lleno" : "Solicitar"}
-                            </Button>
-                          </li>
-                        )
-                      })}
-                    </ul>
-                  )}
+                <li key={c.id}>
+                  <CourseCard course={c} index={i} ministry={s.kind === "ministry"} href={`/mi/escuela/cursos/${c.id}`} />
                 </li>
               ))}
             </ol>
@@ -248,7 +216,7 @@ function EnrollmentCard({ e, onChanged, compact }: { e: EnrollmentLiteDto; onCha
   )
 }
 
-function RequestDialog({ target, onClose, onDone }: { target: { course: CourseDto; group: GroupLiteDto; school: SchoolDto } | null; onClose: () => void; onDone: () => Promise<void> }) {
+export function RequestDialog({ target, onClose, onDone }: { target: { course: CourseDto; group: GroupLiteDto; school: SchoolDto } | null; onClose: () => void; onDone: () => Promise<void> }) {
   const [wantsBook, setWantsBook] = useState(false)
   const [saving, setSaving] = useState(false)
   useEffect(() => setWantsBook(false), [target])
