@@ -2,8 +2,26 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { CalendarDays, ChevronRight, Home, Newspaper, Radio, Ticket, Tv, UserRound, GraduationCap, HandCoins, HeartHandshake } from "lucide-react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  CalendarDays,
+  ChevronRight,
+  Home,
+  Newspaper,
+  Radio,
+  Ticket,
+  Tv,
+  UserRound,
+  GraduationCap,
+  HandCoins,
+  HeartHandshake,
+} from "lucide-react"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { StatusPill } from "@/components/base"
 import { apiJson } from "@/lib/ministries/client"
@@ -22,9 +40,18 @@ const SHORTCUTS = [
   { href: "/mi/perfil", label: "Mi perfil", icon: UserRound },
 ]
 
-const fmt = (iso: string) => new Date(iso).toLocaleString("es-MX", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })
+const fmt = (iso: string) =>
+  new Date(iso).toLocaleString("es-MX", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  })
 
-export function PortalHighlights({ compact = false }: { compact?: boolean } = {}) {
+export function PortalHighlights({
+  compact = false,
+}: { compact?: boolean } = {}) {
   const [home, setHome] = useState<PortalHomeDto | null>(null)
   const [failed, setFailed] = useState(false)
 
@@ -37,34 +64,57 @@ export function PortalHighlights({ compact = false }: { compact?: boolean } = {}
   return (
     <div className={compact ? "space-y-3" : "space-y-4"}>
       {home?.live && (
-        <Link href="/mi/transmisiones" className="press flex items-center gap-3 rounded-2xl border border-destructive/40 bg-destructive/5 p-4">
+        <Link
+          href="/mi/transmisiones"
+          className="press flex items-center gap-3 rounded-2xl border border-destructive/40 bg-destructive/5 p-4"
+        >
           <span className="grid size-10 shrink-0 place-items-center rounded-full bg-destructive text-destructive-foreground">
             <Radio className="size-5" />
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block text-xs font-semibold tracking-wide text-destructive uppercase">En vivo ahora</span>
-            <span className="block truncate font-medium">{home.live.title}</span>
+            <span className="block text-xs font-semibold tracking-wide text-destructive uppercase">
+              En vivo ahora
+            </span>
+            <span className="block truncate font-medium">
+              {home.live.title}
+            </span>
           </span>
           <ChevronRight className="size-4 text-muted-foreground" />
         </Link>
       )}
 
-      {!compact && <nav aria-label="Accesos rápidos" className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-        {SHORTCUTS.map((s) => (
-          <Link key={s.href} href={s.href} className="press flex flex-col items-center gap-1.5 rounded-2xl border bg-card px-2 py-3 text-center text-xs font-medium hover:border-primary/40">
-            <s.icon className="size-5 text-primary" />
-            {s.label}
-          </Link>
-        ))}
-      </nav>}
+      {!compact && (
+        <nav
+          aria-label="Accesos rápidos"
+          className="grid grid-cols-3 gap-2 sm:grid-cols-6"
+        >
+          {SHORTCUTS.map((s) => (
+            <Link
+              key={s.href}
+              href={s.href}
+              className="press flex flex-col items-center gap-1.5 rounded-2xl border bg-card px-2 py-3 text-center text-xs font-medium hover:border-primary/40"
+            >
+              <s.icon className="size-5 text-primary" />
+              {s.label}
+            </Link>
+          ))}
+        </nav>
+      )}
 
-      {!home && !failed && <Skeleton className={compact ? "h-24 w-full" : "h-32 w-full"} />}
+      {!home && !failed && (
+        <Skeleton className={compact ? "h-24 w-full" : "h-32 w-full"} />
+      )}
 
       {home && home.pendingJoinRequests > 0 && (
-        <Link href="/mi/ministerios" className="press flex items-center gap-3 rounded-2xl border bg-card p-4 text-sm">
+        <Link
+          href="/mi/ministerios"
+          className="press flex items-center gap-3 rounded-2xl border bg-card p-4 text-sm"
+        >
           <HeartHandshake className="size-5 shrink-0 text-primary" />
           <span className="min-w-0 flex-1">
-            <span className="font-medium">{home.pendingJoinRequests}</span> solicitud{home.pendingJoinRequests === 1 ? "" : "es"} para servir en tus ministerios
+            <span className="font-medium">{home.pendingJoinRequests}</span>{" "}
+            solicitud{home.pendingJoinRequests === 1 ? "" : "es"} para servir en
+            tus ministerios
           </span>
           <ChevronRight className="size-4 text-muted-foreground" />
         </Link>
@@ -81,9 +131,12 @@ export function PortalHighlights({ compact = false }: { compact?: boolean } = {}
           </CardHeader>
           <CardContent>
             <ul className="divide-y rounded-xl border">
-              {home.agenda.map((a) => (
+              {home.agenda.slice(0, compact ? 3 : 8).map((a) => (
                 <li key={`${a.kind}-${a.id}`}>
-                  <Link href={a.href} className="flex min-h-12 items-center gap-3 px-3 py-2 text-sm hover:bg-muted">
+                  <Link
+                    href={a.href}
+                    className="flex min-h-12 items-center gap-3 px-3 py-2 text-sm hover:bg-muted"
+                  >
                     {a.kind === "event" ? (
                       <Ticket className="size-4 shrink-0 text-muted-foreground" />
                     ) : a.kind === "serve" ? (
@@ -92,7 +145,9 @@ export function PortalHighlights({ compact = false }: { compact?: boolean } = {}
                       <Home className="size-4 shrink-0 text-muted-foreground" />
                     )}
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate font-medium">{a.title}</span>
+                      <span className="block truncate font-medium">
+                        {a.title}
+                      </span>
                       <span className="block truncate text-xs text-muted-foreground">
                         {a.at ? fmt(a.at) : a.detail}
                         {a.at && a.detail ? ` · ${a.detail}` : ""}
@@ -117,10 +172,15 @@ export function PortalHighlights({ compact = false }: { compact?: boolean } = {}
           </CardHeader>
           <CardContent className="space-y-2">
             <ul className="divide-y rounded-xl border">
-              {home.posts.map((p) => (
+              {home.posts.slice(0, compact ? 3 : 5).map((p) => (
                 <li key={p.id}>
-                  <Link href={`/mi/contenido#${p.id}`} className="flex min-h-12 items-center gap-3 px-3 py-2 text-sm hover:bg-muted">
-                    <span className="min-w-0 flex-1 truncate font-medium">{p.title}</span>
+                  <Link
+                    href={`/mi/contenido#${p.id}`}
+                    className="flex min-h-12 items-center gap-3 px-3 py-2 text-sm hover:bg-muted"
+                  >
+                    <span className="min-w-0 flex-1 truncate font-medium">
+                      {p.title}
+                    </span>
                     <StatusPill tone="neutral" dot={false}>
                       {POST_KINDS[p.kind]}
                     </StatusPill>
@@ -128,7 +188,10 @@ export function PortalHighlights({ compact = false }: { compact?: boolean } = {}
                 </li>
               ))}
             </ul>
-            <Link href="/mi/contenido" className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">
+            <Link
+              href="/mi/contenido"
+              className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+            >
               Ver todas <ChevronRight className="size-4" />
             </Link>
           </CardContent>
@@ -136,12 +199,23 @@ export function PortalHighlights({ compact = false }: { compact?: boolean } = {}
       )}
 
       {home?.nextStream && !home.live && (
-        <Link href="/mi/transmisiones" className="press flex items-center gap-3 rounded-2xl border bg-card p-4 text-sm">
+        <Link
+          href="/mi/transmisiones"
+          className="press flex items-center gap-3 rounded-2xl border bg-card p-4 text-sm"
+        >
           <Tv className="size-5 shrink-0 text-primary" />
           <span className="min-w-0 flex-1">
-            <span className="block text-xs text-muted-foreground">Próxima transmisión</span>
-            <span className="block truncate font-medium">{home.nextStream.title}</span>
-            {home.nextStream.scheduledAt && <span className="block text-xs text-muted-foreground">{fmt(home.nextStream.scheduledAt)}</span>}
+            <span className="block text-xs text-muted-foreground">
+              Próxima transmisión
+            </span>
+            <span className="block truncate font-medium">
+              {home.nextStream.title}
+            </span>
+            {home.nextStream.scheduledAt && (
+              <span className="block text-xs text-muted-foreground">
+                {fmt(home.nextStream.scheduledAt)}
+              </span>
+            )}
           </span>
           <ChevronRight className="size-4 text-muted-foreground" />
         </Link>

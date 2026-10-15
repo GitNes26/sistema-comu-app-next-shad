@@ -30,6 +30,10 @@ Formato: `MAJOR.MINOR.PATCH.REVISION` (X.X.X.X)
 
 ## Historial
 
+### [0.28.0.0] — 2026-10-15
+- **Tipo:** `feat` (Minor)
+- feat: paleta de marca azul con apoyo cian, tarjetas de libro compactas, safe areas laterales en el portal y Mi espacio menos saturado con secciones plegadas
+
 ### [0.27.0.0] — 2026-10-15
 - **Tipo:** `feat` (Minor)
 - feat: Mi espacio con columna lateral para novedades, agenda y semana en casa compactas, y Mi camino con mas protagonismo

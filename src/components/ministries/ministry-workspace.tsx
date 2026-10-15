@@ -189,7 +189,7 @@ export function MinistryWorkspace({
       )}
 
       <Card className="overflow-hidden">
-        <div className="flex flex-wrap items-center gap-2 bg-gradient-to-br from-primary/20 via-accent to-warning/10 px-5 py-3 text-xs text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-2 bg-gradient-to-br from-primary/20 via-accent to-info/10 px-5 py-3 text-xs text-muted-foreground">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-card/80 px-2.5 py-1 ring-1 ring-border">
             <Users className="size-3.5" /> {members.length} servidor(es)
           </span>

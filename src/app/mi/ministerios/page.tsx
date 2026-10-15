@@ -32,7 +32,7 @@ export default async function MyMinistriesPage() {
 
   return (
     <div className="w-full space-y-5">
-      <header className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/20 via-accent to-warning/10 p-5 sm:p-7">
+      <header className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/20 via-accent to-info/10 p-5 sm:p-7">
         <div className="flex flex-wrap items-center gap-4">
           <span className="grid size-14 shrink-0 place-items-center rounded-3xl bg-card text-primary shadow-sm">
             <HandHeart className="size-7" />

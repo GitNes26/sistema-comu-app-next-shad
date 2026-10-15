@@ -63,7 +63,9 @@ export default async function MiLayout({ children }: { children: React.ReactNode
                   </Button>
                 )}
                 <OrgSwitcher activeOrganizationId={organizationId} scope={session.user.scope} />
-                <ThemeToggle />
+                <span className="hidden min-[400px]:inline-flex">
+                  <ThemeToggle />
+                </span>
                 <NotificationsBell />
                 <PushSubscriber />
                 <UserMenu
@@ -81,7 +83,7 @@ export default async function MiLayout({ children }: { children: React.ReactNode
               </div>
             </div>
           </header>
-          <main className="w-full px-3 pb-[max(2rem,env(safe-area-inset-bottom))] pt-5 sm:px-4">{children}</main>
+          <main className="w-full pt-5 pr-[max(0.75rem,env(safe-area-inset-right))] pb-[max(2rem,env(safe-area-inset-bottom))] pl-[max(0.75rem,env(safe-area-inset-left))] sm:pr-[max(1rem,env(safe-area-inset-right))] sm:pl-[max(1rem,env(safe-area-inset-left))]">{children}</main>
         </div>
       </>
     </SessionGuard>

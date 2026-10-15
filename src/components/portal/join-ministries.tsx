@@ -43,7 +43,10 @@ export function JoinMinistries() {
     if (!target) return
     setBusy(target.id)
     try {
-      await apiJson("/api/portal/ministries", { method: "POST", body: JSON.stringify({ ministryId: target.id, message }) })
+      await apiJson("/api/portal/ministries", {
+        method: "POST",
+        body: JSON.stringify({ ministryId: target.id, message }),
+      })
       notify.success("Solicitud enviada; su líder la revisará")
       setTarget(null)
       setMessage("")
@@ -57,8 +60,15 @@ export function JoinMinistries() {
   const decide = async (r: JoinRequestDto, decision: "approve" | "reject") => {
     setBusy(r.id)
     try {
-      await apiJson(`/api/portal/join-requests/${r.id}`, { method: "POST", body: JSON.stringify({ decision }) })
-      notify.success(decision === "approve" ? "Se integró al ministerio" : "Solicitud rechazada")
+      await apiJson(`/api/portal/join-requests/${r.id}`, {
+        method: "POST",
+        body: JSON.stringify({ decision }),
+      })
+      notify.success(
+        decision === "approve"
+          ? "Se integró al ministerio"
+          : "Solicitud rechazada"
+      )
       await load()
     } catch (e) {
       swalError("No se pudo resolver", errorMessage(e))
@@ -74,22 +84,38 @@ export function JoinMinistries() {
     <div className="space-y-6">
       {requests.length > 0 && (
         <section className="space-y-2">
-          <h2 className="font-heading text-base font-semibold">Solicitudes por decidir</h2>
+          <h2 className="font-heading text-base font-semibold">
+            Solicitudes por decidir
+          </h2>
           <ul className="divide-y rounded-2xl border bg-card">
             {requests.map((r) => (
-              <li key={r.id} className="flex flex-wrap items-center gap-3 px-3 py-2.5">
+              <li
+                key={r.id}
+                className="flex flex-wrap items-center gap-3 px-3 py-2.5"
+              >
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium">{r.memberName}</span>
+                  <span className="block truncate text-sm font-medium">
+                    {r.memberName}
+                  </span>
                   <span className="block truncate text-xs text-muted-foreground">
                     Quiere servir en {r.ministryName}
                     {r.message ? ` · «${r.message}»` : ""}
                   </span>
                 </span>
-                <Button size="sm" disabled={busy === r.id} onClick={() => void decide(r, "approve")}>
+                <Button
+                  size="sm"
+                  disabled={busy === r.id}
+                  onClick={() => void decide(r, "approve")}
+                >
                   <Check className="size-4" />
                   Aceptar
                 </Button>
-                <Button size="sm" variant="outline" disabled={busy === r.id} onClick={() => void decide(r, "reject")}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={busy === r.id}
+                  onClick={() => void decide(r, "reject")}
+                >
                   <X className="size-4" />
                   Rechazar
                 </Button>
@@ -101,24 +127,45 @@ export function JoinMinistries() {
 
       {available.length > 0 && (
         <section className="space-y-2">
-          <h2 className="font-heading text-base font-semibold">Quiero servir</h2>
-          <p className="text-sm text-muted-foreground">Elige un ministerio y su líder revisará tu solicitud.</p>
+          <h2 className="font-heading text-base font-semibold">
+            Quiero servir
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Elige un ministerio y su líder revisará tu solicitud.
+          </p>
           <ul className="grid gap-3 sm:grid-cols-2">
             {available.map((m) => (
-              <li key={m.id} className="flex flex-col gap-2 rounded-2xl border bg-card p-4">
+              <li
+                key={m.id}
+                className="flex flex-col gap-2 rounded-2xl border bg-card p-4"
+              >
                 <div className="flex items-start gap-2">
                   <HandHeart className="mt-0.5 size-4 shrink-0 text-primary" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium">{m.name}</p>
-                    {m.description && <p className="line-clamp-2 text-xs text-muted-foreground">{m.description}</p>}
-                    {m.requirements && <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">Requisitos: {m.requirements}</p>}
+                    {m.description && (
+                      <p className="line-clamp-2 text-xs text-muted-foreground">
+                        {m.description}
+                      </p>
+                    )}
+                    {m.requirements && (
+                      <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                        Requisitos: {m.requirements}
+                      </p>
+                    )}
                   </div>
                 </div>
                 {m.state === "pending" ? (
                   <StatusPill tone="warning">Solicitud en revisión</StatusPill>
                 ) : (
-                  <Button size="sm" variant={m.state === "rejected" ? "outline" : "default"} onClick={() => setTarget(m)}>
-                    {m.state === "rejected" ? "Volver a solicitar" : "Solicitar"}
+                  <Button
+                    size="sm"
+                    variant={m.state === "rejected" ? "outline" : "default"}
+                    onClick={() => setTarget(m)}
+                  >
+                    {m.state === "rejected"
+                      ? "Volver a solicitar"
+                      : "Solicitar"}
                   </Button>
                 )}
               </li>
@@ -135,7 +182,11 @@ export function JoinMinistries() {
         description="Cuéntale a su líder por qué quieres servir (opcional)."
         footer={
           <>
-            <Button variant="ghost" onClick={() => setTarget(null)} disabled={busy !== null}>
+            <Button
+              variant="ghost"
+              onClick={() => setTarget(null)}
+              disabled={busy !== null}
+            >
               Cancelar
             </Button>
             <Button onClick={() => void send()} disabled={busy !== null}>
@@ -145,7 +196,13 @@ export function JoinMinistries() {
           </>
         }
       >
-        <Textarea rows={4} value={message} maxLength={500} onChange={(e) => setMessage(e.target.value)} placeholder="Mensaje para el líder…" />
+        <Textarea
+          rows={4}
+          value={message}
+          maxLength={500}
+          onChange={(e) => setMessage(e.target.value)}
+          placeholder="Mensaje para el líder…"
+        />
       </DialogComponent>
     </div>
   )

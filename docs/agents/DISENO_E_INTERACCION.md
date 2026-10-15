@@ -103,3 +103,10 @@ La interfaz habla como una familia, no como un sistema: **«¡Bienvenido a casa!
 
 - Toda página de `/mi` abre con `PageHero` (`src/components/mi/page-hero.tsx`): icono, título y leyenda sobre banda cálida. La flecha de regreso la pone el layout; no se duplica en la página.
 - «Mi espacio» es un tablero: portada con avatar y datos, ritmo de la semana, camino con hitos, ministerios como tarjetas, accesos rápidos y datos de la iglesia.
+
+## Paleta de marca y densidad de información
+
+- **Paleta**: azul comunidad (`primaryHue` 245) con apoyo cian (`accentHue` 215) y superficies pizarra; sin ámbar. Los degradados de portada usan `from-primary/… via-accent to-info/10`. El tono lo puede ajustar cada iglesia en Apariencia.
+- **Menos es más**: cada vista muestra a primera vista lo esencial (≈3 bloques); lo demás va plegado (`<details>`: hitos, etapas, resto de la semana, «Mi iglesia») o limitado (agenda y novedades: 3). Un acceso rápido solo si lleva a algo que se usa cada semana.
+- **Tarjetas compactas**: la tarjeta de libro es horizontal (portada 3:4 de 5–6rem + resumen); nunca portadas a ancho completo.
+- **Safe areas**: `main`, cabeceras y barras fijas suman `env(safe-area-inset-*)` en los cuatro lados (también izquierda/derecha en horizontal). En pantallas < 400px se oculta el selector de tema para que quepa la barra superior.

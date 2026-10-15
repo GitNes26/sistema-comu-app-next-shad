@@ -34,7 +34,7 @@ export interface AppearanceParams {
 
 export const DEFAULT_APPEARANCE: AppearanceParams = {
   primaryHue: 245,
-  accentHue: 85,
+  accentHue: 215,
   fontFamily: "poppins",
   fontScale: 1,
   density: "comfortable",

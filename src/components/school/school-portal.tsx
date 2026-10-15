@@ -140,7 +140,7 @@ export function SchoolPortal({ adminHref }: { adminHref?: string }) {
           {s.courses.length === 0 ? (
             <p className="rounded-2xl border bg-muted/40 p-4 text-sm text-muted-foreground">Aún no se publican libros en este programa.</p>
           ) : (
-            <ol className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <ol className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
               {s.courses.map((c, i) => (
                 <li key={c.id}>
                   <CourseCard course={c} index={i} ministry={s.kind === "ministry"} href={`/mi/escuela/cursos/${c.id}`} />

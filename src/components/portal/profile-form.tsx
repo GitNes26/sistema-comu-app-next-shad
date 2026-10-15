@@ -31,11 +31,17 @@ const GENDER = [
   { value: "male", label: "Hombre" },
 ]
 
-const toDate = (ymd: string | null) => (ymd ? new Date(`${ymd}T12:00:00`) : null)
-const toYmd = (d: Date | null) => (d ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}` : null)
+const toDate = (ymd: string | null) =>
+  ymd ? new Date(`${ymd}T12:00:00`) : null
+const toYmd = (d: Date | null) =>
+  d
+    ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+    : null
 
 export function ProfileForm() {
-  const [profile, setProfile] = useState<ProfileDto | null | undefined>(undefined)
+  const [profile, setProfile] = useState<ProfileDto | null | undefined>(
+    undefined
+  )
   const [form, setForm] = useState<Record<string, string>>({})
   const [birth, setBirth] = useState<Date | null>(null)
   const [photo, setPhoto] = useState("")
@@ -80,14 +86,19 @@ export function ProfileForm() {
     )
   }
 
-  const set = (key: string) => (e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, [key]: e.target.value }))
+  const set = (key: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm((f) => ({ ...f, [key]: e.target.value }))
 
   const save = async () => {
     setSaving(true)
     try {
       await apiJson("/api/portal/profile", {
         method: "PUT",
-        body: JSON.stringify({ ...form, birthDate: toYmd(birth), imageUrl: photo || null }),
+        body: JSON.stringify({
+          ...form,
+          birthDate: toYmd(birth),
+          imageUrl: photo || null,
+        }),
       })
       notify.success("Perfil actualizado")
     } catch (e) {
@@ -109,9 +120,14 @@ export function ProfileForm() {
           )}
         </span>
         <div className="min-w-0 flex-1">
-          <p className="truncate font-heading text-base font-semibold">{profile.fullName}</p>
+          <p className="truncate font-heading text-base font-semibold">
+            {profile.fullName}
+          </p>
           <p className="text-xs text-muted-foreground">
-            {profile.memberCode ? `Número de creyente ${profile.memberCode} · ` : ""}Tu nombre lo administra la secretaría.
+            {profile.memberCode
+              ? `Número de creyente ${profile.memberCode} · `
+              : ""}
+            Tu nombre lo administra la secretaría.
           </p>
         </div>
       </section>
@@ -119,22 +135,67 @@ export function ProfileForm() {
       <section className="space-y-3 rounded-2xl border bg-card p-4">
         <h2 className="font-heading text-base font-semibold">Contacto</h2>
         <div className="grid gap-3 sm:grid-cols-2">
-          <InputGroupField label="Teléfono" inputMode="tel" autoComplete="tel" value={form.phone ?? ""} maxLength={30} onChange={set("phone")} />
-          <InputGroupField label="Correo" inputMode="email" autoComplete="email" value={form.email ?? ""} maxLength={120} onChange={set("email")} />
-          <InputGroupField label="Mejor horario para contactarte" value={form.contactSchedule ?? ""} maxLength={150} onChange={set("contactSchedule")} />
+          <InputGroupField
+            label="Teléfono"
+            inputMode="tel"
+            autoComplete="tel"
+            value={form.phone ?? ""}
+            maxLength={30}
+            onChange={set("phone")}
+          />
+          <InputGroupField
+            label="Correo"
+            inputMode="email"
+            autoComplete="email"
+            value={form.email ?? ""}
+            maxLength={120}
+            onChange={set("email")}
+          />
+          <InputGroupField
+            label="Mejor horario para contactarte"
+            value={form.contactSchedule ?? ""}
+            maxLength={150}
+            onChange={set("contactSchedule")}
+          />
           <div className="sm:col-span-2">
-            <Attachment label="Mi foto" value={photo || null} onChange={(u) => setPhoto(u ?? "")} upload={uploadFile} />
+            <Attachment
+              label="Mi foto"
+              value={photo || null}
+              onChange={(u) => setPhoto(u ?? "")}
+              upload={uploadFile}
+            />
           </div>
         </div>
       </section>
 
       <section className="space-y-3 rounded-2xl border bg-card p-4">
-        <h2 className="font-heading text-base font-semibold">Datos personales</h2>
+        <h2 className="font-heading text-base font-semibold">
+          Datos personales
+        </h2>
         <div className="grid gap-3 sm:grid-cols-2">
-          <DatePicker label="Fecha de nacimiento" value={birth} onChange={setBirth} />
-          <FormCombobox label="Género" options={GENDER} value={form.gender ?? ""} onChange={(v) => setForm((f) => ({ ...f, gender: v }))} />
-          <FormCombobox label="Estado civil" options={MARITAL} value={form.maritalStatus ?? ""} onChange={(v) => setForm((f) => ({ ...f, maritalStatus: v }))} />
-          <InputGroupField label="Ocupación" value={form.occupation ?? ""} maxLength={100} onChange={set("occupation")} />
+          <DatePicker
+            label="Fecha de nacimiento"
+            value={birth}
+            onChange={setBirth}
+          />
+          <FormCombobox
+            label="Género"
+            options={GENDER}
+            value={form.gender ?? ""}
+            onChange={(v) => setForm((f) => ({ ...f, gender: v }))}
+          />
+          <FormCombobox
+            label="Estado civil"
+            options={MARITAL}
+            value={form.maritalStatus ?? ""}
+            onChange={(v) => setForm((f) => ({ ...f, maritalStatus: v }))}
+          />
+          <InputGroupField
+            label="Ocupación"
+            value={form.occupation ?? ""}
+            maxLength={100}
+            onChange={set("occupation")}
+          />
         </div>
       </section>
 
@@ -142,12 +203,41 @@ export function ProfileForm() {
         <h2 className="font-heading text-base font-semibold">Domicilio</h2>
         <div className="grid gap-3 sm:grid-cols-3">
           <div className="sm:col-span-2">
-            <InputGroupField label="Calle" autoComplete="address-line1" value={form.street ?? ""} maxLength={150} onChange={set("street")} />
+            <InputGroupField
+              label="Calle"
+              autoComplete="address-line1"
+              value={form.street ?? ""}
+              maxLength={150}
+              onChange={set("street")}
+            />
           </div>
-          <InputGroupField label="Número" value={form.streetNumber ?? ""} maxLength={20} onChange={set("streetNumber")} />
-          <InputGroupField label="Colonia" value={form.neighborhood ?? ""} maxLength={100} onChange={set("neighborhood")} />
-          <InputGroupField label="Ciudad" autoComplete="address-level2" value={form.city ?? ""} maxLength={100} onChange={set("city")} />
-          <InputGroupField label="Código postal" inputMode="numeric" autoComplete="postal-code" value={form.postalCode ?? ""} maxLength={10} onChange={set("postalCode")} />
+          <InputGroupField
+            label="Número"
+            value={form.streetNumber ?? ""}
+            maxLength={20}
+            onChange={set("streetNumber")}
+          />
+          <InputGroupField
+            label="Colonia"
+            value={form.neighborhood ?? ""}
+            maxLength={100}
+            onChange={set("neighborhood")}
+          />
+          <InputGroupField
+            label="Ciudad"
+            autoComplete="address-level2"
+            value={form.city ?? ""}
+            maxLength={100}
+            onChange={set("city")}
+          />
+          <InputGroupField
+            label="Código postal"
+            inputMode="numeric"
+            autoComplete="postal-code"
+            value={form.postalCode ?? ""}
+            maxLength={10}
+            onChange={set("postalCode")}
+          />
         </div>
       </section>
 

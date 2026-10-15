@@ -405,7 +405,7 @@ model AppSettings {
   id             String   @id @default(cuid())
   organizationId String   @unique
   primaryHue     Int      @default(245)
-  accentHue      Int      @default(85)
+  accentHue      Int      @default(215)
   theme          String   @default("system")
   fontFamily     String   @default("poppins")
   fontScale      Decimal  @default(1) @db.Decimal(3, 2)

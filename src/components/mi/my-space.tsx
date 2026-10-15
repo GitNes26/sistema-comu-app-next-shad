@@ -72,6 +72,7 @@ const SOCIAL_LABEL: Record<string, string> = {
   x: "X",
 }
 
+const SHORTCUTS_LIMIT = 6
 const SHORTCUTS: Array<{
   href: string
   label: string
@@ -220,7 +221,7 @@ export function MySpaceView({
   return (
     <div className="w-full space-y-5">
       {/* Portada: saludo + quién eres */}
-      <header className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/20 via-accent to-warning/10 p-5 sm:p-7">
+      <header className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/20 via-accent to-info/10 p-5 sm:p-7">
         <div
           className="pointer-events-none absolute -right-10 -top-10 size-48 rounded-full bg-primary/10 blur-2xl"
           aria-hidden
@@ -355,32 +356,52 @@ export function MySpaceView({
                   </div>
                 </div>
 
-                <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-                  <Milestone
-                    icon={Droplets}
-                    label="Bautismo en aguas"
-                    done={member.baptizedWater}
-                    at={member.baptizedWaterAt}
-                  />
-                  <Milestone
-                    icon={Sparkles}
-                    label="Encuentro con Jesús"
-                    done={!!member.encounterAt}
-                    at={member.encounterAt}
-                  />
-                  <Milestone
-                    icon={Rocket}
-                    label="Lanzamiento"
-                    done={!!member.launchAt}
-                    at={member.launchAt}
-                  />
-                  <Milestone
-                    icon={Flame}
-                    label="Bautismo en fuego"
-                    done={member.baptizedFire}
-                    at={member.baptizedFireAt}
-                  />
-                </div>
+                <details className="group rounded-2xl border p-3 [&_summary::-webkit-details-marker]:hidden">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-sm font-medium">
+                    <span>
+                      Mis hitos{" "}
+                      <span className="text-muted-foreground">
+                        ·{" "}
+                        {
+                          [
+                            member.baptizedWater,
+                            !!member.encounterAt,
+                            !!member.launchAt,
+                            member.baptizedFire,
+                          ].filter(Boolean).length
+                        }{" "}
+                        de 4
+                      </span>
+                    </span>
+                    <ChevronRight className="size-4 text-muted-foreground transition-transform group-open:rotate-90" />
+                  </summary>
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                    <Milestone
+                      icon={Droplets}
+                      label="Bautismo en aguas"
+                      done={member.baptizedWater}
+                      at={member.baptizedWaterAt}
+                    />
+                    <Milestone
+                      icon={Sparkles}
+                      label="Encuentro con Jesús"
+                      done={!!member.encounterAt}
+                      at={member.encounterAt}
+                    />
+                    <Milestone
+                      icon={Rocket}
+                      label="Lanzamiento"
+                      done={!!member.launchAt}
+                      at={member.launchAt}
+                    />
+                    <Milestone
+                      icon={Flame}
+                      label="Bautismo en fuego"
+                      done={member.baptizedFire}
+                      at={member.baptizedFireAt}
+                    />
+                  </div>
+                </details>
 
                 <details className="group">
                   <summary className="cursor-pointer text-sm font-medium text-primary">
@@ -500,8 +521,8 @@ export function MySpaceView({
             <h2 className="font-heading text-lg font-semibold">
               Accesos rápidos
             </h2>
-            <ul className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-4">
-              {SHORTCUTS.map((s) => (
+            <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {SHORTCUTS.slice(0, SHORTCUTS_LIMIT).map((s) => (
                 <li key={s.href}>
                   <Link
                     href={s.href}
@@ -533,119 +554,131 @@ export function MySpaceView({
         <aside className="min-w-0 space-y-4">
           <PortalHighlights compact />
           <WeekRhythm compact />
-          {church.donations && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <HandHeart className="size-4 text-primary" />
-                  Diezmos y ofrendas
-                </CardTitle>
-                {church.donations.note && (
-                  <CardDescription>{church.donations.note}</CardDescription>
-                )}
-              </CardHeader>
-              <CardContent>
-                <dl className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
-                  {(
-                    [
-                      ["Banco", church.donations.bank],
-                      ["Titular", church.donations.holder],
-                      ["CLABE", church.donations.clabe],
-                      ["Cuenta", church.donations.account],
-                      ["Tarjeta", church.donations.card],
-                    ] as const
-                  )
-                    .filter(([, v]) => v)
-                    .map(([label, value]) => (
-                      <div key={label}>
-                        <dt className="text-xs text-muted-foreground">
-                          {label}
-                        </dt>
-                        <dd className="font-mono tabular-nums">{value}</dd>
-                      </div>
-                    ))}
-                </dl>
-                {church.donations.link && (
-                  <a
-                    href={church.donations.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-primary underline-offset-4 hover:underline"
-                  >
-                    <Link2 className="size-4" />
-                    Dar en línea
-                  </a>
-                )}
-              </CardContent>
-            </Card>
-          )}
+          <details className="group rounded-2xl border bg-card [&_summary::-webkit-details-marker]:hidden">
+            <summary className="flex cursor-pointer list-none items-center gap-2 p-4 font-heading text-base font-semibold">
+              <Church className="size-4 text-primary" />
+              <span className="min-w-0 flex-1 truncate">Mi iglesia</span>
+              <ChevronRight className="size-4 text-muted-foreground transition-transform group-open:rotate-90" />
+            </summary>
+            <div className="space-y-4 p-3 pt-0">
+              {church.donations && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <HandHeart className="size-4 text-primary" />
+                      Diezmos y ofrendas
+                    </CardTitle>
+                    {church.donations.note && (
+                      <CardDescription>{church.donations.note}</CardDescription>
+                    )}
+                  </CardHeader>
+                  <CardContent>
+                    <dl className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
+                      {(
+                        [
+                          ["Banco", church.donations.bank],
+                          ["Titular", church.donations.holder],
+                          ["CLABE", church.donations.clabe],
+                          ["Cuenta", church.donations.account],
+                          ["Tarjeta", church.donations.card],
+                        ] as const
+                      )
+                        .filter(([, v]) => v)
+                        .map(([label, value]) => (
+                          <div key={label}>
+                            <dt className="text-xs text-muted-foreground">
+                              {label}
+                            </dt>
+                            <dd className="font-mono tabular-nums">{value}</dd>
+                          </div>
+                        ))}
+                    </dl>
+                    {church.donations.link && (
+                      <a
+                        href={church.donations.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-primary underline-offset-4 hover:underline"
+                      >
+                        <Link2 className="size-4" />
+                        Dar en línea
+                      </a>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Church className="size-4 text-primary" />
-                {church.name}
-              </CardTitle>
-              {church.description && (
-                <CardDescription>{church.description}</CardDescription>
-              )}
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              {church.address && (
-                <p className="flex items-start gap-2">
-                  <MapPin className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-                  {church.address}
-                </p>
-              )}
-              {church.phone && (
-                <p className="flex items-center gap-2">
-                  <Phone className="size-4 shrink-0 text-muted-foreground" />
-                  <a href={`tel:${church.phone}`} className="hover:underline">
-                    {church.phone}
-                  </a>
-                </p>
-              )}
-              {church.email && (
-                <p className="flex items-center gap-2">
-                  <Mail className="size-4 shrink-0 text-muted-foreground" />
-                  <a
-                    href={`mailto:${church.email}`}
-                    className="hover:underline"
-                  >
-                    {church.email}
-                  </a>
-                </p>
-              )}
-              {church.website && (
-                <p className="flex items-center gap-2">
-                  <Globe className="size-4 shrink-0 text-muted-foreground" />
-                  <a
-                    href={church.website}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:underline"
-                  >
-                    {church.website}
-                  </a>
-                </p>
-              )}
-              {Object.keys(church.socialLinks).length > 0 && (
-                <div className="flex flex-wrap gap-2 pt-1">
-                  {Object.entries(church.socialLinks).map(([key, url]) => (
-                    <a
-                      key={key}
-                      href={url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="press rounded-full border px-3 py-1.5 text-xs font-medium transition-colors hover:border-primary/40"
-                    >
-                      {SOCIAL_LABEL[key] ?? key}
-                    </a>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <Church className="size-4 text-primary" />
+                    {church.name}
+                  </CardTitle>
+                  {church.description && (
+                    <CardDescription>{church.description}</CardDescription>
+                  )}
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm">
+                  {church.address && (
+                    <p className="flex items-start gap-2">
+                      <MapPin className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                      {church.address}
+                    </p>
+                  )}
+                  {church.phone && (
+                    <p className="flex items-center gap-2">
+                      <Phone className="size-4 shrink-0 text-muted-foreground" />
+                      <a
+                        href={`tel:${church.phone}`}
+                        className="hover:underline"
+                      >
+                        {church.phone}
+                      </a>
+                    </p>
+                  )}
+                  {church.email && (
+                    <p className="flex items-center gap-2">
+                      <Mail className="size-4 shrink-0 text-muted-foreground" />
+                      <a
+                        href={`mailto:${church.email}`}
+                        className="hover:underline"
+                      >
+                        {church.email}
+                      </a>
+                    </p>
+                  )}
+                  {church.website && (
+                    <p className="flex items-center gap-2">
+                      <Globe className="size-4 shrink-0 text-muted-foreground" />
+                      <a
+                        href={church.website}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="hover:underline"
+                      >
+                        {church.website}
+                      </a>
+                    </p>
+                  )}
+                  {Object.keys(church.socialLinks).length > 0 && (
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {Object.entries(church.socialLinks).map(([key, url]) => (
+                        <a
+                          key={key}
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="press rounded-full border px-3 py-1.5 text-xs font-medium transition-colors hover:border-primary/40"
+                        >
+                          {SOCIAL_LABEL[key] ?? key}
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </details>
         </aside>
       </div>
     </div>

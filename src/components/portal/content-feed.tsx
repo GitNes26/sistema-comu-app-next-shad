@@ -14,7 +14,12 @@ import type { PostDto } from "@/lib/portal/server"
 
 // Publicaciones de la iglesia: anuncios, devocionales, artículos y noticias.
 
-const fmt = (iso: string) => new Date(iso).toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" })
+const fmt = (iso: string) =>
+  new Date(iso).toLocaleDateString("es-MX", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  })
 
 /** Texto con saltos de línea y enlaces https clicables (sin HTML). */
 function Body({ text }: { text: string }) {
@@ -23,7 +28,13 @@ function Body({ text }: { text: string }) {
     <p className="text-sm leading-relaxed whitespace-pre-line">
       {parts.map((p, i) =>
         p.startsWith("https://") ? (
-          <a key={i} href={p} target="_blank" rel="noopener noreferrer" className="break-all text-primary underline-offset-2 hover:underline">
+          <a
+            key={i}
+            href={p}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="break-all text-primary underline-offset-2 hover:underline"
+          >
             {p}
           </a>
         ) : (
@@ -41,10 +52,19 @@ export function ContentFeed({ canManage }: { canManage: boolean }) {
   useEffect(() => {
     apiJson<{ posts: PostDto[] }>("/api/portal/posts")
       .then((r) => setPosts(r.posts))
-      .catch((e) => setError(errorMessage(e, "No se pudieron cargar las publicaciones")))
+      .catch((e) =>
+        setError(errorMessage(e, "No se pudieron cargar las publicaciones"))
+      )
   }, [])
 
-  if (error) return <EmptyState icon={Newspaper} title="No se pudo cargar" description={error} />
+  if (error)
+    return (
+      <EmptyState
+        icon={Newspaper}
+        title="No se pudo cargar"
+        description={error}
+      />
+    )
   if (!posts) return <Skeleton className="h-64 w-full" />
 
   return (
@@ -60,7 +80,11 @@ export function ContentFeed({ canManage }: { canManage: boolean }) {
         </div>
       )}
       {posts.length === 0 ? (
-        <EmptyState icon={Megaphone} title="Aún no hay publicaciones" description="Cuando la iglesia publique anuncios o devocionales, aparecerán aquí." />
+        <EmptyState
+          icon={Megaphone}
+          title="Aún no hay publicaciones"
+          description="Cuando la iglesia publique anuncios o devocionales, aparecerán aquí."
+        />
       ) : (
         <ul className="space-y-4">
           {posts.map((p) => (
@@ -68,12 +92,22 @@ export function ContentFeed({ canManage }: { canManage: boolean }) {
               <article className="overflow-hidden rounded-2xl border bg-card">
                 {p.flyer ? (
                   <div className="p-3 pb-0 sm:mx-auto sm:max-w-md">
-                    <PostFlyer flyer={p.flyer} title={p.title} body={p.body} kind={p.kind} />
+                    <PostFlyer
+                      flyer={p.flyer}
+                      title={p.title}
+                      body={p.body}
+                      kind={p.kind}
+                    />
                   </div>
                 ) : (
                   p.coverUrl && (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={p.coverUrl} alt="" loading="lazy" className="aspect-[16/7] w-full object-cover" />
+                    <img
+                      src={p.coverUrl}
+                      alt=""
+                      loading="lazy"
+                      className="aspect-[16/7] w-full object-cover"
+                    />
                   )
                 )}
                 <div className="space-y-2 p-4">
@@ -87,11 +121,16 @@ export function ContentFeed({ canManage }: { canManage: boolean }) {
                         Fijada
                       </span>
                     )}
-                    <time className="ml-auto text-xs text-muted-foreground" dateTime={p.publishedAt}>
+                    <time
+                      className="ml-auto text-xs text-muted-foreground"
+                      dateTime={p.publishedAt}
+                    >
                       {fmt(p.publishedAt)}
                     </time>
                   </div>
-                  <h2 className="font-heading text-lg font-semibold">{p.title}</h2>
+                  <h2 className="font-heading text-lg font-semibold">
+                    {p.title}
+                  </h2>
                   <Body text={p.body} />
                 </div>
               </article>

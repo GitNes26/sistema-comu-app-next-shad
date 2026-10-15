@@ -135,7 +135,7 @@
 
   /* Sistema de apariencia: generadas desde app_settings */
   --primary-hue: 245;
-  --accent-hue: 85;
+  --accent-hue: 215;
   --font-family: var(--font-poppins);
   --font-scale: 1;
   --radius-base: 0.75;

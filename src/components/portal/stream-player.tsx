@@ -8,7 +8,12 @@ import type { StreamDto } from "@/lib/portal/server"
 export function StreamPlayer({ stream }: { stream: StreamDto }) {
   if (!stream.embedUrl) {
     return (
-      <a href={stream.url} target="_blank" rel="noopener noreferrer" className="flex aspect-video items-center justify-center gap-2 rounded-2xl bg-muted text-sm font-medium hover:underline">
+      <a
+        href={stream.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex aspect-video items-center justify-center gap-2 rounded-2xl bg-muted text-sm font-medium hover:underline"
+      >
         Abrir transmisión <ExternalLink className="size-4" />
       </a>
     )
