@@ -13,3 +13,4 @@ Lee `AGENTS.md` primero. Después carga solo lo necesario:
 Principio de economía: no cargues todos los manuales para una corrección local. Busca primero con `rg`, abre la implementación canónica y compara al menos un consumidor real.
 
 Estos documentos contienen reglas de ingeniería, no instrucciones de una tarea particular. No agregues credenciales, IDs locales, resultados de pruebas puntuales ni pendientes que ya concluyeron.
+- [`FLUJOS.md`](FLUJOS.md): flujos de punta a punta (visitante→crecimiento, donativos y campañas, eventos, escuela, kids, ministerios, nómina).

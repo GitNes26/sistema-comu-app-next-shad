@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db"
+import { openCampaignOrThrow } from "@/lib/finance/campaigns"
 import { fireAndForget, notifyMembers, notifyPermission } from "@/lib/notifications/church"
 import { CrudError } from "@/lib/crud/types"
 import { memberIdOfUser, type Actor } from "@/lib/ministries/server"
@@ -151,6 +152,7 @@ export async function createIncome(actor: Actor, input: Record<string, unknown>)
       notes: text(input.notes, 500),
       memberId: await validMember(actor.organizationId, input.memberId),
       gatheringId: await validGathering(actor.organizationId, input.gatheringId),
+      campaignId: (await openCampaignOrThrow(actor.organizationId, input.campaignId))?.id ?? null,
       createdByUserId: actor.userId,
     },
     select: { id: true },
@@ -328,9 +330,10 @@ export interface DonationDto {
   createdAt: string
   paidAt: string | null
   notes: string | null
+  campaignName: string | null
 }
 
-const donationDto = (d: { id: string; donorName: string | null; member: { fullName: string } | null; amount: unknown; kind: string; provider: string | null; reference: string | null; status: DonationDto["status"]; createdAt: Date; paidAt: Date | null; notes: string | null }): DonationDto => ({
+const donationDto = (d: { id: string; donorName: string | null; member: { fullName: string } | null; amount: unknown; kind: string; provider: string | null; reference: string | null; status: DonationDto["status"]; createdAt: Date; paidAt: Date | null; notes: string | null; campaign?: { name: string } | null }): DonationDto => ({
   id: d.id,
   donor: d.member?.fullName ?? d.donorName ?? "Anónimo",
   amount: num(d.amount as { toString(): string }),
@@ -341,13 +344,14 @@ const donationDto = (d: { id: string; donorName: string | null; member: { fullNa
   createdAt: d.createdAt.toISOString(),
   paidAt: d.paidAt?.toISOString() ?? null,
   notes: d.notes,
+  campaignName: d.campaign?.name ?? null,
 })
 
 export async function listDonations(actor: Actor, status?: string): Promise<DonationDto[]> {
   assertView(actor)
   const rows = await prisma.donation.findMany({
     where: { organizationId: actor.organizationId, ...(["pending", "paid", "failed", "refunded"].includes(String(status)) ? { status: status as DonationDto["status"] } : {}) },
-    include: { member: { select: { fullName: true } } },
+    include: { member: { select: { fullName: true } }, campaign: { select: { name: true } } },
     orderBy: { createdAt: "desc" },
     take: 200,
   })
@@ -355,7 +359,7 @@ export async function listDonations(actor: Actor, status?: string): Promise<Dona
 }
 
 /** El creyente avisa que ya hizo su transferencia; tesorería la confirma. */
-export async function reportMyDonation(actor: Actor, input: { amount?: unknown; kind?: unknown; reference?: unknown; notes?: unknown }) {
+export async function reportMyDonation(actor: Actor, input: { amount?: unknown; kind?: unknown; reference?: unknown; notes?: unknown; campaignId?: unknown }) {
   const memberId = await memberIdOfUser(actor.organizationId, actor.userId)
   if (!memberId) throw new CrudError("Tu usuario aún no tiene ficha de creyente", 409)
   const amount = money(input.amount)
@@ -363,8 +367,9 @@ export async function reportMyDonation(actor: Actor, input: { amount?: unknown; 
   const kind = ["tithe", "offering", "donation"].includes(String(input.kind)) ? (String(input.kind) as "tithe" | "offering" | "donation") : "donation"
   const pending = await prisma.donation.count({ where: { organizationId: actor.organizationId, memberId, status: "pending" } })
   if (pending >= 5) throw new CrudError("Tienes varios avisos pendientes; espera a que se confirmen", 409)
+  const campaign = await openCampaignOrThrow(actor.organizationId, input.campaignId)
   const row = await prisma.donation.create({
-    data: { organizationId: actor.organizationId, memberId, amount, kind, reference: text(input.reference, 80), notes: text(input.notes, 300) },
+    data: { organizationId: actor.organizationId, memberId, amount, kind, reference: text(input.reference, 80), notes: text(input.notes, 300), campaignId: campaign?.id ?? null },
     select: { id: true },
   })
   fireAndForget(
@@ -384,7 +389,7 @@ export async function listMyDonations(actor: Actor): Promise<DonationDto[]> {
   if (!memberId) return []
   const rows = await prisma.donation.findMany({
     where: { organizationId: actor.organizationId, memberId },
-    include: { member: { select: { fullName: true } } },
+    include: { member: { select: { fullName: true } }, campaign: { select: { name: true } } },
     orderBy: { createdAt: "desc" },
     take: 50,
   })
@@ -426,8 +431,9 @@ export async function decideDonation(actor: Actor, id: string, input: { decision
         receivedAt,
         memberId: d.memberId,
         reference: d.reference,
-        concept: "Donativo confirmado",
+        concept: d.campaignId ? "Donativo a campaña" : "Donativo confirmado",
         donationId: d.id,
+        campaignId: d.campaignId,
         createdByUserId: actor.userId,
       },
     }),

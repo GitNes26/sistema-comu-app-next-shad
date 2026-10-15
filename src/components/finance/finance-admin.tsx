@@ -27,6 +27,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { CampaignsTab } from "@/components/finance/campaigns-admin"
 import { DialogComponent } from "@/components/ui/dialog"
 import { DatePicker } from "@/components/base/date-picker"
 import { FormCombobox } from "@/components/base/form-combobox"
@@ -91,6 +92,7 @@ export function FinanceAdmin({ canManage, canPayroll, canVehicles }: { canManage
         <TabsTrigger value="donations">
           <HandCoins className="size-4" /> Donativos
         </TabsTrigger>
+        <TabsTrigger value="campaigns">Campañas</TabsTrigger>
         <TabsTrigger value="bank">
           <Landmark className="size-4" /> Conciliación
         </TabsTrigger>
@@ -129,6 +131,9 @@ export function FinanceAdmin({ canManage, canPayroll, canVehicles }: { canManage
       </TabsContent>
       <TabsContent value="donations">
         <DonationsTab canManage={canManage} onChanged={refresh} />
+      </TabsContent>
+      <TabsContent value="campaigns">
+        <CampaignsTab canManage={canManage} onChanged={refresh} />
       </TabsContent>
       <TabsContent value="bank">
         <BankReconciliation canManage={canManage} />

@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db"
 import { CrudError } from "@/lib/crud/types"
 import { fireAndForget, notifyMembers, notifyMinistryLeaders, notifyPermission } from "@/lib/notifications/church"
 import { memberIdOfUser, type Actor } from "@/lib/ministries/server"
+import { listOpenCampaigns, type CampaignDto } from "@/lib/finance/campaigns"
 import {
   CARD_KINDS,
   digitsOf,
@@ -55,6 +56,8 @@ export interface PublicChurchDto {
   events: { id: string; name: string; startsAt: string; location: string | null; price: number; imageUrl: string | null }[]
   stream: { title: string; platform: string; url: string; embedUrl: string | null; status: string } | null
   hue: { primary: number; accent: number } | null
+  campaigns: CampaignDto[]
+  giving: { bank: string | null; holder: string | null; clabe: string | null; account: string | null; note: string | null; link: string | null } | null
 }
 
 export async function getPublicChurch(slug: string): Promise<PublicChurchDto | null> {
@@ -77,13 +80,21 @@ export async function getPublicChurch(slug: string): Promise<PublicChurchDto | n
       email: true,
       mapUrl: true,
       socialLinks: true,
+      publicGiving: true,
+      donationsEnabled: true,
+      donationBank: true,
+      donationHolder: true,
+      donationClabe: true,
+      donationAccount: true,
+      donationNote: true,
+      donationLink: true,
       organization: { select: { name: true, isBlocked: true, appSettings: { select: { primaryHue: true, accentHue: true } } } },
     },
   })
   if (!profile || profile.organization.isBlocked) return null
   const organizationId = profile.organizationId
 
-  const [series, events, stream] = await Promise.all([
+  const [series, events, stream, campaigns] = await Promise.all([
     prisma.gatheringSeries.findMany({
       where: { organizationId, isActive: true, isPublic: true },
       orderBy: [{ dayOfWeek: "asc" }, { startTime: "asc" }],
@@ -100,6 +111,7 @@ export async function getPublicChurch(slug: string): Promise<PublicChurchDto | n
       orderBy: [{ status: "asc" }, { scheduledAt: "asc" }],
       select: { title: true, platform: true, url: true, status: true },
     }),
+    profile.publicGiving ? listOpenCampaigns(organizationId, { publicOnly: true }) : Promise.resolve([] as CampaignDto[]),
   ])
 
   const social = Object.fromEntries(
@@ -123,6 +135,11 @@ export async function getPublicChurch(slug: string): Promise<PublicChurchDto | n
     schedule: series,
     events: events.map((e) => ({ id: e.id, name: e.name, startsAt: e.startsAt.toISOString(), location: e.location, price: Number(e.price), imageUrl: e.imageUrl })),
     stream: stream ? { ...stream, embedUrl: null } : null,
+    campaigns,
+    giving:
+      profile.publicGiving && profile.donationsEnabled
+        ? { bank: profile.donationBank, holder: profile.donationHolder, clabe: profile.donationClabe, account: profile.donationAccount, note: profile.donationNote, link: profile.donationLink }
+        : null,
     hue: profile.organization.appSettings ? { primary: profile.organization.appSettings.primaryHue, accent: profile.organization.appSettings.accentHue } : null,
   }
 }

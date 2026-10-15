@@ -30,6 +30,10 @@ Formato: `MAJOR.MINOR.PATCH.REVISION` (X.X.X.X)
 
 ## Historial
 
+### [0.23.0.0] — 2026-10-15
+- **Tipo:** `feat` (Minor)
+- feat: campanas de donativos para ComuniDAR con meta y vigencia, aula del maestro con siguiente clase y alumnos en atencion, flujos documentados y arranque de base de datos que no tumba el contenedor
+
 ### [0.22.0.0] — 2026-10-14
 - **Tipo:** `feat` (Minor)
 - feat: boleto con diseno de boleto, campus del alumno con navegacion y avance, mis hijos como lugar seguro, avisos en vivo para boletos pagos calificaciones y ministerios sin notificaciones de demostracion

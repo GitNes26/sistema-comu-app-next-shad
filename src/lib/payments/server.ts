@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db"
+import { openCampaignOrThrow } from "@/lib/finance/campaigns"
 import { CrudError } from "@/lib/crud/types"
 import { memberIdOfUser, type Actor } from "@/lib/ministries/server"
 import { notifyMembers, notifyPermission } from "@/lib/notifications/church"
@@ -121,7 +122,7 @@ async function providerCall(url: string, init: RequestInit): Promise<Record<stri
   return body
 }
 
-export async function startCheckout(actor: Actor, input: { provider?: unknown; amount?: unknown; kind?: unknown }) {
+export async function startCheckout(actor: Actor, input: { provider?: unknown; amount?: unknown; kind?: unknown; campaignId?: unknown }) {
   if (!isPaymentProvider(input.provider)) throw new CrudError("Elige cómo quieres pagar", 400, "provider")
   const provider = input.provider
   const amount = validOnlineAmount(input.amount)
@@ -132,13 +133,14 @@ export async function startCheckout(actor: Actor, input: { provider?: unknown; a
   const gateway = await gatewayFor(actor.organizationId, provider)
   const member = await prisma.member.findUniqueOrThrow({ where: { id: memberId }, select: { fullName: true, email: true } })
 
+  const campaign = await openCampaignOrThrow(actor.organizationId, input.campaignId)
   const donation = await prisma.donation.create({
-    data: { organizationId: actor.organizationId, memberId, amount, kind, provider, notes: "Pago en línea" },
+    data: { organizationId: actor.organizationId, memberId, amount, kind, provider, notes: "Pago en línea", campaignId: campaign?.id ?? null },
     select: { id: true },
   })
   const success = `${baseUrl()}/mi/donativos?pago=ok`
   const cancel = `${baseUrl()}/mi/donativos?pago=cancelado`
-  const title = `${KIND_LABEL[kind]} a la iglesia`
+  const title = campaign ? `${KIND_LABEL[kind]} · ${campaign.name}`.slice(0, 120) : `${KIND_LABEL[kind]} a la iglesia`
   try {
     if (provider === "stripe") {
       const form = new URLSearchParams()
@@ -251,9 +253,10 @@ async function settle(organizationId: string, p: Paid): Promise<"paid" | "duplic
         amount: pending.amount,
         receivedAt: new Date(`${paidAt.toISOString().slice(0, 10)}T00:00:00.000Z`),
         memberId: pending.memberId,
-        concept: "Donativo en línea",
+        concept: pending.campaignId ? "Donativo en línea a campaña" : "Donativo en línea",
         reference: p.reference?.slice(0, 80) ?? p.externalId,
         donationId: pending.id,
+        campaignId: pending.campaignId,
       },
     })
     return true

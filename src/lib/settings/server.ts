@@ -35,6 +35,7 @@ export interface CompanyProfileInput {
   donationLink?: string | null;
   donationNote?: string | null;
   publicEnabled?: boolean;
+  publicGiving?: boolean;
   publicSlug?: string | null;
   tagline?: string | null;
   pastorName?: string | null;
@@ -75,6 +76,7 @@ export async function getCompanyProfile(organizationId: string) {
       donationLink: null,
       donationNote: null,
       publicEnabled: false,
+      publicGiving: false,
       publicSlug: null,
       tagline: null,
       pastorName: null,

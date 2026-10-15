@@ -1,9 +1,11 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { CalendarDays, Clock, ExternalLink, HandHeart, HeartHandshake, MapPin, Phone, Radio, Sparkles, Wifi } from "lucide-react"
+import { CalendarDays, Clock, ExternalLink, Gift, HandHeart, HeartHandshake, MapPin, Phone, Radio, Sparkles, Wifi } from "lucide-react"
 import { Logo } from "@/components/layout/logo"
 import { PublicTheme } from "@/components/public/public-theme"
+import { CampaignCard } from "@/components/finance/campaign-card"
+import { CopyField } from "@/components/public/copy-field"
 import { getPublicChurch } from "@/lib/connect/server"
 import { MODALITY, slotRange, type Modality } from "@/lib/connect/rules"
 
@@ -144,6 +146,49 @@ export default async function PublicChurchPage({ params }: Props) {
                 </li>
               ))}
             </ul>
+          </section>
+        )}
+
+        {/* ── Generosidad ──────────────────────────────────────────── */}
+        {(church.campaigns.length > 0 || church.giving) && (
+          <section aria-labelledby="dar" className="space-y-5">
+            <h2 id="dar" className="flex items-center gap-2 font-heading text-2xl font-semibold tracking-tight">
+              <Gift className="size-6 text-primary" /> Generosidad
+            </h2>
+            {church.campaigns.length > 0 && (
+              <ul className="grid gap-4 md:grid-cols-2">
+                {church.campaigns.map((c) => (
+                  <li key={c.id}>
+                    <CampaignCard c={c} />
+                  </li>
+                ))}
+              </ul>
+            )}
+            {church.giving && (
+              <div className="rounded-3xl border bg-card p-5">
+                <p className="font-medium">Cómo dar</p>
+                {church.giving.note && <p className="mt-1 text-sm text-muted-foreground">{church.giving.note}</p>}
+                <dl className="mt-3 grid gap-2 sm:grid-cols-2">
+                  {(
+                    [
+                      ["Banco", church.giving.bank],
+                      ["Titular", church.giving.holder],
+                      ["CLABE", church.giving.clabe],
+                      ["Cuenta", church.giving.account],
+                    ] as const
+                  )
+                    .filter(([, v]) => v)
+                    .map(([label, value]) => (
+                      <CopyField key={label} label={label} value={value!} />
+                    ))}
+                </dl>
+                {church.giving.link && (
+                  <a href={church.giving.link} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline">
+                    Dar en línea <ExternalLink className="size-3.5" />
+                  </a>
+                )}
+              </div>
+            )}
           </section>
         )}
 

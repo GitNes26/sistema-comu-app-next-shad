@@ -3,12 +3,13 @@
 import { TextareaField } from "@/components/base/textarea-field"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import { ArrowLeft, Ban, CircleDollarSign, ClipboardCheck, Download, Loader2, Lock, UserPlus } from "lucide-react"
+import { AlertTriangle, ArrowLeft, Ban, CalendarCheck, CircleDollarSign, ClipboardCheck, Download, GraduationCap, Loader2, Lock, Table2, UserPlus, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Textarea } from "@/components/ui/textarea"
 import { DialogComponent } from "@/components/ui/dialog"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DatePicker } from "@/components/base/date-picker"
 import { FormCombobox } from "@/components/base/form-combobox"
 import { InputGroupField } from "@/components/base/input-group-field"
@@ -81,6 +82,20 @@ export function Gradebook({ groupId, backHref }: { groupId: string; backHref: st
   const exercises = Array.from({ length: g.exercisesCount }, (_, i) => i + 1)
   const weeks = Array.from({ length: g.weeks }, (_, i) => i + 1)
   const sessionByWeek = new Map(book.sessions.map((s) => [s.week, s]))
+  const active = book.rows.filter((r) => r.status === "enrolled" || r.status === "completed" || r.status === "failed")
+  const held = book.sessions.length
+  const marks = active.flatMap((r) => Object.values(r.attendance))
+  const attendancePct = held > 0 && marks.length > 0 ? Math.round((marks.filter((m) => m === "present" || m === "excused").length / marks.length) * 100) : null
+  const finals = active.map((r) => r.finalGrade).filter((v): v is number => v !== null)
+  const avgFinal = finals.length > 0 ? Math.round((finals.reduce((s, v) => s + v, 0) / finals.length) * 10) / 10 : null
+  const nextWeek = weeks.find((w) => !sessionByWeek.has(w)) ?? null
+  const attention = active
+    .map((r) => {
+      const absences = Object.values(r.attendance).filter((a) => a === "absent").length
+      const low = r.finalGrade !== null && r.finalGrade < g.passScore
+      return { r, absences, low }
+    })
+    .filter((x) => x.absences >= 2 || x.low)
 
   const decide = async (id: string, action: "approve" | "reject") => {
     try {
@@ -131,26 +146,53 @@ export function Gradebook({ groupId, backHref }: { groupId: string; backHref: st
   const td = "border px-1 py-1 text-center text-xs tabular-nums"
 
   return (
-    <div className="space-y-4">
-      <Button asChild variant="ghost" size="sm" className="-ml-2">
-        <Link href={backHref}>
-          <ArrowLeft className="size-4" />
-          Volver
+    <div className="w-full space-y-5">
+      <header className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary to-[color-mix(in_oklab,var(--primary)_55%,black)] p-5 text-primary-foreground sm:p-7">
+        <div aria-hidden className="pointer-events-none absolute -top-16 -right-10 size-64 rounded-full bg-white/10" />
+        <Link href={backHref} className="relative inline-flex items-center gap-1.5 text-xs font-medium text-primary-foreground/80 hover:text-primary-foreground">
+          <ArrowLeft className="size-3.5" /> Volver
         </Link>
-      </Button>
-
-      <div className="flex flex-wrap items-start gap-3">
-        <div className="min-w-0 flex-1">
-          <h1 className="font-heading text-xl font-semibold tracking-tight">{g.courseName}</h1>
-          <p className="text-sm text-muted-foreground">
-            {g.name}
-            {g.teacherName ? ` · Maestro: ${g.teacherName}` : ""}
-            {g.assistantName ? ` · Apoyo: ${g.assistantName}` : ""}
-            {g.startDate ? ` · ${g.startDate}` : ""}
-            {g.endDate ? ` al ${g.endDate}` : ""}
-          </p>
+        <div className="relative mt-3 flex flex-wrap items-end gap-4">
+          <div className="min-w-0 flex-1 space-y-1">
+            <p className="flex items-center gap-1.5 text-xs font-semibold tracking-[0.18em] uppercase opacity-80">
+              <GraduationCap className="size-4" /> Aula del maestro
+            </p>
+            <h1 className="font-heading text-2xl leading-tight font-semibold text-balance sm:text-3xl">{g.courseName}</h1>
+            <p className="text-sm opacity-90">
+              {g.name}
+              {g.teacherName ? ` · Maestro: ${g.teacherName}` : ""}
+              {g.assistantName ? ` · Apoyo: ${g.assistantName}` : ""}
+              {g.startDate ? ` · ${g.startDate}` : ""}
+              {g.endDate ? ` al ${g.endDate}` : ""}
+            </p>
+          </div>
+          <span className="rounded-full bg-white/20 px-3 py-1 text-sm font-medium">{closed ? "Cerrado" : g.status === "open" ? "Abierto" : "Por iniciar"}</span>
         </div>
-        <StatusPill tone={closed ? "neutral" : g.status === "open" ? "success" : "info"}>{closed ? "Cerrado" : g.status === "open" ? "Abierto" : "Por iniciar"}</StatusPill>
+        <div className="relative mt-5 h-2 overflow-hidden rounded-full bg-white/20" aria-label={`Clase ${held} de ${g.weeks}`}>
+          <div className="h-full rounded-full bg-white transition-all duration-700" style={{ width: `${Math.round((held / Math.max(1, g.weeks)) * 100)}%` }} />
+        </div>
+        <p className="relative mt-1.5 text-xs opacity-80">
+          {held} de {g.weeks} clases impartidas
+        </p>
+      </header>
+
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {[
+          { icon: Users, label: "Alumnos", value: String(active.length), tone: "" },
+          { icon: CalendarCheck, label: "Asistencia", value: attendancePct === null ? "—" : `${attendancePct}%`, tone: attendancePct !== null && attendancePct < 70 ? "text-warning-ink" : "" },
+          { icon: GraduationCap, label: "Promedio general", value: avgFinal === null ? "—" : avgFinal.toFixed(1), tone: avgFinal !== null && avgFinal < g.passScore ? "text-destructive" : "" },
+          { icon: ClipboardCheck, label: "Por revisar", value: String(book.pendingReviews), tone: book.pendingReviews > 0 ? "text-primary" : "" },
+        ].map((k) => (
+          <div key={k.label} className="flex items-center gap-3 rounded-2xl border bg-card p-3">
+            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+              <k.icon className="size-5" />
+            </span>
+            <span>
+              <span className={cn("block font-heading text-2xl leading-none font-semibold tabular-nums", k.tone)}>{k.value}</span>
+              <span className="text-xs text-muted-foreground">{k.label}</span>
+            </span>
+          </div>
+        ))}
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -200,6 +242,124 @@ export function Gradebook({ groupId, backHref }: { groupId: string; backHref: st
         </section>
       )}
 
+      <Tabs defaultValue="aula">
+        <TabsList>
+          <TabsTrigger value="aula">
+            <CalendarCheck className="size-4" /> Aula
+          </TabsTrigger>
+          <TabsTrigger value="alumnos">
+            <Users className="size-4" /> Alumnos
+          </TabsTrigger>
+          <TabsTrigger value="planilla">
+            <Table2 className="size-4" /> Planilla
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="aula" className="space-y-4 pt-3">
+          {canTeach && !closed && (
+            <section className="flex flex-wrap items-center gap-4 rounded-3xl border border-primary/30 bg-primary/5 p-5">
+              <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground">
+                <CalendarCheck className="size-6" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold tracking-wide text-primary uppercase">{nextWeek ? "Siguiente clase" : "Curso completo"}</p>
+                <p className="font-heading text-lg font-semibold">{nextWeek ? `Semana ${nextWeek} de ${g.weeks}` : "Ya pasaste lista en todas las semanas"}</p>
+              </div>
+              {nextWeek && (
+                <Button size="lg" onClick={() => setWeek(nextWeek)}>
+                  <CalendarCheck className="size-5" /> Pasar lista
+                </Button>
+              )}
+            </section>
+          )}
+
+          <section className="space-y-2">
+            <h2 className="flex items-center gap-2 font-heading text-base font-semibold">
+              <AlertTriangle className="size-4 text-warning-ink" /> Necesitan atención
+            </h2>
+            {attention.length === 0 ? (
+              <p className="rounded-2xl border bg-card p-4 text-sm text-muted-foreground">Todos van bien: sin faltas repetidas ni calificaciones por debajo de {g.passScore.toFixed(1)}.</p>
+            ) : (
+              <ul className="grid gap-2 md:grid-cols-2">
+                {attention.map(({ r, absences, low }) => (
+                  <li key={r.enrollmentId}>
+                    <button type="button" onClick={() => setStudent(r)} className="press flex w-full items-center gap-3 rounded-2xl border bg-card p-3 text-left hover:border-primary/40">
+                      <span className="grid size-10 shrink-0 place-items-center rounded-full bg-warning/20 font-heading font-semibold text-warning-ink">{r.name.charAt(0)}</span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-medium">{r.name}</span>
+                        <span className="block text-xs text-muted-foreground">
+                          {absences >= 2 ? `${absences} faltas` : ""}
+                          {absences >= 2 && low ? " · " : ""}
+                          {low ? `Promedio ${fmt(r.finalGrade)}` : ""}
+                        </span>
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          {canTeach && book.pendingReviews > 0 && (
+            <button type="button" onClick={() => setReviewsOpen(true)} className="press flex w-full items-center gap-3 rounded-2xl border border-primary/30 bg-card p-4 text-left">
+              <ClipboardCheck className="size-6 text-primary" />
+              <span className="flex-1">
+                <span className="block font-medium">{book.pendingReviews} envío(s) esperan tu revisión</span>
+                <span className="text-xs text-muted-foreground">Califica las respuestas abiertas para publicar sus notas.</span>
+              </span>
+            </button>
+          )}
+        </TabsContent>
+
+        <TabsContent value="alumnos" className="pt-3">
+          {active.length === 0 ? (
+            <EmptyState icon={Users} title="Aún no hay alumnos inscritos" description="Inscribe alumnos o aprueba las solicitudes para empezar." />
+          ) : (
+            <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {active.map((r) => {
+                const present = Object.values(r.attendance).filter((a) => a === "present").length
+                return (
+                  <li key={r.enrollmentId}>
+                    <button type="button" onClick={() => setStudent(r)} className="press flex w-full flex-col gap-3 rounded-2xl border bg-card p-4 text-left hover:border-primary/40">
+                      <span className="flex items-center gap-3">
+                        <span className="grid size-11 shrink-0 place-items-center rounded-full bg-primary/10 font-heading text-base font-semibold text-primary">{r.name.charAt(0)}</span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate font-medium">{r.name}</span>
+                          <span className="block text-xs text-muted-foreground">
+                            {present} asistencia(s) · tareas {fmt(r.tasksAvg) || "—"} · ejercicios {fmt(r.exercisesAvg) || "—"}
+                          </span>
+                        </span>
+                        <span className={cn("font-heading text-2xl font-semibold tabular-nums", r.finalGrade !== null && (r.finalGrade >= g.passScore ? "text-success-ink" : "text-destructive"))}>{fmt(r.finalGrade) || "—"}</span>
+                      </span>
+                      <span className="flex flex-wrap gap-1" aria-label="Asistencia por semana">
+                        {weeks.map((w) => {
+                          const st = r.attendance[w]
+                          return (
+                            <span
+                              key={w}
+                              title={`Semana ${w}`}
+                              className={cn(
+                                "grid size-6 place-items-center rounded-md text-[0.65rem] font-semibold",
+                                st === "present" && "bg-success/20 text-success-ink",
+                                st === "absent" && "bg-destructive/15 text-destructive",
+                                st === "excused" && "bg-warning/20 text-warning-ink",
+                                !st && "bg-muted text-muted-foreground"
+                              )}
+                            >
+                              {w}
+                            </span>
+                          )
+                        })}
+                      </span>
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </TabsContent>
+
+        <TabsContent value="planilla" className="space-y-3 pt-3">
       <div className="overflow-x-auto rounded-2xl border bg-card">
         <table className="w-full min-w-max border-collapse">
           <thead>
@@ -324,6 +484,8 @@ export function Gradebook({ groupId, backHref }: { groupId: string; backHref: st
       <p className="text-xs text-muted-foreground">
         ✓ asistió · F faltó · J justificada. Las calificaciones en negritas las capturó el maestro. El promedio se calcula sobre el total de actividades del libro y se aprueba con {g.passScore.toFixed(1)} o más.
       </p>
+        </TabsContent>
+      </Tabs>
 
       <SessionDialog groupId={groupId} week={week} book={book} onClose={() => setWeek(null)} onSaved={load} />
       <GradeDialog cell={cell} onClose={() => setCell(null)} onSaved={load} />

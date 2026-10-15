@@ -88,6 +88,7 @@ const schema = yup.object({
   donationLink: optionalUrl,
   donationNote: optionalText(300),
   publicEnabled: yup.boolean().default(false),
+  publicGiving: yup.boolean().default(false),
   publicSlug: yup
     .string()
     .trim()
@@ -132,6 +133,7 @@ function toValues(p: CompanyProfileView | null): Values {
     donationLink: p?.donationLink ?? "",
     donationNote: p?.donationNote ?? "",
     publicEnabled: p?.publicEnabled ?? false,
+    publicGiving: p?.publicGiving ?? false,
     publicSlug: p?.publicSlug ?? "",
     tagline: p?.tagline ?? "",
     pastorName: p?.pastorName ?? "",
@@ -199,6 +201,7 @@ export function CompanyForm() {
         donationLink: nullable(v.donationLink),
         donationNote: nullable(v.donationNote),
         publicEnabled: v.publicEnabled,
+        publicGiving: v.publicGiving,
         publicSlug: nullable(v.publicSlug),
         tagline: nullable(v.tagline),
         pastorName: nullable(v.pastorName),
@@ -360,6 +363,22 @@ export function CompanyForm() {
               label="Publicar la página de bienvenida"
               description="Horarios, eventos, transmisión y «Soy nuevo» visibles sin iniciar sesión."
               icon={<Globe className="size-4" />}
+              checked={field.value}
+              onCheckedChange={field.onChange}
+            />
+          )}
+        />
+      </div>
+      <div className="sm:col-span-2">
+        <Controller
+          control={control}
+          name="publicGiving"
+          render={({ field }) => (
+            <SwitchField
+              id="publicGiving"
+              label="Mostrar «Cómo dar» y las campañas en la página pública"
+              description="Publica los datos bancarios de «Diezmos y ofrendas» y las campañas abiertas marcadas como públicas."
+              icon={<HandHeart className="size-4" />}
               checked={field.value}
               onCheckedChange={field.onChange}
             />

@@ -1,0 +1,46 @@
+# Flujos de la iglesia (de punta a punta)
+
+Cada flujo nombra **quién actúa**, **qué cambia en los datos** y **qué avisa el sistema**. Una pantalla nueva debe encajar en uno de estos flujos o declarar el suyo aquí.
+
+## 1. Llegar y crecer (el camino de la visión)
+
+| Paso | Quién | Qué pasa | Aviso |
+|---|---|---|---|
+| Conoce la iglesia | Visitante | Entra a `/c/[slug]` y toca «Soy nuevo» | — |
+| Deja su tarjeta | Visitante | Se crea `Member` (etapa *Ganar*) y un `ConsolidationCase`; una tarjeta `ConnectionCard` queda en la bandeja | Líderes de Consolidación y `members.manage` |
+| Seguimiento | Consolidación | Contactos, asignación y, al final, canalización a la **célula/grupo en casa** más cercano | Quien recibe la asignación |
+| Encuentro, Escuela, Lanzamiento | Líder / eventos / escuela | Cada hito marca su check al **finalizar** el evento o el grupo y mueve la etapa | La persona (`growth`) |
+| Liderazgo y discipulado | Pastores | Cambia jerarquía y etapa; aparece en el organigrama | — |
+
+Regla: el avance de etapa lo produce un hecho (asistencia verificada, grupo cerrado), no una edición manual suelta.
+
+## 2. Dar (ofrendas, diezmos y campañas)
+
+1. Tesorería abre una **campaña** (ComuniDAR · templo, un evento, un proyecto) con meta y vigencia opcionales; puede pausarla o cerrarla. **No siempre hay una activa.**
+2. La persona elige *a qué aportar* (general o una campaña abierta) y da en línea o por transferencia.
+3. Transferencia: avisa → tesorería **confirma** → nace el `Income` (con `campaignId`) → la meta avanza. En línea: el webhook confirma solo, idempotente.
+4. La persona recibe «¡Gracias!»; nadie ve lo que otro dio. Lo reunido sale de los ingresos ligados a la campaña (una sola fuente de verdad con Finanzas).
+
+## 3. Eventos y boletos
+
+Organizador crea el evento y su público → publica → las personas **apartan** boleto (o se les asigna) → eligen asiento si hay plano → pagan (abonos) → **entrada por QR** → al finalizar se aplican los checks del camino. Avisos: boleto asignado/cancelado, abonos, saldo liquidado. El boleto mostrado es el comprobante (evento, fecha, hora, lugar, asiento, titular, folio, importe, QR).
+
+## 4. Escuela (alumno ↔ maestro)
+
+Solicitud o inscripción → aprobación → clases con **pase de lista** → tareas y ejercicios (calificación automática + abiertas por revisar) → calificación publicada (aviso) → cierre del grupo (aprobado/no aprobado) → diploma al finalizar el Lanzamiento. El maestro trabaja desde el **Aula** (siguiente clase, quién necesita atención, por revisar); el alumno, desde su **Campus** (avance, material, boleta).
+
+## 5. Kids
+
+Registro del niño con tutores → QR → **entrada** registra salón (aviso al tutor) → mensajes y alertas → **salida** solo con el permiso `kids.authorize_exit` (aviso al tutor). Datos de menores: acceso mínimo y por relación.
+
+## 6. Ministerios y servicio
+
+Persona solicita servir → líder acepta (alta con aviso) → reuniones del ministerio (aviso a su equipo) → asistencia. Eventos y reuniones generales piden **servidores** a ministerios; el líder asigna y la persona confirma.
+
+## 7. Nómina
+
+Configurar pago por empleado (solo administración y limpieza/mantenimiento) → crear periodo → capturar → **cerrar** (se congela) → **pagar** (genera el gasto una sola vez; no se reabre) → recibos por impresión o correo.
+
+## 8. Comunicación
+
+Publicaciones (con flyer), transmisiones y avisos en vivo (campana + toast + push). Cada aviso sale de un **tipo** del catálogo `src/lib/notifications/kinds.ts`; no se inventan avisos sueltos.

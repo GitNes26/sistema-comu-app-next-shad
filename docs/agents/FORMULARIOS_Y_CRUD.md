@@ -65,6 +65,8 @@ El teclado móvil debe corresponder al dato. `ui/input.tsx` e `InputGroupField` 
 - **`DateTimePicker` ocupa todo el ancho disponible** (fecha y hora se reparten la fila; en móvil se apilan). No lo envuelvas en contenedores `w-40`/`w-56`.
 - Todo selector de fecha trae **«Hoy»** al pie del calendario y todo selector de hora **«Ahora»** (hora actual); `DateTimePicker` los hereda. La letra de `TimePicker` es una talla menor y sus selects son fluidos para no salirse del contenedor.
 - `SegmentedFilter` con más opciones que ancho muestra **flechas** a los lados para desplazar con el puntero (en táctil se arrastra).
+- Todo selector de fecha trae **«Hoy»** al pie del calendario y todo selector de hora **«Ahora»** (hora actual); `DateTimePicker` los hereda. La letra de `TimePicker` es una talla menor y sus selects son fluidos para no salirse del contenedor.
+- `SegmentedFilter` con más opciones que ancho muestra **flechas** a los lados para desplazar con el puntero (en táctil se arrastra).
 - Toda pantalla con filtros o búsqueda incluye `ClearFiltersButton`; solo aparece si hay algún filtro distinto del predeterminado.
 
 ## Buscadores, filtros y selectores ignoran mayúsculas y acentos (obligatorio)

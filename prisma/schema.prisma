@@ -248,6 +248,7 @@ model Organization {
   payrollConcepts       PayrollConcept[]
   prayerRequests        PrayerRequest[]
   connectionCards       ConnectionCard[]
+  donationCampaigns     DonationCampaign[]
 
   @@map("organizations")
 }
@@ -382,6 +383,8 @@ model CompanyProfile {
   donationNote     String?  @db.VarChar(300)
   /// Cara pública (/c/[slug]): se enciende explícitamente.
   publicEnabled    Boolean  @default(false)
+  /// Muestra en la página pública cómo dar (banco, titular, CLABE) y las campañas activas.
+  publicGiving     Boolean  @default(false)
   publicSlug       String?  @unique @db.VarChar(60)
   tagline          String?  @db.VarChar(160)
   pastorName       String?  @db.VarChar(120)
@@ -2364,15 +2367,19 @@ model Income {
   notes           String?      @db.Text
   /// Donativo (transferencia reportada o pago en línea) que originó este ingreso.
   donationId      String?      @unique
+  /// Campaña a la que suma este ingreso.
+  campaignId      String?
   createdByUserId String?
   createdAt       DateTime     @default(now())
 
-  organization Organization @relation(fields: [organizationId], references: [id])
-  gathering    Gathering?   @relation(fields: [gatheringId], references: [id], onDelete: SetNull)
-  member       Member?      @relation(fields: [memberId], references: [id], onDelete: SetNull)
-  donation     Donation?    @relation(fields: [donationId], references: [id], onDelete: SetNull)
+  organization Organization      @relation(fields: [organizationId], references: [id])
+  gathering    Gathering?        @relation(fields: [gatheringId], references: [id], onDelete: SetNull)
+  member       Member?           @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  donation     Donation?         @relation(fields: [donationId], references: [id], onDelete: SetNull)
+  campaign     DonationCampaign? @relation("CampaignIncomes", fields: [campaignId], references: [id], onDelete: SetNull)
 
   @@index([organizationId, receivedAt])
+  @@index([campaignId])
   @@index([gatheringId])
   @@map("incomes")
 }
@@ -2393,13 +2400,16 @@ model Donation {
   externalId     String?
   /// Folio o referencia de la transferencia.
   reference      String?
+  /// Campaña a la que se dirige (ComuniDAR, un proyecto…); null = general.
+  campaignId     String?
   status         DonationStatus @default(pending)
   paidAt         DateTime?
   notes          String?
   createdAt      DateTime       @default(now())
 
-  organization Organization @relation(fields: [organizationId], references: [id])
-  member       Member?      @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  organization Organization      @relation(fields: [organizationId], references: [id])
+  member       Member?           @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  campaign     DonationCampaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
   income       Income?
 
   @@unique([provider, externalId])
@@ -2910,4 +2920,34 @@ model ConnectionCard {
 
   @@index([organizationId, status, createdAt])
   @@map("connection_cards")
+}
+
+/// Campaña de donativos con propósito y vigencia (p. ej. «ComuniDAR · nuestro templo»).
+/// No siempre hay una activa: se abre, se pausa o se cierra según el proyecto.
+model DonationCampaign {
+  id             String    @id @default(cuid())
+  organizationId String
+  name           String    @db.VarChar(120)
+  description    String?   @db.Text
+  /// building | project | event | general
+  kind           String    @default("project") @db.VarChar(12)
+  /// Meta opcional; sin meta no hay termómetro.
+  goalAmount     Decimal?  @db.Decimal(14, 2)
+  imageUrl       String?
+  startsAt       DateTime? @db.Date
+  endsAt         DateTime? @db.Date
+  /// active | paused | closed
+  status         String    @default("active") @db.VarChar(10)
+  /// Aparece en la página pública.
+  isPublic       Boolean   @default(true)
+  sortOrder      Int       @default(0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  donations    Donation[]
+  incomes      Income[]     @relation("CampaignIncomes")
+
+  @@index([organizationId, status])
+  @@map("donation_campaigns")
 }

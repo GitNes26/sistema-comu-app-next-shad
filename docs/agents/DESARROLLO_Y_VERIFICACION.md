@@ -31,6 +31,7 @@ npm run dev
 - Seeders idempotentes y sin secretos literales (credenciales por env). La demo exige `SEED_DEMO=true` y `NODE_ENV != production`.
 - `db:reset` es destructivo: solo con autorización y destino resuelto.
 - **`DB_RESET="true"` (despliegue)**: tras un cambio importante que afecta registros, `scripts/db-bootstrap.mjs` (CMD del contenedor) borra la base, la recrea con `prisma migrate reset --force --skip-seed` y corre el seed (producción siempre; la demo solo si además `SEED_DEMO="true"`). Es de **una vez por versión** (marca en la tabla `_db_resets`): reiniciar con la variable activa no vuelve a borrar. Quítala después del despliegue; no la dejes puesta de forma permanente.
+- **`DB_RESET="true"` (despliegue)**: tras un cambio importante que afecta registros, `scripts/db-bootstrap.mjs` (CMD del contenedor) borra la base, la recrea con `prisma migrate reset --force --skip-seed` y corre el seed (producción siempre; la demo solo si además `SEED_DEMO="true"`). Es de **una vez por versión** (marca en la tabla `_db_resets`): reiniciar con la variable activa no vuelve a borrar. Quítala después del despliegue; no la dejes puesta de forma permanente.
 - Al cambiar tipo/relación, migra datos existentes o documenta por qué no hay backfill seguro.
 
 ## Pruebas

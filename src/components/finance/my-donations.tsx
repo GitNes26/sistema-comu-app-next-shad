@@ -12,6 +12,8 @@ import { notify } from "@/lib/notify"
 import { swalError } from "@/lib/swal"
 import { apiJson, errorMessage } from "@/lib/ministries/client"
 import type { DonationDto } from "@/lib/finance/server"
+import type { CampaignDto } from "@/lib/finance/campaigns"
+import { CampaignCard } from "@/components/finance/campaign-card"
 import { PAYMENT_PROVIDERS, type PaymentProvider } from "@/lib/payments/rules"
 
 // «Mis donativos»: los datos para dar y el aviso de transferencia. La tesorería lo
@@ -42,12 +44,20 @@ export function MyDonations() {
   const [onlineAmount, setOnlineAmount] = useState("")
   const [onlineKind, setOnlineKind] = useState("tithe")
   const [returned, setReturned] = useState<string | null>(null)
+  const [campaigns, setCampaigns] = useState<CampaignDto[]>([])
+  // "" = aportación general a la iglesia
+  const [campaignId, setCampaignId] = useState("")
 
   const load = useCallback(async () => {
     try {
-      const [i, m] = await Promise.all([apiJson<{ info: Info }>("/api/finance/donations/info"), apiJson<{ donations: DonationDto[] }>("/api/finance/donations/mine")])
+      const [i, m, cs] = await Promise.all([
+        apiJson<{ info: Info }>("/api/finance/donations/info"),
+        apiJson<{ donations: DonationDto[] }>("/api/finance/donations/mine"),
+        apiJson<{ campaigns: CampaignDto[] }>("/api/campaigns").catch(() => ({ campaigns: [] as CampaignDto[] })),
+      ])
       setInfo(i.info)
       setMine(m.donations)
+      setCampaigns(cs.campaigns)
     } catch (e) {
       setInfo({ enabled: false })
       setMine([])
@@ -65,7 +75,7 @@ export function MyDonations() {
     try {
       const r = await apiJson<{ url: string }>("/api/finance/donations/checkout", {
         method: "POST",
-        body: JSON.stringify({ provider, amount: onlineAmount, kind: onlineKind }),
+        body: JSON.stringify({ provider, amount: onlineAmount, kind: campaignId ? "donation" : onlineKind, campaignId: campaignId || undefined }),
       })
       window.location.assign(r.url)
     } catch (e) {
@@ -85,7 +95,7 @@ export function MyDonations() {
   const send = async () => {
     setSaving(true)
     try {
-      await apiJson("/api/finance/donations", { method: "POST", body: JSON.stringify({ amount, kind, reference }) })
+      await apiJson("/api/finance/donations", { method: "POST", body: JSON.stringify({ amount, kind: campaignId ? "donation" : kind, reference, campaignId: campaignId || undefined }) })
       notify.success("Aviso enviado; la tesorería lo confirmará")
       setAmount("")
       setReference("")
@@ -116,6 +126,29 @@ export function MyDonations() {
       )}
       {returned === "cancelado" && <p role="status" className="rounded-2xl border bg-muted/50 p-3 text-sm">El pago se canceló; no se hizo ningún cargo.</p>}
 
+      {/* Paso 1: ¿a qué quieres aportar? */}
+      {campaigns.length > 0 && (
+        <section className="space-y-3" aria-labelledby="para-que">
+          <h2 id="para-que" className="font-heading text-base font-semibold">
+            ¿A qué quieres aportar?
+          </h2>
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            <button
+              type="button"
+              aria-pressed={campaignId === ""}
+              onClick={() => setCampaignId("")}
+              className={`press flex flex-col justify-center gap-1 rounded-3xl border bg-card p-4 text-left ${campaignId === "" ? "border-primary ring-2 ring-primary/30" : ""}`}
+            >
+              <span className="font-heading text-base font-semibold">Diezmos y ofrendas</span>
+              <span className="text-sm text-muted-foreground">Para el sostenimiento y la obra de la iglesia.</span>
+            </button>
+            {campaigns.map((c) => (
+              <CampaignCard key={c.id} c={c} selected={campaignId === c.id} onSelect={() => setCampaignId(c.id)} />
+            ))}
+          </div>
+        </section>
+      )}
+
       {online.length > 0 && (
         <section className="space-y-3 rounded-2xl border bg-card p-4">
           <h2 className="flex items-center gap-2 font-heading text-base font-semibold">
@@ -125,13 +158,15 @@ export function MyDonations() {
           <p className="text-sm text-muted-foreground">Paga de forma segura con tarjeta; el pago se registra solo.</p>
           <div className="grid gap-3 sm:grid-cols-2">
             <InputGroupField label="Monto (MXN)" required inputMode="decimal" value={onlineAmount} onChange={(e) => setOnlineAmount(e.target.value.replace(/[^0-9.]/g, ""))} />
-            <FormCombobox
-              label="Es un…"
-              options={Object.entries(KIND).map(([value, label]) => ({ value, label }))}
-              value={onlineKind}
-              onChange={setOnlineKind}
-              clearable={false}
-            />
+            {campaignId === "" && (
+              <FormCombobox
+                label="Es un…"
+                options={Object.entries(KIND).map(([value, label]) => ({ value, label }))}
+                value={onlineKind}
+                onChange={setOnlineKind}
+                clearable={false}
+              />
+            )}
           </div>
           <div className="flex flex-wrap justify-end gap-2">
             {online.map((p) => (
@@ -178,13 +213,15 @@ export function MyDonations() {
         <p className="text-sm text-muted-foreground">Avísanos para que la tesorería la confirme y la registre.</p>
         <div className="grid gap-3 sm:grid-cols-3">
           <InputGroupField label="Monto" required inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} />
-          <FormCombobox
-            label="Es un…"
-            options={Object.entries(KIND).map(([value, label]) => ({ value, label }))}
-            value={kind}
-            onChange={setKind}
-            clearable={false}
-          />
+          {campaignId === "" && (
+            <FormCombobox
+              label="Es un…"
+              options={Object.entries(KIND).map(([value, label]) => ({ value, label }))}
+              value={kind}
+              onChange={setKind}
+              clearable={false}
+            />
+          )}
           <InputGroupField label="Folio o referencia" value={reference} maxLength={80} onChange={(e) => setReference(e.target.value)} />
         </div>
         <div className="flex justify-end">
@@ -202,7 +239,7 @@ export function MyDonations() {
             {mine.map((d) => (
               <li key={d.id} className="flex items-center gap-3 px-3 py-2 text-sm">
                 <span className="min-w-0 flex-1 truncate">
-                  {KIND[d.kind as keyof typeof KIND] ?? d.kind} · {new Date(d.createdAt).toLocaleDateString("es-MX", { day: "numeric", month: "short" })}
+                  {d.campaignName ?? KIND[d.kind as keyof typeof KIND] ?? d.kind} · {new Date(d.createdAt).toLocaleDateString("es-MX", { day: "numeric", month: "short" })}
                   {d.reference ? ` · ${d.reference}` : ""}
                 </span>
                 <span className="tabular-nums">{money(d.amount)}</span>

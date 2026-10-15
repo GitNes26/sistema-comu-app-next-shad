@@ -43,6 +43,7 @@ export interface CompanyProfileView {
   donationLink: string | null;
   donationNote: string | null;
   publicEnabled: boolean;
+  publicGiving: boolean;
   publicSlug: string | null;
   tagline: string | null;
   pastorName: string | null;
