@@ -58,6 +58,8 @@ Sistema de gestión integral de una iglesia (Comunidad Torreón de La Laguna es 
 - **Familia** (`Family`/`FamilyMember`; `/admin/families`, `/mi/familia`): cabeza, cónyuge, hijos y parientes del padrón; una persona pertenece a una sola. **No** es un hogar de amor. La administra `members.manage`; cada persona ve la suya sin teléfonos. Migración `20261015090000_families_cell_requests`.
 - **Catálogo de la escuela**: cada libro es una tarjeta con su portada de fondo y resumen (semanas, grupos abiertos, inscripción) que se eleva al pasar el puntero y abre `/mi/escuela/cursos/[id]` (portada, qué incluye, grupos, «Solicitar inscripción» o «Entrar a mi clase»).
 
+- **Un solo lugar por concepto** (ajuste tras revisión): «Mi hogar de amor» (`/mi/celulas`) agrupa mi hogar y el buscador (pestañas); `/mi/hogares` solo redirige. «Mi familia» (`/mi/familia`) incluye a los hijos de Kids; `/mi/hijos` redirige. El **Panel** de bienvenida (sin estadísticos) se organiza en bienvenida, «Hoy en la iglesia», próximos eventos, accesos principales y zonas con descripción de cada acceso.
+
 **Pendiente (ver §7):** células/redes, reuniones, eventos, escuela, kids, finanzas, vehículos, nómina, contenido/transmisiones, reportes PDF, portal completo del creyente.
 
 ## 3. Vocabulario

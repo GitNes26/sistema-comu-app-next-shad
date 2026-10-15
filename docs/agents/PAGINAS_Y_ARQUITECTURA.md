@@ -74,3 +74,7 @@ Cuidado con los guards: devuelven `{ response }` o el contexto; comprueba con `"
 ## Operaciones entre dominios
 
 Antes de mutar pregunta qué registros afecta: asistencia, pagos, inscripciones, notificaciones, reportes. Si dos efectos son una sola acción, comparten transacción o una estrategia idempotente. No borres historia: inactiva y conserva snapshots descriptivos.
+
+## Antes de crear una pantalla: ¿ya existe el concepto?
+
+Revisa `src/lib/nav.ts`, `CONTEXTO_SISTEMA.md` (vocabulario) y el menú del seeder. Si el concepto existe con otro nombre, **extiéndelo** (otra pestaña, otra sección) y deja una redirección en la ruta vieja. Ejemplos ya resueltos: buscador de hogares dentro de «Mi hogar de amor»; «Mis hijos» dentro de «Mi familia». Al retirar una entrada de menú, agrégala a `RETIRED_MENU_IDS` del seeder para que se desactive en las bases existentes.

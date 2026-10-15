@@ -17,7 +17,7 @@ import { KidsMessagesDialog } from "./kids-messages"
 // «Mis hijos»: los niños de los que la persona es tutora. El acceso nace de la
 // relación de tutela; nadie ve a un niño que no es suyo.
 
-export function MyKids() {
+export function MyKids({ embedded = false }: { embedded?: boolean } = {}) {
   const [children, setChildren] = useState<MyChildDto[] | null>(null)
   const [qr, setQr] = useState<MyChildDto | null>(null)
   const [chat, setChat] = useState<MyChildDto | null>(null)
@@ -42,6 +42,18 @@ export function MyKids() {
 
   return (
     <div className="w-full space-y-5">
+      {embedded ? (
+        <div className="flex flex-wrap items-center gap-3">
+          <h2 className="flex min-w-0 flex-1 items-center gap-2 font-heading text-lg font-semibold">
+            <Baby className="size-5 text-primary" /> Mis hijos en Kids
+          </h2>
+          <Button onClick={() => setForm("new")} size="sm">
+            <Plus className="size-4" />
+            Registrar hijo
+          </Button>
+        </div>
+      ) : (
+        <>
       {/* Un lugar seguro: cálido, claro y con la protección a la vista. */}
       <header className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-warning/20 via-primary/10 to-accent p-5 sm:p-7">
         <div aria-hidden className="pointer-events-none absolute -top-10 -right-8 size-44 rounded-full bg-warning/25 blur-2xl" />
@@ -75,6 +87,9 @@ export function MyKids() {
           ))}
         </ul>
       </header>
+
+        </>
+      )}
 
       {children === null ? (
         <Skeleton className="h-40 w-full" />

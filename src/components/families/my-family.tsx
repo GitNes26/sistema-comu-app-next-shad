@@ -1,13 +1,13 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import Link from "next/link"
-import { Baby, Cake, Home, Users } from "lucide-react"
+import { Cake, Users } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { EmptyState } from "@/components/shared/empty-state"
 import { apiJson } from "@/lib/ministries/client"
 import type { FamilyDto } from "@/lib/families/server"
 import { FAMILY_RELATIONS } from "@/lib/families/rules"
+import { MyKids } from "@/components/kids/my-kids"
 
 // «Mi familia»: quiénes la integran según el padrón de la iglesia. Lo administra la
 // secretaría; aquí solo se consulta (sin teléfonos).
@@ -57,22 +57,9 @@ export function MyFamily() {
         </ul>
       )}
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Link href="/mi/hijos" className="press flex items-center gap-3 rounded-2xl border bg-card p-4 hover:border-primary/40">
-          <Baby className="size-6 text-primary" />
-          <span>
-            <span className="block font-medium">Mis hijos en Kids</span>
-            <span className="text-xs text-muted-foreground">Su QR de entrada y salida y los avisos.</span>
-          </span>
-        </Link>
-        <Link href="/mi/hogares" className="press flex items-center gap-3 rounded-2xl border bg-card p-4 hover:border-primary/40">
-          <Home className="size-6 text-primary" />
-          <span>
-            <span className="block font-medium">Hogares de amor</span>
-            <span className="text-xs text-muted-foreground">Encuentra la reunión en casa más cercana.</span>
-          </span>
-        </Link>
-      </div>
+      <section id="hijos" className="scroll-mt-20">
+        <MyKids embedded />
+      </section>
     </div>
   )
 }

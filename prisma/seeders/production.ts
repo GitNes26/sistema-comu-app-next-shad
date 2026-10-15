@@ -31,6 +31,8 @@ type SystemMenuDef = {
   sortOrder: number
 }
 
+const RETIRED_MENU_IDS = ["menu-hogares", "menu-mis-hijos"]
+
 export const SYSTEM_MENUS: SystemMenuDef[] = [
   { id: "menu-principal", parentId: null, type: "section", label: "Principal", icon: "LayoutDashboard", sortOrder: 1 },
   { id: "menu-panel", parentId: "menu-principal", type: "item", label: "Panel", icon: "LayoutDashboard", href: "/admin", sortOrder: 1 },
@@ -56,11 +58,9 @@ export const SYSTEM_MENUS: SystemMenuDef[] = [
   { id: "menu-servicio", parentId: null, type: "section", label: "Servicio", icon: "HandHeart", sortOrder: 3 },
   { id: "menu-mis-ministerios", parentId: "menu-servicio", type: "item", label: "Mis ministerios", icon: "HeartHandshake", href: "/mi/ministerios", sortOrder: 1 },
   { id: "menu-mi-escuela", parentId: "menu-servicio", type: "item", label: "Mi escuela", icon: "GraduationCap", href: "/mi/escuela", sortOrder: 2 },
-  { id: "menu-mis-hijos", parentId: "menu-servicio", type: "item", label: "Mis hijos", icon: "Baby", href: "/mi/hijos", sortOrder: 3 },
   { id: "menu-ministerios", parentId: "menu-servicio", type: "item", label: "Ministerios", icon: "HandHeart", href: "/admin/ministries", permissionKey: "ministries.view", sortOrder: 4 },
-  { id: "menu-hogares", parentId: "menu-servicio", type: "item", label: "Hogares de amor", icon: "MapPinned", href: "/mi/hogares", sortOrder: 3 },
   { id: "menu-organigrama", parentId: "menu-servicio", type: "item", label: "Organigrama", icon: "Network", href: "/mi/organigrama", sortOrder: 3 },
-  { id: "menu-mis-celulas", parentId: "menu-servicio", type: "item", label: "Mis células", icon: "Home", href: "/mi/celulas", sortOrder: 2 },
+  { id: "menu-mis-celulas", parentId: "menu-servicio", type: "item", label: "Mi hogar de amor", icon: "Home", href: "/mi/celulas", sortOrder: 2 },
   { id: "menu-celulas", parentId: "menu-servicio", type: "item", label: "Células y redes", icon: "Network", href: "/admin/cells", permissionKey: "cells.view", sortOrder: 5 },
 
   { id: "menu-iglesia", parentId: null, type: "section", label: "Iglesia", icon: "Church", sortOrder: 4 },
@@ -168,6 +168,9 @@ export async function seedProduction() {
       })
     }
   }
+
+  // Entradas retiradas por duplicar otra (hogares de amor = células; hijos viven en Mi familia).
+  await prisma.menu.updateMany({ where: { id: { in: RETIRED_MENU_IDS } }, data: { isActive: false } })
 
   // Menú dinámico
   for (const m of SYSTEM_MENUS) {

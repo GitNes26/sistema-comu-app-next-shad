@@ -42,6 +42,7 @@ Si documentación y código difieren, comprueba el comportamiento y actualiza la
 - API: autentica, resuelve iglesia efectiva, comprueba scope/permiso/plan, valida entrada, ejecuta lógica en `src/lib`, responde sin filtrar datos sensibles.
 - Prisma 7 (adaptador MariaDB): agrega migración versionada y seeder idempotente. Producción usa `prisma migrate deploy`; nunca `db push` ni resets sin autorización explícita. El cliente se genera en `src/generated/prisma` (ignorado por git).
 - Nuevo módulo: sigue la receta de la guía de páginas (entidad → permisos → lógica → CRUD/API → página → menú → pruebas → documentación).
+- **Un concepto, un módulo.** Antes de crear una pantalla, ruta o entrada de menú, busca si el concepto ya existe con otro nombre (en COMU-APP: *hogar de amor = grupo en casa = célula*; *familia* ≠ hogar de amor; los *hijos* de Kids viven en «Mi familia»). Se amplía el módulo existente; no se duplica con un nombre nuevo. Toda página sin sidebar lleva flecha de regreso.
 - Conserva cambios ajenos del worktree y no reviertas archivos que no sean parte de la tarea.
 
 ## Verificación y entrega

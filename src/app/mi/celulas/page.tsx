@@ -1,27 +1,19 @@
 import type { Metadata } from "next"
-import Link from "next/link"
-import { ArrowLeft } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { CellsList } from "@/components/cells/cells-list"
+import { MyCellsTabs } from "@/components/cells/my-cells-tabs"
 
-export const metadata: Metadata = { title: "Mis células" }
+export const metadata: Metadata = { title: "Mi hogar de amor" }
 
-// Las células propias salen de la relación (líder, apoyo, integrante, anfitrión o
-// encargado de red); un líder con varias las ve todas, cada una con su horario.
-export default function MyCellsPage() {
+// El hogar de amor (grupo en casa = célula) propio sale de la relación (líder, apoyo,
+// integrante, anfitrión o encargado de red). El buscador vive en la misma página.
+export default async function MyCellsPage({ searchParams }: { searchParams: Promise<{ buscar?: string }> }) {
+  const { buscar } = await searchParams
   return (
-    <div className="space-y-4">
-      <Button asChild variant="ghost" size="sm" className="-ml-2">
-        <Link href="/mi">
-          <ArrowLeft className="size-4" />
-          Mi espacio
-        </Link>
-      </Button>
+    <div className="w-full space-y-4">
       <div>
-        <h1 className="font-heading text-2xl font-semibold tracking-tight">Mis células</h1>
-        <p className="text-sm text-muted-foreground">Las células donde participas o que lideras.</p>
+        <h1 className="font-heading text-2xl font-semibold tracking-tight">Mi hogar de amor</h1>
+        <p className="text-sm text-muted-foreground">La reunión en casa donde participas o que lideras, y cómo encontrar la más cercana.</p>
       </div>
-      <CellsList scope="mine" basePath="/mi/celulas" />
+      <MyCellsTabs initial={buscar ? "find" : "mine"} />
     </div>
   )
 }

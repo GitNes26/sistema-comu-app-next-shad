@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { MiBackButton } from "@/components/layout/mi-back-button"
 import { getServerSession } from "next-auth"
 import { redirect } from "next/navigation"
 import { LayoutDashboard } from "lucide-react"
@@ -47,6 +48,7 @@ export default async function MiLayout({ children }: { children: React.ReactNode
         <div className="min-h-svh bg-background">
           <header className="sticky top-0 z-30 border-b bg-background/92 supports-backdrop-filter:bg-background/75 supports-backdrop-filter:backdrop-blur-lg">
             <div className="flex h-[calc(3.5rem+env(safe-area-inset-top))] w-full items-center gap-2 pt-[env(safe-area-inset-top)] pr-[max(0.75rem,env(safe-area-inset-right))] pl-[max(0.75rem,env(safe-area-inset-left))]">
+              <MiBackButton />
               <Link href="/mi" className="flex min-w-0 items-center gap-2">
                 <Logo size={20} logoUrl={logoUrl} className="rounded-lg" />
                 <span className="truncate font-heading text-sm font-semibold">{churchName}</span>

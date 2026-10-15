@@ -59,6 +59,10 @@ Todo lo que se puede tocar o pulsar — botones, enlaces, filas y tarjetas clica
 
 `globals.css` aplica la base a `a[href]`, `button`, `[role=button|tab|menuitem|option|switch|checkbox|radio]`, `summary`, `label[for]` e inputs de casilla/rango/archivo. Para tarjetas y filas clicables que no sean botón ni enlace usa `.press`; si el elemento es un `div` con `onClick`, conviértelo en `button`/`Link` (accesible y con teclado). No inventes animaciones propias por componente.
 
+## Toda página sin sidebar lleva flecha de regreso (obligatorio)
+
+El espacio personal (`/mi`), la cara pública (`/c/[slug]`), `/legal` y `/auth` no tienen sidebar: sin una flecha la persona queda atrapada. `/mi` la pone el layout (`MiBackButton`, en el encabezado, salvo en `/mi`); las demás páginas usan `BackButton` con un `fallback` (el padre natural). Una página nueva sin sidebar que no la tenga es un defecto.
+
 ## Safe areas
 
 - `viewport-fit=cover` en el layout raíz.

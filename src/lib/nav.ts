@@ -1,8 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import {
-  MapPinned,
   Inbox,
-  Baby,
   BadgeDollarSign,
   BellRing,
   Briefcase,
@@ -94,11 +92,9 @@ export const NAV_SECTIONS: NavSection[] = [
     title: "Servicio",
     items: [
       { href: "/mi/ministerios", label: "Mis ministerios", icon: HeartHandshake },
-      { href: "/mi/celulas", label: "Mis células", icon: Home },
-      { href: "/mi/hogares", label: "Hogares de amor", icon: MapPinned },
+      { href: "/mi/celulas", label: "Mi hogar de amor", icon: Home },
       { href: "/mi/organigrama", label: "Organigrama", icon: Network },
       { href: "/mi/escuela", label: "Mi escuela", icon: GraduationCap },
-      { href: "/mi/hijos", label: "Mis hijos", icon: Baby },
       { href: "/admin/ministries", label: "Ministerios", icon: HandHeart, permission: "ministries.view", feature: "ministries" },
       { href: "/admin/cells", label: "Células y redes", icon: Network, permission: "cells.view", feature: "cells" },
     ],
