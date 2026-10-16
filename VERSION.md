@@ -30,6 +30,10 @@ Formato: `MAJOR.MINOR.PATCH.REVISION` (X.X.X.X)
 
 ## Historial
 
+### [0.31.0.0] — 2026-10-16
+- **Tipo:** `feat` (Minor)
+- feat: chat de Kids con composer redondeado, animacion blur fade y avisos rapidos con flechas laterales
+
 ### [0.30.0.0] — 2026-10-16
 - **Tipo:** `feat` (Minor)
 - feat: chat de Kids con Message, Bubble y MessageScroller de shadcn, separadores por dia, desvanecido en bordes y estados con shimmer

@@ -524,6 +524,22 @@
   to { opacity: 1; }
 }
 
+/* Blur fade: lo nuevo aparece desde el desenfoque y sube un poco. La demora (--blur-fade-delay)
+   escalona varios elementos. Sin movimiento si la persona lo pidió. */
+@keyframes blur-fade-in {
+  from { opacity: 0; filter: blur(6px); transform: translateY(6px); }
+  to { opacity: 1; filter: blur(0); transform: none; }
+}
+.blur-fade {
+  animation: blur-fade-in 420ms var(--ease-out-quart) both;
+  animation-delay: var(--blur-fade-delay, 0ms);
+}
+@media (prefers-reduced-motion: reduce) {
+  .blur-fade {
+    animation: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .press,
   .ui-button-motion {

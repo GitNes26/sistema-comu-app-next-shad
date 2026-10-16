@@ -115,3 +115,6 @@ La interfaz habla como una familia, no como un sistema: **«¡Bienvenido a casa!
 ## Conversaciones (chat)
 
 Todo chat usa los componentes de shadcn instalados en `src/components/ui`: `Message`/`MessageAvatar`/`MessageContent`/`MessageHeader`/`MessageFooter` + `Bubble` (variante `default` para lo propio, `muted` para lo ajeno) dentro de `MessageScroller` (`autoScroll`, `defaultScrollPosition="end"`, botón «ir al último»). Separadores de día con `Marker variant="separator"`; estados «Cargando/Enviando…» con `Marker role="status"` + `Spinner` + `shimmer`. Los bordes del transcript y de filas desplazables usan `scroll-fade-y`/`scroll-fade-x` (con `no-scrollbar`). Ejemplo: `src/components/kids/kids-messages.tsx`. Los registros de shadcn importan `cn` desde `"cn"`; hay que cambiarlo a `@/lib/utils` y no instalar el paquete `cn`.
+- **Blur fade**: clase `.blur-fade` (globals.css) para que lo nuevo entre desde el desenfoque; `--blur-fade-delay` escalona. Se apaga con `prefers-reduced-motion`.
+- **Filas con flechas**: chips o avisos que se desplazan en horizontal van en `ScrollRow` (`src/components/base/scroll-row.tsx`): flechas laterales solo cuando hay más opciones y desvanecido en los bordes.
+- **Composer de chat**: superficie redondeada con «+» (opciones rápidas), cuadro que crece con el texto y botón circular de enviar con flecha arriba.

@@ -1,9 +1,8 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
-import { BellRing, Check, CheckCheck, MessageCircleHeart, Send, ShieldCheck, UserRound } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { ArrowUp, BellRing, Check, CheckCheck, MessageCircleHeart, Plus, ShieldCheck, UserRound } from "lucide-react"
+import { ScrollRow } from "@/components/base/scroll-row"
 import { DialogComponent } from "@/components/ui/dialog"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Bubble, BubbleContent } from "@/components/ui/bubble"
@@ -25,6 +24,9 @@ import type { MessageDto } from "@/lib/kids/server"
 import { cn } from "@/lib/utils"
 
 const POLL_MS = 8000
+
+// Frases a un toque para quien escribe como papá o mamá (se insertan en el cuadro, no se envían solas).
+const PARENT_PHRASES = ["Voy en camino", "Me retraso unos minutos", "Gracias por avisarme", "¿Cómo va todo?"]
 
 const dayKey = (iso: string) => new Date(iso).toDateString()
 function dayLabel(iso: string) {
@@ -64,6 +66,16 @@ export function KidsMessagesDialog({
   const [messages, setMessages] = useState<MessageDto[] | null>(null)
   const [body, setBody] = useState("")
   const [sending, setSending] = useState(false)
+  const [tools, setTools] = useState(staff)
+  const input = useRef<HTMLTextAreaElement>(null)
+
+  // El cuadro crece con el texto (hasta unas 5 líneas).
+  useEffect(() => {
+    const el = input.current
+    if (!el) return
+    el.style.height = "auto"
+    el.style.height = `${Math.min(el.scrollHeight, 128)}px`
+  }, [body, open])
 
   const load = useCallback(async () => {
     if (!childId) return
@@ -124,13 +136,23 @@ export function KidsMessagesDialog({
       description={staff ? "Les llega una notificación al instante." : "Habla con el personal de Comunidad Kids."}
       footer={
         <form
-          className="flex w-full items-end gap-2"
+          className="flex w-full items-end gap-2 rounded-3xl bg-muted/50 p-2 ring-1 ring-border focus-within:ring-2 focus-within:ring-ring/40"
           onSubmit={(e) => {
             e.preventDefault()
             void send(body)
           }}
         >
-          <Textarea
+          <button
+            type="button"
+            onClick={() => setTools((v) => !v)}
+            aria-label={tools ? "Ocultar opciones rápidas" : "Mostrar opciones rápidas"}
+            aria-pressed={tools}
+            className={cn("press grid size-10 shrink-0 place-items-center rounded-full border bg-card text-muted-foreground transition-transform hover:text-foreground", tools && "rotate-45 border-primary/40 text-primary")}
+          >
+            <Plus className="size-5" />
+          </button>
+          <textarea
+            ref={input}
             value={body}
             onChange={(e) => setBody(e.target.value)}
             onKeyDown={(e) => {
@@ -139,34 +161,59 @@ export function KidsMessagesDialog({
                 void send(body)
               }
             }}
-            rows={2}
+            rows={1}
             maxLength={1000}
             aria-label="Mensaje"
             placeholder="Escribe un mensaje…"
             enterKeyHint="send"
-            className="min-h-11 flex-1"
+            className="max-h-32 min-h-10 flex-1 resize-none bg-transparent px-1 py-2 text-sm outline-none placeholder:text-muted-foreground"
           />
-          <Button type="submit" size="icon" aria-label="Enviar" disabled={sending || !body.trim()}>
-            {sending ? <Spinner /> : <Send className="size-4" />}
-          </Button>
+          <button
+            type="submit"
+            aria-label="Enviar"
+            disabled={sending || !body.trim()}
+            className="press grid size-10 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground transition-opacity disabled:opacity-40"
+          >
+            {sending ? <Spinner /> : <ArrowUp className="size-5" />}
+          </button>
         </form>
       }
     >
       <div className="space-y-3">
-        {staff && (
-          <div className="scroll-fade-x no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 py-1" aria-label="Avisos rápidos">
-            {ALERT_PRESETS.map((p) => (
-              <button
-                key={p}
-                type="button"
-                disabled={sending}
-                onClick={() => void send(p, "alert")}
-                className="press inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-full border border-warning/40 bg-warning/10 px-3 text-xs font-medium whitespace-nowrap text-warning-ink hover:bg-warning/20"
-              >
-                <BellRing className="size-3.5" />
-                {p}
-              </button>
-            ))}
+        {tools && (
+          <div className="blur-fade">
+            {staff ? (
+              <ScrollRow label="Avisos rápidos">
+                {ALERT_PRESETS.map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    disabled={sending}
+                    onClick={() => void send(p, "alert")}
+                    className="press inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-full border border-warning/40 bg-warning/10 px-3 text-xs font-medium whitespace-nowrap text-warning-ink hover:bg-warning/20"
+                  >
+                    <BellRing className="size-3.5" />
+                    {p}
+                  </button>
+                ))}
+              </ScrollRow>
+            ) : (
+              <ScrollRow label="Frases rápidas">
+                {PARENT_PHRASES.map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => {
+                      setBody((cur) => (cur ? `${cur} ${p}` : p))
+                      input.current?.focus()
+                    }}
+                    className="press inline-flex min-h-9 shrink-0 items-center rounded-full border bg-card px-3 text-xs font-medium whitespace-nowrap hover:border-primary/40"
+                  >
+                    {p}
+                  </button>
+                ))}
+              </ScrollRow>
+            )}
           </div>
         )}
 
@@ -184,7 +231,7 @@ export function KidsMessagesDialog({
                     </Marker>
                   )}
                   {messages?.length === 0 && (
-                    <div className="m-auto flex max-w-64 flex-col items-center gap-2 py-8 text-center text-sm text-muted-foreground">
+                    <div className="blur-fade m-auto flex max-w-64 flex-col items-center gap-2 py-8 text-center text-sm text-muted-foreground">
                       <span className="grid size-12 place-items-center rounded-2xl bg-primary/10 text-primary">
                         <MessageCircleHeart className="size-6" />
                       </span>
@@ -192,15 +239,15 @@ export function KidsMessagesDialog({
                       <p>{staff ? "Escribe a los papás o manda un aviso rápido." : "Escribe al personal si necesitas algo de tu hijo."}</p>
                     </div>
                   )}
-                  {rows.map((r) =>
+                  {rows.map((r, i) =>
                     r.type === "day" ? (
-                      <MessageScrollerItem key={r.key}>
+                      <MessageScrollerItem key={r.key} className="blur-fade">
                         <Marker variant="separator" className="py-1 text-xs first-letter:uppercase">
                           <MarkerContent>{r.label}</MarkerContent>
                         </Marker>
                       </MessageScrollerItem>
                     ) : (
-                      <MessageScrollerItem key={r.m.id} messageId={r.m.id}>
+                      <MessageScrollerItem key={r.m.id} messageId={r.m.id} className="blur-fade" style={{ "--blur-fade-delay": `${Math.min(i, 8) * 45}ms` } as React.CSSProperties}>
                         <Message align={r.m.mine ? "end" : "start"}>
                           {!r.m.mine && (
                             <MessageAvatar>
@@ -233,7 +280,7 @@ export function KidsMessagesDialog({
                     )
                   )}
                   {sending && (
-                    <Marker role="status" className="justify-end">
+                    <Marker role="status" className="blur-fade justify-end">
                       <MarkerIcon>
                         <Spinner />
                       </MarkerIcon>
