@@ -52,3 +52,7 @@ Configurar pago por empleado (solo administración y limpieza/mantenimiento) →
 ## 8. Comunicación
 
 Publicaciones (con flyer), transmisiones y avisos en vivo (campana + toast + push). Cada aviso sale de un **tipo** del catálogo `src/lib/notifications/kinds.ts`; no se inventan avisos sueltos.
+
+## 3b. Elegir lugar y boleto (detalle)
+
+El plano del área rotula **letra de fila** (izquierda) y **número de asiento** (arriba y dentro de cada asiento); al tocar uno aparece un globo «Fila C · 5» y debajo un resumen (fila/asiento/zona) antes de confirmar. El boleto (`ticket-card.tsx`) separa **Fila y Asiento** (o Mesa y Lugar) en grande, muestra estado, folio e importe, y ofrece compartir, ver/descargar el QR y abrir el mapa del lugar. Fila y asiento salen de `parseSeatLabel` (`src/lib/events/rules.ts`); no se agregan campos al boleto.

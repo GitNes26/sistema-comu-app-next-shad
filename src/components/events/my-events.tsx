@@ -29,34 +29,38 @@ export function MyEvents() {
   if (events.length === 0) return <EmptyState icon={CalendarDays} title="Sin eventos próximos" description="Cuando se publique un evento para ti, aparecerá aquí." />
 
   return (
-    <ul className="grid gap-3 sm:grid-cols-2">
-      {events.map((e) => (
-        <li key={e.id}>
-          <Link href={`/mi/eventos/${e.id}`} className="press flex h-full flex-col overflow-hidden rounded-2xl border bg-card hover:border-primary/40">
-            {e.imageUrl && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={e.imageUrl} alt="" className="h-32 w-full object-cover" />
-            )}
-            <span className="flex flex-1 flex-col gap-1 p-3">
-              <span className="flex flex-wrap items-center gap-2">
-                <span className="text-sm font-semibold">{e.name}</span>
-                {e.myTicket && <StatusPill tone={e.myTicket.status === "paid" ? "success" : "warning"}>Tu boleto</StatusPill>}
+    <ul className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
+      {events.map((e) => {
+        const d = new Date(e.startsAt)
+        return (
+          <li key={e.id}>
+            <Link href={`/mi/eventos/${e.id}`} className="press group flex h-full gap-3 overflow-hidden rounded-2xl border bg-card p-3 transition-colors hover:border-primary/40">
+              <span className="flex w-14 shrink-0 flex-col items-center justify-center rounded-xl bg-primary/10 py-2 text-primary">
+                <span className="font-heading text-2xl leading-none font-semibold tabular-nums">{d.getDate()}</span>
+                <span className="text-[0.7rem] font-semibold tracking-wide uppercase">{d.toLocaleDateString("es-MX", { month: "short" }).replace(".", "")}</span>
               </span>
-              <span className="text-xs text-muted-foreground first-letter:uppercase">{fmtWhen(e.startsAt)}</span>
-              <span className="flex flex-wrap items-center gap-x-3 text-xs text-muted-foreground">
-                <span>{e.kind}</span>
-                {(e.venueName || e.location) && (
-                  <span className="inline-flex items-center gap-1">
-                    <MapPin className="size-3" /> {e.venueName ?? e.location}
-                  </span>
-                )}
-                <span>{e.price > 0 ? money(e.price) : "Sin costo"}</span>
+              <span className="flex min-w-0 flex-1 flex-col gap-1">
+                <span className="flex flex-wrap items-center gap-2">
+                  <span className="min-w-0 text-sm font-semibold">{e.name}</span>
+                  {e.myTicket && <StatusPill tone={e.myTicket.status === "paid" ? "success" : "warning"}>Tu boleto</StatusPill>}
+                </span>
+                <span className="text-xs text-muted-foreground first-letter:uppercase">{fmtWhen(e.startsAt)}</span>
+                <span className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+                  <span>{e.kind}</span>
+                  {(e.venueName || e.location) && (
+                    <span className="inline-flex min-w-0 items-center gap-1">
+                      <MapPin className="size-3 shrink-0" /> <span className="truncate">{e.venueName ?? e.location}</span>
+                    </span>
+                  )}
+                  <span>{e.price > 0 ? money(e.price) : "Sin costo"}</span>
+                </span>
+                {!e.myTicket && !e.canRegister && e.status === "published" && <span className="text-xs text-destructive">Sin lugares disponibles</span>}
+                {!e.myTicket && e.canRegister && <span className="mt-auto text-xs font-medium text-primary">Apartar mi boleto →</span>}
               </span>
-              {!e.myTicket && !e.canRegister && e.status === "published" && <span className="text-xs text-destructive">Sin lugares disponibles</span>}
-            </span>
-          </Link>
-        </li>
-      ))}
+            </Link>
+          </li>
+        )
+      })}
     </ul>
   )
 }

@@ -1,7 +1,7 @@
 "use client"
 
 import { forwardRef, useMemo } from "react"
-import { SEAT_PITCH, TABLE_RADIUS, computeSeats, type BlockElement, type Layout, type LayoutElement } from "@/lib/events/rules"
+import { SEAT_PITCH, TABLE_RADIUS, computeSeats, rowName, type BlockElement, type Layout, type LayoutElement } from "@/lib/events/rules"
 import { cn } from "@/lib/utils"
 
 // Plano del área: se dibuja en SVG (2D) y, con `view3d`, se inclina en perspectiva
@@ -26,16 +26,20 @@ export interface SeatMapProps {
   /** Editor: arrastre de elementos. */
   onElementPointerDown?: (el: LayoutElement, e: React.PointerEvent) => void
   selectedElementId?: string | null
+  /** Letras de fila y números de asiento en el plano (por defecto, en los interactivos). */
+  showAxes?: boolean
 }
 
 const SEAT_R = 11
 
 export const SeatMap = forwardRef<SVGSVGElement, SeatMapProps>(function SeatMap(
-  { width, height, layout, taken, mine, selected, occupants, interactive, view3d, className, onSeatClick, onElementPointerDown, selectedElementId },
+  { width, height, layout, taken, mine, selected, occupants, interactive, view3d, className, onSeatClick, onElementPointerDown, selectedElementId, showAxes },
   ref
 ) {
   const seats = useMemo(() => computeSeats(layout), [layout])
   const blocked = useMemo(() => new Set(layout.blocked), [layout.blocked])
+  const axes = showAxes ?? Boolean(interactive || occupants)
+  const selectedSeat = selected ? seats.find((s) => s.code === selected) : null
   const colorOf = (sectionId: string | null) => layout.sections.find((s) => s.id === sectionId)?.color ?? "#64748b"
 
   return (
@@ -99,8 +103,20 @@ export const SeatMap = forwardRef<SVGSVGElement, SeatMapProps>(function SeatMap(
                 strokeWidth={3}
                 strokeDasharray={selectedEl ? "6 4" : undefined}
               />
+              {axes &&
+                Array.from({ length: b.rows }, (_, r) => (
+                  <text key={`r${r}`} x={el.x - SEAT_R - 12} y={el.y + r * SEAT_PITCH} textAnchor="middle" dominantBaseline="central" className="fill-muted-foreground text-[11px] font-semibold">
+                    {rowName(r)}
+                  </text>
+                ))}
+              {axes &&
+                Array.from({ length: b.cols }, (_, cI) => (
+                  <text key={`c${cI}`} x={el.x + cI * SEAT_PITCH} y={el.y - SEAT_R - 9} textAnchor="middle" dominantBaseline="central" className="fill-muted-foreground text-[10px]">
+                    {cI + 1}
+                  </text>
+                ))}
               {el.label && (
-                <text x={el.x + ((b.cols - 1) * SEAT_PITCH) / 2} y={el.y - 26} textAnchor="middle" className="fill-muted-foreground text-[13px]">
+                <text x={el.x + ((b.cols - 1) * SEAT_PITCH) / 2} y={el.y - (axes ? 38 : 26)} textAnchor="middle" className="fill-muted-foreground text-[13px]">
                   {el.label}
                 </text>
               )}
@@ -150,12 +166,25 @@ export const SeatMap = forwardRef<SVGSVGElement, SeatMapProps>(function SeatMap(
                 strokeWidth={isBlocked ? 1 : 2.5}
                 strokeDasharray={isBlocked ? "3 3" : undefined}
               />
+              {axes && !isTaken && !isBlocked && (
+                <text x={s.x} y={s.y} textAnchor="middle" dominantBaseline="central" className="pointer-events-none text-[10px] font-semibold" fill="#fff">
+                  {s.seatNo}
+                </text>
+              )}
               {isTaken && !isMine && (
                 <path d={`M${s.x - 5} ${s.y - 5} L${s.x + 5} ${s.y + 5} M${s.x + 5} ${s.y - 5} L${s.x - 5} ${s.y + 5}`} stroke="#fff" strokeWidth={2} strokeLinecap="round" />
               )}
             </g>
           )
         })}
+        {selectedSeat && (
+          <g className="pointer-events-none">
+            <rect x={selectedSeat.x - 62} y={selectedSeat.y - SEAT_R - 34} width={124} height={24} rx={12} fill="var(--foreground)" />
+            <text x={selectedSeat.x} y={selectedSeat.y - SEAT_R - 22} textAnchor="middle" dominantBaseline="central" className="text-[12px] font-semibold" style={{ fill: "var(--background)" }}>
+              {selectedSeat.rowName.startsWith("Mesa") ? `${selectedSeat.rowName} · ${selectedSeat.seatNo}` : `Fila ${selectedSeat.rowName} · ${selectedSeat.seatNo}`}
+            </text>
+          </g>
+        )}
       </svg>
     </div>
   )

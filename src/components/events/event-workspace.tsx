@@ -9,6 +9,7 @@ import { TicketCard } from "@/components/events/ticket-card"
 import {
   ArrowLeft,
   Ban,
+  Armchair,
   Box,
   Check,
   CircleDollarSign,
@@ -44,6 +45,7 @@ import { notify } from "@/lib/notify"
 import { swalConfirm, swalError } from "@/lib/swal"
 import { uploadFile } from "@/lib/uploads"
 import { apiJson, errorMessage } from "@/lib/ministries/client"
+import { computeSeats, type Layout } from "@/lib/events/rules"
 import type { EventDetailDto, ExpenseDto, ItineraryDto, TicketDto, VenueDto } from "@/lib/events/server"
 import { EventFormDialog, STATUS_LABEL, STATUS_TONE, money } from "./events-admin"
 import { SeatLegend, SeatMap } from "./seat-map"
@@ -1434,6 +1436,35 @@ function EventQr({ code }: { code: string }) {
   return <img src={src} alt="Código QR de tu boleto" className="size-60" />
 }
 
+function SeatSummary({ layout, code }: { layout: Layout; code: string | null }) {
+  const info = code ? computeSeats(layout).find((s) => s.code === code) : null
+  if (!info) return <p className="rounded-2xl border border-dashed p-3 text-center text-sm text-muted-foreground">Toca un asiento libre del plano para elegirlo.</p>
+  const section = layout.sections.find((s) => s.id === info.sectionId)
+  const table = info.rowName.startsWith("Mesa")
+  return (
+    <div className="flex items-center gap-3 rounded-2xl border border-primary/40 bg-primary/5 p-3">
+      <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-primary text-primary-foreground">
+        <Armchair className="size-6" />
+      </span>
+      <dl className="grid flex-1 grid-cols-2 gap-2 text-center">
+        <div>
+          <dt className="text-[0.65rem] tracking-wide text-muted-foreground uppercase">{table ? "Mesa" : "Fila"}</dt>
+          <dd className="font-heading text-xl font-semibold">{table ? info.rowName.replace("Mesa ", "") : info.rowName}</dd>
+        </div>
+        <div>
+          <dt className="text-[0.65rem] tracking-wide text-muted-foreground uppercase">{table ? "Lugar" : "Asiento"}</dt>
+          <dd className="font-heading text-xl font-semibold tabular-nums">{info.seatNo}</dd>
+        </div>
+      </dl>
+      {section && (
+        <span className="shrink-0 rounded-full px-2.5 py-1 text-xs font-medium text-white" style={{ background: section.color }}>
+          {section.name}
+        </span>
+      )}
+    </div>
+  )
+}
+
 function AttendeeView({ event, onChanged }: { event: EventDetailDto; onChanged: () => Promise<void> }) {
   const [sectionId, setSectionId] = useState("")
   const [seat, setSeat] = useState<string | null>(null)
@@ -1602,12 +1633,14 @@ function AttendeeView({ event, onChanged }: { event: EventDetailDto; onChanged: 
             className="max-h-[60vh]"
           />
           <SeatLegend sections={event.plan.layout.sections} />
+          <SeatSummary layout={event.plan.layout} code={seat} />
           {ticket && (
-            <Button onClick={() => void chooseSeat()} disabled={!seat || busy}>
+            <Button onClick={() => void chooseSeat()} disabled={!seat || busy} className="w-full sm:w-auto">
+              {busy && <Loader2 className="size-4 animate-spin" />}
               Confirmar este lugar
             </Button>
           )}
-          {!ticket && seat && <p className="text-sm text-muted-foreground">Lugar elegido: {seat}. Toca «Apartar mi boleto» para confirmarlo.</p>}
+          {!ticket && seat && <p className="text-sm text-muted-foreground">Toca «Apartar mi boleto» para confirmar este lugar.</p>}
         </section>
       )}
 

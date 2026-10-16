@@ -226,7 +226,7 @@ export function MySpaceView({
           className="pointer-events-none absolute -right-10 -top-10 size-48 rounded-full bg-primary/10 blur-2xl"
           aria-hidden
         />
-        <div className="relative flex flex-wrap items-center gap-4">
+        <div className="relative grid gap-4 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center">
           <span className="grid size-16 shrink-0 place-items-center overflow-hidden rounded-3xl bg-card font-heading text-2xl font-semibold text-primary shadow-sm sm:size-20">
             {member?.imageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -270,7 +270,7 @@ export function MySpaceView({
               </p>
             )}
           </div>
-          <div className="grid shrink-0 grid-cols-2 gap-2 text-center">
+          <div className="grid grid-cols-2 gap-2 text-center sm:shrink-0">
             <Link
               href="/mi/ministerios"
               className="press rounded-2xl bg-card/80 px-4 py-2 ring-1 ring-border"

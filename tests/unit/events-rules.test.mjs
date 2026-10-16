@@ -95,3 +95,12 @@ test("público: abierto, solo líderes o ministerios elegidos", () => {
   assert.equal(audienceAllows("ministries", person, ["m1", "m2"]), true)
   assert.equal(audienceAllows("ministries", person, ["m2"]), false)
 })
+
+test("parseSeatLabel separa fila, asiento y zona para el boleto", async () => {
+  const { parseSeatLabel } = await import("../../src/lib/events/rules.ts")
+  assert.deepEqual(parseSeatLabel("Fila C · asiento 5"), { row: "C", seatNo: "5", kind: "fila", area: null })
+  assert.deepEqual(parseSeatLabel("Balcón · Fila AA · asiento 12"), { row: "AA", seatNo: "12", kind: "fila", area: "Balcón" })
+  assert.deepEqual(parseSeatLabel("Mesa M1 · lugar 3"), { row: "M1", seatNo: "3", kind: "mesa", area: null })
+  assert.equal(parseSeatLabel("Sección general"), null)
+  assert.equal(parseSeatLabel(null), null)
+})

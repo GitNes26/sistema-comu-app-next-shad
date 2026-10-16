@@ -53,13 +53,17 @@ export interface Seat {
   elementId: string
   /** Etiqueta legible: «Fila A · asiento 12» / «Mesa M1 · lugar 3». */
   label: string
+  /** «C» (fila) o «Mesa M1»; con `seatNo` identifica el lugar en el boleto. */
+  rowName: string
+  /** Número de asiento dentro de la fila o la mesa. */
+  seatNo: number
 }
 
 export const SEAT_PITCH = 34 // separación entre asientos (unidades del plano)
 export const TABLE_RADIUS = 36
 export const LIMITS = { elements: 80, seats: 3000, rows: 60, cols: 60, tableSeats: 24, sections: 12 }
 
-const rowName = (i: number) => {
+export const rowName = (i: number) => {
   // 0 → A … 25 → Z, 26 → AA …
   let n = i
   let out = ""
@@ -85,6 +89,8 @@ export function computeSeats(layout: Layout): Seat[] {
             sectionId: el.sectionId ?? null,
             elementId: el.id,
             label: `${el.label ? el.label + " · " : ""}Fila ${row} · asiento ${c + 1}`,
+            rowName: row,
+            seatNo: c + 1,
           })
         }
       }
@@ -98,11 +104,23 @@ export function computeSeats(layout: Layout): Seat[] {
           sectionId: el.sectionId ?? null,
           elementId: el.id,
           label: `Mesa ${el.code} · lugar ${i + 1}`,
+          rowName: `Mesa ${el.code}`,
+          seatNo: i + 1,
         })
       }
     }
   }
   return seats
+}
+
+/** Fila/mesa y número a partir de la etiqueta legible de un asiento (para el boleto). */
+export function parseSeatLabel(label: string | null | undefined): { row: string; seatNo: string; kind: "fila" | "mesa"; area: string | null } | null {
+  if (!label) return null
+  const f = /^(?:(.*) · )?Fila (\w+) · asiento (\d+)$/.exec(label)
+  if (f) return { row: f[2], seatNo: f[3], kind: "fila", area: f[1] ?? null }
+  const m = /^Mesa (\w+) · lugar (\d+)$/.exec(label)
+  if (m) return { row: m[1], seatNo: m[2], kind: "mesa", area: null }
+  return null
 }
 
 export function sellableSeats(layout: Layout): Seat[] {
