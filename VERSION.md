@@ -30,6 +30,10 @@ Formato: `MAJOR.MINOR.PATCH.REVISION` (X.X.X.X)
 
 ## Historial
 
+### [0.30.0.0] — 2026-10-16
+- **Tipo:** `feat` (Minor)
+- feat: chat de Kids con Message, Bubble y MessageScroller de shadcn, separadores por dia, desvanecido en bordes y estados con shimmer
+
 ### [0.29.0.0] — 2026-10-16
 - **Tipo:** `feat` (Minor)
 - feat: plano de asientos con fila y numero, resumen del lugar elegido, boleto rediseñado con fila, asiento, compartir y QR, lista de eventos con fecha y encabezado de Mi espacio responsivo en movil

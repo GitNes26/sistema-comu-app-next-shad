@@ -111,3 +111,7 @@ La interfaz habla como una familia, no como un sistema: **«¡Bienvenido a casa!
 - **Tarjetas compactas**: la tarjeta de libro es horizontal (portada 3:4 de 5–6rem + resumen); nunca portadas a ancho completo.
 - **Safe areas**: `main`, cabeceras y barras fijas suman `env(safe-area-inset-*)` en los cuatro lados (también izquierda/derecha en horizontal). En pantallas < 400px se oculta el selector de tema para que quepa la barra superior.
 - **Cuadrículas en móvil**: `globals.css` fija `.grid { grid-template-columns: minmax(0,1fr) }` en la capa base. Sin ella, un `grid` sin columnas explícitas usa una pista `auto` que se ensancha con el texto más largo y la página desborda a la derecha (tarjetas más anchas que la pantalla). Las utilidades `grid-cols-*` la sustituyen.
+
+## Conversaciones (chat)
+
+Todo chat usa los componentes de shadcn instalados en `src/components/ui`: `Message`/`MessageAvatar`/`MessageContent`/`MessageHeader`/`MessageFooter` + `Bubble` (variante `default` para lo propio, `muted` para lo ajeno) dentro de `MessageScroller` (`autoScroll`, `defaultScrollPosition="end"`, botón «ir al último»). Separadores de día con `Marker variant="separator"`; estados «Cargando/Enviando…» con `Marker role="status"` + `Spinner` + `shimmer`. Los bordes del transcript y de filas desplazables usan `scroll-fade-y`/`scroll-fade-x` (con `no-scrollbar`). Ejemplo: `src/components/kids/kids-messages.tsx`. Los registros de shadcn importan `cn` desde `"cn"`; hay que cambiarlo a `@/lib/utils` y no instalar el paquete `cn`.

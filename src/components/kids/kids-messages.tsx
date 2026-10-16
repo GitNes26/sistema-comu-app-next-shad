@@ -1,10 +1,23 @@
 "use client"
 
-import { useCallback, useEffect, useRef, useState } from "react"
-import { BellRing, Loader2, Send } from "lucide-react"
+import { useCallback, useEffect, useMemo, useState } from "react"
+import { BellRing, Check, CheckCheck, MessageCircleHeart, Send, ShieldCheck, UserRound } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { DialogComponent } from "@/components/ui/dialog"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Bubble, BubbleContent } from "@/components/ui/bubble"
+import { Marker, MarkerContent, MarkerIcon } from "@/components/ui/marker"
+import { Message, MessageAvatar, MessageContent, MessageFooter, MessageHeader } from "@/components/ui/message"
+import {
+  MessageScroller,
+  MessageScrollerButton,
+  MessageScrollerContent,
+  MessageScrollerItem,
+  MessageScrollerProvider,
+  MessageScrollerViewport,
+} from "@/components/ui/message-scroller"
+import { Spinner } from "@/components/ui/spinner"
 import { swalError } from "@/lib/swal"
 import { apiJson, errorMessage } from "@/lib/ministries/client"
 import { ALERT_PRESETS } from "@/lib/kids/rules"
@@ -13,8 +26,23 @@ import { cn } from "@/lib/utils"
 
 const POLL_MS = 8000
 
+const dayKey = (iso: string) => new Date(iso).toDateString()
+function dayLabel(iso: string) {
+  const d = new Date(iso)
+  const today = new Date()
+  const yesterday = new Date()
+  yesterday.setDate(today.getDate() - 1)
+  if (d.toDateString() === today.toDateString()) return "Hoy"
+  if (d.toDateString() === yesterday.toDateString()) return "Ayer"
+  return d.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" })
+}
+const hm = (iso: string) => new Date(iso).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })
+
+type Row = { type: "day"; key: string; label: string } | { type: "msg"; m: MessageDto }
+
 // Conversación entre el personal de Kids y los padres de un niño. Se actualiza
-// sola mientras está abierta (sondeo corto) y marca como leído lo que llega.
+// sola mientras está abierta (sondeo corto) y marca como leído lo que llega. Usa el
+// transcript de shadcn (Message + Bubble + MessageScroller) con desvanecido en los bordes.
 export function KidsMessagesDialog({
   childId,
   childName,
@@ -36,7 +64,6 @@ export function KidsMessagesDialog({
   const [messages, setMessages] = useState<MessageDto[] | null>(null)
   const [body, setBody] = useState("")
   const [sending, setSending] = useState(false)
-  const bottom = useRef<HTMLDivElement>(null)
 
   const load = useCallback(async () => {
     if (!childId) return
@@ -59,9 +86,20 @@ export function KidsMessagesDialog({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, childId])
 
-  useEffect(() => {
-    bottom.current?.scrollIntoView({ block: "end" })
-  }, [messages?.length])
+  // Mensajes con separador por día.
+  const rows = useMemo(() => {
+    const out: Row[] = []
+    let last = ""
+    for (const m of messages ?? []) {
+      const k = dayKey(m.createdAt)
+      if (k !== last) {
+        out.push({ type: "day", key: `d-${k}`, label: dayLabel(m.createdAt) })
+        last = k
+      }
+      out.push({ type: "msg", m })
+    }
+    return out
+  }, [messages])
 
   const send = async (text: string, kind: "message" | "alert" = "message") => {
     const value = text.trim()
@@ -95,28 +133,35 @@ export function KidsMessagesDialog({
           <Textarea
             value={body}
             onChange={(e) => setBody(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+                e.preventDefault()
+                void send(body)
+              }
+            }}
             rows={2}
             maxLength={1000}
             aria-label="Mensaje"
             placeholder="Escribe un mensaje…"
+            enterKeyHint="send"
             className="min-h-11 flex-1"
           />
           <Button type="submit" size="icon" aria-label="Enviar" disabled={sending || !body.trim()}>
-            {sending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
+            {sending ? <Spinner /> : <Send className="size-4" />}
           </Button>
         </form>
       }
     >
       <div className="space-y-3">
         {staff && (
-          <div className="flex flex-wrap gap-2">
+          <div className="scroll-fade-x no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 py-1" aria-label="Avisos rápidos">
             {ALERT_PRESETS.map((p) => (
               <button
                 key={p}
                 type="button"
                 disabled={sending}
                 onClick={() => void send(p, "alert")}
-                className="press inline-flex min-h-9 items-center gap-1.5 rounded-full border border-warning/40 bg-warning/10 px-3 text-xs font-medium text-warning-ink hover:bg-warning/20"
+                className="press inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-full border border-warning/40 bg-warning/10 px-3 text-xs font-medium whitespace-nowrap text-warning-ink hover:bg-warning/20"
               >
                 <BellRing className="size-3.5" />
                 {p}
@@ -124,26 +169,82 @@ export function KidsMessagesDialog({
             ))}
           </div>
         )}
-        <div className="space-y-2" aria-live="polite">
-          {messages === null && <p className="text-sm text-muted-foreground">Cargando…</p>}
-          {messages?.length === 0 && <p className="text-sm text-muted-foreground">Aún no hay mensajes.</p>}
-          {messages?.map((m) => (
-            <div key={m.id} className={cn("flex", m.mine ? "justify-end" : "justify-start")}>
-              <div
-                className={cn(
-                  "max-w-[85%] rounded-2xl px-3 py-2 text-sm",
-                  m.kind === "alert" ? "border border-warning/40 bg-warning/15" : m.mine ? "bg-primary text-primary-foreground" : "bg-muted"
-                )}
-              >
-                {m.kind === "alert" && <p className="mb-0.5 text-[0.7rem] font-semibold tracking-wide uppercase">Aviso</p>}
-                <p className="whitespace-pre-line">{m.body}</p>
-                <p className={cn("mt-0.5 text-[0.7rem]", m.mine && m.kind !== "alert" ? "text-primary-foreground/70" : "text-muted-foreground")}>
-                  {new Date(m.createdAt).toLocaleString("es-MX", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
-                </p>
-              </div>
-            </div>
-          ))}
-          <div ref={bottom} />
+
+        <div className="h-[52dvh] min-h-64 overflow-hidden rounded-2xl bg-muted/30 ring-1 ring-border">
+          <MessageScrollerProvider autoScroll defaultScrollPosition="end">
+            <MessageScroller>
+              <MessageScrollerViewport className="scroll-fade-y px-3 py-4">
+                <MessageScrollerContent aria-busy={sending} className="gap-2">
+                  {messages === null && (
+                    <Marker role="status" className="justify-center py-6">
+                      <MarkerIcon>
+                        <Spinner />
+                      </MarkerIcon>
+                      <MarkerContent className="shimmer">Cargando mensajes…</MarkerContent>
+                    </Marker>
+                  )}
+                  {messages?.length === 0 && (
+                    <div className="m-auto flex max-w-64 flex-col items-center gap-2 py-8 text-center text-sm text-muted-foreground">
+                      <span className="grid size-12 place-items-center rounded-2xl bg-primary/10 text-primary">
+                        <MessageCircleHeart className="size-6" />
+                      </span>
+                      <p className="font-medium text-foreground">Aún no hay mensajes</p>
+                      <p>{staff ? "Escribe a los papás o manda un aviso rápido." : "Escribe al personal si necesitas algo de tu hijo."}</p>
+                    </div>
+                  )}
+                  {rows.map((r) =>
+                    r.type === "day" ? (
+                      <MessageScrollerItem key={r.key}>
+                        <Marker variant="separator" className="py-1 text-xs first-letter:uppercase">
+                          <MarkerContent>{r.label}</MarkerContent>
+                        </Marker>
+                      </MessageScrollerItem>
+                    ) : (
+                      <MessageScrollerItem key={r.m.id} messageId={r.m.id}>
+                        <Message align={r.m.mine ? "end" : "start"}>
+                          {!r.m.mine && (
+                            <MessageAvatar>
+                              <Avatar className="size-8">
+                                <AvatarFallback className="bg-primary/10 text-primary">
+                                  {staff ? <UserRound className="size-4" /> : <ShieldCheck className="size-4" />}
+                                </AvatarFallback>
+                              </Avatar>
+                            </MessageAvatar>
+                          )}
+                          <MessageContent>
+                            {r.m.kind === "alert" && (
+                              <MessageHeader className="gap-1 text-warning-ink">
+                                <BellRing className="size-3" /> Aviso
+                              </MessageHeader>
+                            )}
+                            <Bubble variant={r.m.mine ? "default" : "muted"} align={r.m.mine ? "end" : "start"}>
+                              <BubbleContent className={cn("whitespace-pre-line", r.m.kind === "alert" && "border-warning/40 bg-warning/15 text-foreground")}>
+                                {r.m.body}
+                              </BubbleContent>
+                            </Bubble>
+                            <MessageFooter className="gap-1 tabular-nums">
+                              {hm(r.m.createdAt)}
+                              {r.m.mine &&
+                                (r.m.read ? <CheckCheck className="size-3.5 text-primary" aria-label="Leído" /> : <Check className="size-3.5" aria-label="Enviado" />)}
+                            </MessageFooter>
+                          </MessageContent>
+                        </Message>
+                      </MessageScrollerItem>
+                    )
+                  )}
+                  {sending && (
+                    <Marker role="status" className="justify-end">
+                      <MarkerIcon>
+                        <Spinner />
+                      </MarkerIcon>
+                      <MarkerContent className="shimmer">Enviando…</MarkerContent>
+                    </Marker>
+                  )}
+                </MessageScrollerContent>
+              </MessageScrollerViewport>
+              <MessageScrollerButton aria-label="Ir al último mensaje" />
+            </MessageScroller>
+          </MessageScrollerProvider>
         </div>
       </div>
     </DialogComponent>
