@@ -190,6 +190,11 @@
 }
 
 @layer base {
+  /* Una cuadrícula sin columnas explícitas (móvil) usa una sola columna que SÍ se encoge:
+     con la pista implícita «auto», un hijo con texto largo ensancha la página entera. */
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
   * {
     @apply border-border outline-ring/50;
   }

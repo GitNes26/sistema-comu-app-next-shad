@@ -30,6 +30,10 @@ Formato: `MAJOR.MINOR.PATCH.REVISION` (X.X.X.X)
 
 ## Historial
 
+### [0.28.1.0] — 2026-10-16
+- **Tipo:** `fix` (Patch)
+- fix: cuadriculas sin columnas explicitas desbordaban la pantalla en movil, ahora una sola columna que se encoge
+
 ### [0.28.0.0] — 2026-10-15
 - **Tipo:** `feat` (Minor)
 - feat: paleta de marca azul con apoyo cian, tarjetas de libro compactas, safe areas laterales en el portal y Mi espacio menos saturado con secciones plegadas
