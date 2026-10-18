@@ -144,6 +144,7 @@ function SurfaceTonePicker({
 }
 
 const COLOR_PRESETS = [
+  { label: "Comunidad (marca)", primary: 245, accent: 215 },
   { label: "Esmeralda", primary: 160, accent: 210 },
   { label: "Turquesa", primary: 180, accent: 35 },
   { label: "Cian", primary: 195, accent: 15 },

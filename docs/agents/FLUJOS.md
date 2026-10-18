@@ -56,3 +56,11 @@ Publicaciones (con flyer), transmisiones y avisos en vivo (campana + toast + pus
 ## 3b. Elegir lugar y boleto (detalle)
 
 El plano del área rotula **letra de fila** (izquierda) y **número de asiento** (arriba y dentro de cada asiento); al tocar uno aparece un globo «Fila C · 5» y debajo un resumen (fila/asiento/zona) antes de confirmar. El boleto (`ticket-card.tsx`) separa **Fila y Asiento** (o Mesa y Lugar) en grande, muestra estado, folio e importe, y ofrece compartir, ver/descargar el QR y abrir el mapa del lugar. Fila y asiento salen de `parseSeatLabel` (`src/lib/events/rules.ts`); no se agregan campos al boleto.
+
+## 5c. Hoja de seguimiento mensual (hogar de amor)
+
+Es la hoja de papel que entrega cada hogar, ahora generada por el sistema: `GET /api/cells/followup?cellId=…&month=YYYY-MM&format=pdf|json` (sin `cellId`: una hoja por célula accesible, opcionalmente de una `networkId`). Pestaña **Seguimiento** en la célula y botón «Hojas de seguimiento» en el listado. Contenido: líder, colonia, calle, teléfono, día/hora, anfitrión, red y pastor (líder de la red); asistencia por **semana del mes** (1–5, la columna toma el día de reunión de la célula; la fecha va bajo el número y al tocarla se pasa lista); **crecimiento** BA (bautismo en agua), BES (bautismo en Espíritu Santo, campo `baptizedFire`), EJ (encuentro), EM (Escuela de Ministerio: palomita si aprobó todos los libros o ya se lanzó; número = libros aprobados), EL (lanzamiento) y UT (Universidad Teológica: número = cursos aprobados); **nuevos creyentes** (quien llegó como nuevo ese mes en la lista); total de ovejas, asistentes por semana y observaciones (notas de las reuniones). Reglas puras en `src/lib/cells/followup-rules.ts`; PDF en `followup-pdf.ts`.
+
+## 8b. Formatos impresos (PDF)
+
+Todo reporte y planilla se exporta con el mismo lenguaje de las hojas de papel (`src/lib/pdf/kit.ts`): cuadro oscuro con logo, título en mayúsculas, campos con línea, tablas con rejilla, cifras en recuadros y renglones de firma. Reportes: `/api/reports/[id]?format=pdf`; hoja de seguimiento de célula; **lista de asistencia y calificaciones** de un grupo de escuela (`/api/school/groups/[groupId]/sheet`, botón «Lista (PDF)»).

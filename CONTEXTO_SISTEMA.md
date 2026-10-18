@@ -140,3 +140,11 @@ Preparación para vender a otras iglesias (sin exponerlo aún): aislamiento por 
 ## 8. Pendientes de definición
 
 Correo (SMTP), dominio y hosting (por definir). El resto de las preguntas abiertas quedó respondido en `docs/BRIEF.md`.
+
+
+## Actualización 2026-10-18
+
+- **Marca única**: una sola iglesia; paleta de somoscomunidad.mx en todo el sistema (migración `20261018090000_brand_palette_reset`).
+- **Hoja de seguimiento mensual** del hogar de amor (pestaña Seguimiento, PDF individual y masivo), con BA/BES/EJ/EM/EL/UT y nuevos creyentes; ver `docs/agents/FLUJOS.md` §5c.
+- **Formatos PDF** unificados en estilo de hoja impresa (`src/lib/pdf/kit.ts`): reportes, hoja de seguimiento y lista de asistencia y calificaciones del grupo de escuela.
+- «Bautismo en fuego» pasa a llamarse **Bautismo en Espíritu Santo** en pantallas (el campo sigue siendo `baptizedFire`).

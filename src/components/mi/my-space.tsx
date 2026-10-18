@@ -396,7 +396,7 @@ export function MySpaceView({
                     />
                     <Milestone
                       icon={Flame}
-                      label="Bautismo en fuego"
+                      label="Bautismo en Espíritu Santo"
                       done={member.baptizedFire}
                       at={member.baptizedFireAt}
                     />

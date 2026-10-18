@@ -97,7 +97,7 @@ export function AdminDashboard({
         />
         <MetricCard label="Personal" value={summary.employees} hint="Empleados activos" icon={<UserCog className="size-4" />} />
         <MetricCard label="Bautismo en aguas" value={summary.baptizedWater} hint="Fe pública" icon={<Droplets className="size-4" />} />
-        <MetricCard label="Bautismo en fuego" value={summary.baptizedFire} hint="Don de lenguas" icon={<Flame className="size-4" />} />
+        <MetricCard label="Bautismo en Espíritu Santo" value={summary.baptizedFire} hint="Don de lenguas" icon={<Flame className="size-4" />} />
         <MetricCard label="Sedes" value={summary.locations} hint="Activas" icon={<MapPin className="size-4" />} />
       </div>
 

@@ -6,7 +6,7 @@ import Link from "next/link"
 import { Controller, useForm } from "react-hook-form"
 import { yupResolver } from "@hookform/resolvers/yup"
 import * as yup from "yup"
-import { CalendarClock, Loader2, MapPin, Network, Plus, Search, Tag, Users, X } from "lucide-react"
+import { CalendarClock, FileDown, Loader2, MapPin, Network, Plus, Search, Tag, Users, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -98,8 +98,20 @@ export function CellsList({ scope, basePath }: { scope: "mine" | "all"; basePath
             />
           </div>
         )}
+        {scope === "all" && (
+          <Button asChild variant="outline" className="ml-auto">
+            <a
+              href={`/api/cells/followup?format=pdf&month=${new Date().toISOString().slice(0, 7)}${networkId ? `&networkId=${networkId}` : ""}`}
+              download
+              title="Una hoja por célula, con el formato impreso"
+            >
+              <FileDown className="size-4" />
+              Hojas de seguimiento
+            </a>
+          </Button>
+        )}
         {scope === "all" && canManage && (
-          <Button className="ml-auto" onClick={() => setFormOpen(true)}>
+          <Button onClick={() => setFormOpen(true)}>
             <Plus className="size-4" />
             Nueva célula
           </Button>

@@ -30,6 +30,10 @@ Formato: `MAJOR.MINOR.PATCH.REVISION` (X.X.X.X)
 
 ## Historial
 
+### [0.32.0.0] — 2026-10-18
+- **Tipo:** `feat` (Minor)
+- feat: hoja de seguimiento mensual de celulas en pantalla y PDF, formatos PDF con estilo de hoja impresa para reportes y listas de la escuela, pase de lista con avance y marca unica de la iglesia
+
 ### [0.31.0.0] — 2026-10-16
 - **Tipo:** `feat` (Minor)
 - feat: chat de Kids con composer redondeado, animacion blur fade y avisos rapidos con flechas laterales

@@ -1,9 +1,11 @@
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib"
 import { compactNumber, niceScale } from "./rules"
+import { PALETTE, drawFieldLine, drawLogoBox } from "@/lib/pdf/kit"
 import type { CellValue, ReportChart, ReportDoc, ReportSection } from "./types"
 
-// Genera el PDF de un reporte: encabezado con el nombre (y logo) de la iglesia,
-// cifras clave y tablas que continúan en páginas siguientes con su encabezado.
+// Genera el PDF de un reporte con el aspecto de las hojas impresas de la iglesia: cuadro
+// oscuro con el logo, título en mayúsculas, campos con línea, tablas con rejilla, cifras en
+// recuadros y renglones de firma al final. Continúa en páginas siguientes con su encabezado.
 
 export interface PdfBranding {
   organizationName: string
@@ -14,10 +16,9 @@ export interface PdfBranding {
 const MARGIN = 40
 const ROW_H = 18
 const HEAD_H = 20
-const INK = rgb(0.13, 0.15, 0.2)
-const MUTED = rgb(0.42, 0.45, 0.5)
-const LINE = rgb(0.85, 0.87, 0.9)
-const BRAND = rgb(0.1, 0.35, 0.55)
+const INK = PALETTE.ink
+const MUTED = PALETTE.muted
+const LINE = PALETTE.grid
 
 export async function renderReportPdf(doc: ReportDoc, branding: PdfBranding): Promise<Buffer> {
   const pdf = await PDFDocument.create()
@@ -30,7 +31,7 @@ export async function renderReportPdf(doc: ReportDoc, branding: PdfBranding): Pr
 
   // Texto compatible con WinAnsi: lo que la fuente no codifica se cambia por «?».
   const cache = new Map<string, string>()
-  const safe = (v: CellValue, f: PDFFont): string => {
+  const safe = (v: CellValue | undefined, f: PDFFont): string => {
     const s = v === null || v === undefined ? "" : String(v)
     let out = ""
     for (const ch of s) {
@@ -60,21 +61,21 @@ export async function renderReportPdf(doc: ReportDoc, branding: PdfBranding): Pr
   let y = H - MARGIN
   const pages: PDFPage[] = [page]
 
+  const fonts = { regular: font, bold }
+  const tools = { safe, fit }
   const header = (first: boolean) => {
     y = H - MARGIN
     if (first) {
-      let x = MARGIN
-      if (logo) {
-        const scale = Math.min(44 / logo.height, 120 / logo.width)
-        page.drawImage(logo, { x, y: y - logo.height * scale + 6, width: logo.width * scale, height: logo.height * scale })
-        x += logo.width * scale + 12
-      }
-      page.drawText(safe(branding.organizationName, bold), { x, y: y - 8, size: 13, font: bold, color: INK })
-      page.drawText(safe(doc.title, bold), { x, y: y - 26, size: 17, font: bold, color: BRAND })
-      page.drawText(safe(doc.periodLabel, font), { x, y: y - 42, size: 10, font, color: MUTED })
-      y -= 62
-      page.drawLine({ start: { x: MARGIN, y }, end: { x: W - MARGIN, y }, thickness: 1, color: LINE })
-      y -= 16
+      drawLogoBox(page, { x: MARGIN, top: y, w: 118, h: 74 }, logo, branding.logo, branding.organizationName, { bold }, tools)
+      const title = safe(doc.title.toUpperCase(), bold)
+      const size = Math.min(17, ((W - MARGIN * 2 - 130) / Math.max(1, bold.widthOfTextAtSize(title, 17))) * 17)
+      page.drawText(title, { x: W - MARGIN - bold.widthOfTextAtSize(title, size), y: y - 14, size, font: bold, color: INK })
+      const fx = MARGIN + 140
+      const fw = W - MARGIN - fx
+      drawFieldLine(page, fonts, tools, "Iglesia", branding.organizationName, fx, y - 38, fw, 9)
+      drawFieldLine(page, fonts, tools, "Periodo", doc.periodLabel, fx, y - 54, fw, 9)
+      if (doc.comparedWith) drawFieldLine(page, fonts, tools, "Comparativo", doc.comparedWith.label, fx, y - 70, fw, 9)
+      y -= 90
     } else {
       page.drawText(safe(`${branding.organizationName} - ${doc.title}`, font), { x: MARGIN, y: y - 6, size: 9, font, color: MUTED })
       y -= 22
@@ -100,7 +101,7 @@ export async function renderReportPdf(doc: ReportDoc, branding: PdfBranding): Pr
       ensure(46)
       doc.kpis.slice(i, i + perRow).forEach((k, j) => {
         const x = MARGIN + j * (cw + gap)
-        page.drawRectangle({ x, y: y - 40, width: cw, height: 40, borderColor: LINE, borderWidth: 1, color: rgb(0.97, 0.98, 0.99) })
+        page.drawRectangle({ x, y: y - 40, width: cw, height: 40, borderColor: PALETTE.line, borderWidth: 0.8, color: PALETTE.soft })
         page.drawText(fit(safe(k.value, bold), bold, 15, cw - 12), { x: x + 6, y: y - 18, size: 15, font: bold, color: INK })
         page.drawText(fit(safe(k.label, font), font, 8, cw - 12), { x: x + 6, y: y - 33, size: 8, font, color: MUTED })
       })
@@ -111,7 +112,7 @@ export async function renderReportPdf(doc: ReportDoc, branding: PdfBranding): Pr
 
   const drawTable = (s: ReportSection) => {
     ensure(HEAD_H + ROW_H * 2 + 24)
-    page.drawText(safe(s.title, bold), { x: MARGIN, y: y - 10, size: 12, font: bold, color: INK })
+    page.drawText(safe(s.title.toUpperCase(), bold), { x: MARGIN, y: y - 10, size: 11, font: bold, color: INK })
     y -= 18
     if (s.note) {
       page.drawText(fit(safe(s.note, font), font, 8, W - MARGIN * 2), { x: MARGIN, y: y - 7, size: 8, font, color: MUTED })
@@ -132,10 +133,11 @@ export async function renderReportPdf(doc: ReportDoc, branding: PdfBranding): Pr
       page.drawText(t, { x: col.align === "right" ? x + widths[i] - 4 - tw : x + 4, y: rowY, size, font: f, color })
     }
     const head = () => {
-      page.drawRectangle({ x: MARGIN, y: y - HEAD_H, width: total, height: HEAD_H, color: rgb(0.92, 0.94, 0.97) })
+      page.drawRectangle({ x: MARGIN, y: y - HEAD_H, width: total, height: HEAD_H, color: PALETTE.band, borderColor: PALETTE.line, borderWidth: 0.7 })
       let x = MARGIN
       s.columns.forEach((c, i) => {
-        cell(safe(c.label, bold), i, x, y - 13, bold, 8.5)
+        if (i > 0) page.drawLine({ start: { x, y }, end: { x, y: y - HEAD_H }, thickness: 0.5, color: PALETTE.line })
+        cell(safe(c.label.toUpperCase(), bold), i, x, y - 13, bold, 8)
         x += widths[i]
       })
       y -= HEAD_H
@@ -146,13 +148,17 @@ export async function renderReportPdf(doc: ReportDoc, branding: PdfBranding): Pr
         newPage()
         head()
       }
-      if (shaded) page.drawRectangle({ x: MARGIN, y: y - ROW_H, width: total, height: ROW_H, color: rgb(0.98, 0.98, 0.99) })
+      if (strong) page.drawRectangle({ x: MARGIN, y: y - ROW_H, width: total, height: ROW_H, color: PALETTE.soft })
+      else if (shaded) page.drawRectangle({ x: MARGIN, y: y - ROW_H, width: total, height: ROW_H, color: rgb(0.975, 0.98, 0.985) })
       let x = MARGIN
       s.columns.forEach((c, i) => {
+        if (i > 0) page.drawLine({ start: { x, y }, end: { x, y: y - ROW_H }, thickness: 0.4, color: LINE })
         cell(safe(r[c.key], strong ? bold : font), i, x, y - 12.5, strong ? bold : font, 9)
         x += widths[i]
       })
-      page.drawLine({ start: { x: MARGIN, y: y - ROW_H }, end: { x: MARGIN + total, y: y - ROW_H }, thickness: 0.4, color: LINE })
+      page.drawLine({ start: { x: MARGIN, y: y - ROW_H }, end: { x: MARGIN + total, y: y - ROW_H }, thickness: 0.5, color: LINE })
+      page.drawLine({ start: { x: MARGIN, y }, end: { x: MARGIN, y: y - ROW_H }, thickness: 0.7, color: PALETTE.line })
+      page.drawLine({ start: { x: MARGIN + total, y }, end: { x: MARGIN + total, y: y - ROW_H }, thickness: 0.7, color: PALETTE.line })
       y -= ROW_H
     }
     if (s.rows.length === 0) {
@@ -165,7 +171,7 @@ export async function renderReportPdf(doc: ReportDoc, branding: PdfBranding): Pr
     y -= 14
   }
   // Gráficas: barras agrupadas (comparativos) y líneas (tendencias).
-  const SERIES = [rgb(0.1, 0.35, 0.55), rgb(0.62, 0.67, 0.74), rgb(0.85, 0.55, 0.15)]
+  const SERIES = [PALETTE.blue, PALETTE.slate, rgb(0.62, 0.67, 0.74)]
   const chartH = 150
   const drawChart = (ch: ReportChart) => {
     if (ch.categories.length === 0 || ch.series.length === 0) return
@@ -238,6 +244,16 @@ export async function renderReportPdf(doc: ReportDoc, branding: PdfBranding): Pr
   for (const ch of doc.charts ?? []) drawChart(ch)
 
   for (const s of doc.sections) drawTable(s)
+
+  // Renglones de firma, como en el papel.
+  ensure(60)
+  y -= 28
+  const half = (W - MARGIN * 2 - 40) / 2
+  ;(["Elaboró", "Revisó"] as const).forEach((label, i) => {
+    const x = MARGIN + i * (half + 40)
+    page.drawLine({ start: { x, y }, end: { x: x + half, y }, thickness: 0.7, color: PALETTE.line })
+    page.drawText(safe(label, bold), { x, y: y - 11, size: 8, font: bold, color: INK })
+  })
 
   // Pie en cada página.
   const stamp = new Date().toLocaleString("es-MX", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })

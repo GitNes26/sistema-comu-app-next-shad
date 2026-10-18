@@ -118,3 +118,7 @@ Todo chat usa los componentes de shadcn instalados en `src/components/ui`: `Mess
 - **Blur fade**: clase `.blur-fade` (globals.css) para que lo nuevo entre desde el desenfoque; `--blur-fade-delay` escalona. Se apaga con `prefers-reduced-motion`.
 - **Filas con flechas**: chips o avisos que se desplazan en horizontal van en `ScrollRow` (`src/components/base/scroll-row.tsx`): flechas laterales solo cuando hay más opciones y desvanecido en los bordes.
 - **Composer de chat**: superficie redondeada con «+» (opciones rápidas), cuadro que crece con el texto y botón circular de enviar con flecha arriba.
+
+## Una sola iglesia, una sola marca
+
+COMU-APP se opera para una iglesia (con posibles sedes); el multi-organización del esquema queda como capacidad, no como diseño. Toda la apariencia parte de la paleta de somoscomunidad.mx: azul comunidad `primaryHue` 245, apoyo cian `accentHue` 215 y superficies pizarra. La migración `20261018090000_brand_palette_reset` fija esos valores en `app_settings`; Apariencia incluye el preajuste «Comunidad (marca)» para volver a ellos. Los PDF usan `PALETTE` (`src/lib/pdf/kit.ts`: pizarra #303f4e y azul #2689cf).

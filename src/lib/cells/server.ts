@@ -1028,3 +1028,34 @@ export async function listTransferTargets(actor: Actor, cellId: string) {
   })
   return rows
 }
+
+// ── Hoja de seguimiento: acceso ──────────────────────────────────────────────
+
+/** Quien ve la lista de la célula (líder, apoyo, encargado de red o permiso global) puede sacar su hoja. */
+export async function cellSheetAccess(actor: Actor, cellId: string) {
+  const a = await cellAccess(actor, cellId)
+  if (!a.canSeeRoster) throw new CrudError("No tienes permiso para ver la lista de esta célula", 403)
+  return a.cell
+}
+
+/** Células cuya hoja puede sacar la persona: todas con permiso global; si no, las que lidera, apoya o encabeza su red. */
+export async function listSheetCellIds(actor: Actor, networkId?: string | null): Promise<string[]> {
+  const base = { organizationId: actor.organizationId, isActive: true, ...(networkId ? { networkId } : {}) }
+  if (actor.canViewCells || actor.canManageCells) {
+    return (await prisma.cell.findMany({ where: base, select: { id: true }, orderBy: { name: "asc" } })).map((c) => c.id)
+  }
+  const memberId = await memberIdOfUser(actor.organizationId, actor.userId)
+  if (!memberId) return []
+  const rows = await prisma.cell.findMany({
+    where: {
+      ...base,
+      OR: [
+        { members: { some: { memberId, isActive: true, role: { in: ["leader", "support"] } } } },
+        { network: { leaderMemberId: memberId } },
+      ],
+    },
+    select: { id: true },
+    orderBy: { name: "asc" },
+  })
+  return rows.map((c) => c.id)
+}

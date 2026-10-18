@@ -15,6 +15,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ClipboardCheck,
+  FileText,
   Home,
   Loader2,
   MapPin,
@@ -57,6 +58,7 @@ import {
 } from "@/lib/cells/rules"
 import type { CellDetailDto, CellMemberDto, MeetingDetailDto, NetworkDto } from "@/lib/cells/server"
 import { CellFormDialog } from "./cells-list"
+import { FollowUpSheetView } from "./followup-sheet"
 import { cn } from "@/lib/utils"
 
 // Espacio de una célula: resumen y cumpleañeros del mes, integrantes (con su avance
@@ -73,6 +75,8 @@ export function CellWorkspace({ cellId, backHref }: { cellId: string; backHref: 
   const [error, setError] = useState<string | null>(null)
   const [month, setMonth] = useState<string | undefined>(undefined)
   const [editOpen, setEditOpen] = useState(false)
+  const [meetDate, setMeetDate] = useState<string | null>(null)
+  const [sheetKey, setSheetKey] = useState(0)
   const [catalogs, setCatalogs] = useState<{ networks: NetworkDto[]; types: { id: string; name: string; isActive: boolean }[] }>({ networks: [], types: [] })
 
   const load = useCallback(
@@ -166,6 +170,11 @@ export function CellWorkspace({ cellId, backHref }: { cellId: string; backHref: 
             </TabsTrigger>
           )}
           {cell.members && (
+            <TabsTrigger value="followup">
+              <FileText className="size-4" /> Seguimiento
+            </TabsTrigger>
+          )}
+          {cell.members && (
             <TabsTrigger value="transfers" className="relative">
               <Repeat className="size-4" /> Traspasos
               {pendingForMe > 0 && <span className="ml-1 rounded-full bg-destructive px-1.5 text-[0.65rem] text-white">{pendingForMe}</span>}
@@ -187,11 +196,26 @@ export function CellWorkspace({ cellId, backHref }: { cellId: string; backHref: 
           </TabsContent>
         )}
         {cell.members && (
+          <TabsContent value="followup">
+            <FollowUpSheetView cellId={cell.id} reloadKey={sheetKey} canTakeAttendance={cell.access.canTakeAttendance} onTakeAttendance={(d) => setMeetDate(d)} />
+          </TabsContent>
+        )}
+        {cell.members && (
           <TabsContent value="transfers">
             <TransfersTab cell={cell} onChanged={refresh} />
           </TabsContent>
         )}
       </Tabs>
+
+      <MeetingDialog
+        cell={cell}
+        date={meetDate}
+        onClose={() => setMeetDate(null)}
+        onSaved={async () => {
+          await refresh()
+          setSheetKey((k) => k + 1)
+        }}
+      />
 
       <CellFormDialog
         open={editOpen}
@@ -804,6 +828,8 @@ function MeetingDialog({ cell, date, onClose, onSaved }: { cell: CellDetailDto; 
   }
 
   const presentCount = meeting?.attendance.filter((a) => present.has(a.memberId)).length ?? 0
+  const totalCount = meeting?.attendance.length ?? 0
+  const setAll = (on: boolean) => setPresent(on ? new Set(meeting?.attendance.map((a) => a.memberId) ?? []) : new Set())
 
   return (
     <DialogComponent
@@ -839,19 +865,51 @@ function MeetingDialog({ cell, date, onClose, onSaved }: { cell: CellDetailDto; 
           <InputGroupField label="Enlace del tema (opcional)" type="url" inputMode="url" placeholder="https://…" value={topicUrl} onChange={(e) => setTopicUrl(e.target.value)} />
 
           <fieldset className="space-y-2">
-            <legend className="flex w-full items-center text-sm font-semibold">
-              <span className="flex-1">Asistencia</span>
+            <legend className="flex w-full flex-wrap items-center gap-2 text-sm font-semibold">
+              <span className="flex-1">Pase de lista</span>
+              <Button type="button" size="sm" variant="ghost" onClick={() => setAll(true)}>
+                Todos
+              </Button>
+              <Button type="button" size="sm" variant="ghost" onClick={() => setAll(false)}>
+                Ninguno
+              </Button>
               <Button type="button" size="sm" variant="outline" onClick={() => setNewOpen(true)}>
                 <UserPlus className="size-4" />
                 Llegó alguien nuevo
               </Button>
             </legend>
+            <div className="flex items-center gap-3 rounded-2xl bg-muted/50 px-3 py-2 text-sm" aria-live="polite">
+              <span className="font-heading text-lg font-semibold tabular-nums">
+                {presentCount}
+                <span className="text-sm font-normal text-muted-foreground"> de {totalCount}</span>
+              </span>
+              <span className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
+                <span className="block h-full rounded-full bg-primary transition-[width] duration-300" style={{ width: `${totalCount ? (presentCount / totalCount) * 100 : 0}%` }} />
+              </span>
+              <span className="text-xs tabular-nums text-muted-foreground">{totalCount ? Math.round((presentCount / totalCount) * 100) : 0}%</span>
+            </div>
             <ul className="grid gap-1.5 sm:grid-cols-2">
               {meeting.attendance.map((a) => (
                 <li key={a.memberId}>
-                  <label className={cn("flex min-h-11 items-center gap-2 rounded-xl border px-3 text-sm", present.has(a.memberId) && "border-primary bg-primary/5")}>
-                    <input type="checkbox" className="size-4 accent-[var(--primary)]" checked={present.has(a.memberId)} onChange={() => toggle(a.memberId)} />
-                    <span className="min-w-0 flex-1 truncate">{a.fullName}</span>
+                  <label
+                    className={cn(
+                      "press flex min-h-12 cursor-pointer items-center gap-3 rounded-2xl border px-3 text-sm transition-colors",
+                      present.has(a.memberId) ? "border-primary bg-primary/5" : "bg-card"
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "grid size-8 shrink-0 place-items-center rounded-full text-xs font-semibold transition-colors",
+                        present.has(a.memberId) ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                      )}
+                    >
+                      {present.has(a.memberId) ? <Check className="size-4" /> : a.fullName.charAt(0).toUpperCase()}
+                    </span>
+                    <input type="checkbox" className="sr-only" checked={present.has(a.memberId)} onChange={() => toggle(a.memberId)} />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-medium">{a.fullName}</span>
+                      {a.role !== "member" && <span className="block text-xs text-muted-foreground">{CELL_ROLE_LABEL[a.role]}</span>}
+                    </span>
                     {a.birthday && <Cake className="size-3.5 shrink-0 text-primary" aria-label="Cumple años este mes" />}
                     {fresh.has(a.memberId) && <StatusPill tone="success" dot={false}>Nuevo</StatusPill>}
                   </label>

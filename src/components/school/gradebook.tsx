@@ -3,7 +3,7 @@
 import { TextareaField } from "@/components/base/textarea-field"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import { AlertTriangle, ArrowLeft, Ban, CalendarCheck, CircleDollarSign, ClipboardCheck, Download, GraduationCap, Loader2, Lock, Table2, UserPlus, Users } from "lucide-react"
+import { AlertTriangle, ArrowLeft, Ban, CalendarCheck, CircleDollarSign, ClipboardCheck, Download, FileDown, GraduationCap, Loader2, Lock, Table2, UserPlus, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -216,6 +216,12 @@ export function Gradebook({ groupId, backHref }: { groupId: string; backHref: st
         <Button variant="outline" onClick={exportCsv}>
           <Download className="size-4" />
           CSV
+        </Button>
+        <Button asChild variant="outline">
+          <a href={`/api/school/groups/${book.group.id}/sheet`} download>
+            <FileDown className="size-4" />
+            Lista (PDF)
+          </a>
         </Button>
         {canManage && !closed && (
           <Button variant="ghost" className="ml-auto" onClick={() => void close()}>
