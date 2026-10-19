@@ -96,12 +96,16 @@ export function CourseEditor({ courseId }: { courseId: string }) {
           <TabsTrigger value="book">
             <BookOpen className="size-4" /> Libro digital
           </TabsTrigger>
-          <TabsTrigger value="groups">
-            <Users className="size-4" /> Grupos
-          </TabsTrigger>
-          <TabsTrigger value="settings">
-            <Settings2 className="size-4" /> Datos
-          </TabsTrigger>
+          {data.access.canManage && (
+            <>
+            <TabsTrigger value="groups">
+              <Users className="size-4" /> Grupos
+            </TabsTrigger>
+            <TabsTrigger value="settings">
+              <Settings2 className="size-4" /> Datos
+            </TabsTrigger>
+            </>
+          )}
         </TabsList>
         <TabsContent value="assessments">
           <AssessmentsTab data={data} onChanged={load} />
@@ -112,12 +116,16 @@ export function CourseEditor({ courseId }: { courseId: string }) {
         <TabsContent value="book">
           <DocumentsTab courseId={data.course.id} weeks={data.course.weeks} />
         </TabsContent>
-        <TabsContent value="groups">
-          <GroupsTab data={data} onChanged={load} />
-        </TabsContent>
-        <TabsContent value="settings">
-          <SettingsTab data={data} onChanged={load} />
-        </TabsContent>
+        {data.access.canManage && (
+          <>
+          <TabsContent value="groups">
+            <GroupsTab data={data} onChanged={load} />
+          </TabsContent>
+          <TabsContent value="settings">
+            <SettingsTab data={data} onChanged={load} />
+          </TabsContent>
+          </>
+        )}
       </Tabs>
     </div>
   )
@@ -170,7 +178,19 @@ function SettingsTab({ data, onChanged }: { data: CourseAdminDto; onChanged: () 
         <InputGroupField label="Número de tareas" inputMode="numeric" value={v.tasksCount} onChange={(e) => set("tasksCount", e.target.value.replace(/\D/g, ""))} />
         <InputGroupField label="Número de ejercicios" inputMode="numeric" value={v.exercisesCount} onChange={(e) => set("exercisesCount", e.target.value.replace(/\D/g, ""))} />
         <InputGroupField label="Costo de inscripción" inputMode="decimal" value={v.enrollmentFee} onChange={(e) => set("enrollmentFee", e.target.value)} helper="Se aplica a quienes se inscriban desde ahora." />
-        <InputGroupField label="Libro de texto (opcional)" inputMode="decimal" value={v.bookPrice} onChange={(e) => set("bookPrice", e.target.value)} helper="Se vende aparte de la inscripción." />
+        <InputGroupField
+          label="Libro de texto (opcional)"
+          inputMode="decimal"
+          value={v.bookPrice}
+          onChange={(e) => set("bookPrice", e.target.value)}
+          helper="Precio del libro físico: se vende aparte de la inscripción."
+          leftIcon={
+            <span className="relative inline-flex" aria-hidden>
+              <BookOpen className="size-4" />
+              <span className="absolute -right-1.5 -bottom-1 grid size-3 place-items-center rounded-full bg-primary text-[0.5rem] leading-none font-bold text-primary-foreground">$</span>
+            </span>
+          }
+        />
         {c.schoolKind === "university" && (
           <>
             <InputGroupField label="Año del trayecto" inputMode="numeric" value={v.year} placeholder="1 a 6" onChange={(e) => set("year", e.target.value.replace(/\D/g, "").slice(0, 2))} helper="Ordena el curso en el trayecto (1 = primer año)." />

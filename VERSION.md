@@ -30,6 +30,10 @@ Formato: `MAJOR.MINOR.PATCH.REVISION` (X.X.X.X)
 
 ## Historial
 
+### [0.33.0.0] — 2026-10-19
+- **Tipo:** `feat` (Minor)
+- feat: logo de la iglesia en toda la app, acceso, splash y cargando con la marca, trayecto de Teologia compacto, cuatro libros de la Escuela de Ministerio, icono del precio del libro y material de la escuela tambien para maestros
+
 ### [0.32.0.0] — 2026-10-18
 - **Tipo:** `feat` (Minor)
 - feat: hoja de seguimiento mensual de celulas en pantalla y PDF, formatos PDF con estilo de hoja impresa para reportes y listas de la escuela, pase de lista con avance y marca unica de la iglesia

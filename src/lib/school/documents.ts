@@ -7,7 +7,7 @@ import { prisma } from "@/lib/db"
 import { CrudError } from "@/lib/crud/types"
 import { memberIdOfUser, type Actor } from "@/lib/ministries/server"
 import { uploadsRoot } from "@/lib/uploads/storage"
-import { courseManage } from "@/lib/school/server"
+import { courseTeach } from "@/lib/school/server"
 import { isAnnotationKind, paginateHtml, sanitizeDocxHtml, sanitizeRects, visiblePagesFor, type PageRange } from "@/lib/school/document-rules"
 
 // Libro digital: PDF, Word o imágenes subidos a la plataforma.
@@ -56,7 +56,7 @@ export interface DocumentDto {
 }
 
 export async function listDocuments(actor: Actor, courseId: string): Promise<DocumentDto[]> {
-  await courseManage(actor, courseId)
+  await courseTeach(actor, courseId)
   const rows = await prisma.courseDocument.findMany({
     where: { courseId, organizationId: actor.organizationId },
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
@@ -73,7 +73,7 @@ export async function listDocuments(actor: Actor, courseId: string): Promise<Doc
 }
 
 export async function uploadDocument(actor: Actor, courseId: string, file: File, title: string | null) {
-  await courseManage(actor, courseId)
+  await courseTeach(actor, courseId)
   const kind = MIME[file.type]
   if (!kind) throw new CrudError("Formatos permitidos: PDF, Word (.docx) e imágenes PNG, JPG o WEBP", 415)
   if (file.size > LIMITS[kind]) throw new CrudError(`El archivo excede ${Math.round(LIMITS[kind] / 1024 / 1024)} MB`, 413)
@@ -125,7 +125,7 @@ export async function uploadDocument(actor: Actor, courseId: string, file: File,
 export async function saveDocument(actor: Actor, documentId: string, input: { title?: unknown; sections?: unknown }) {
   const doc = await prisma.courseDocument.findFirst({ where: { id: documentId, organizationId: actor.organizationId }, include: { course: { select: { weeks: true } } } })
   if (!doc) throw new CrudError("Documento no encontrado", 404)
-  await courseManage(actor, doc.courseId)
+  await courseTeach(actor, doc.courseId)
   const title = text(input.title, 150)
   if (!title) throw new CrudError("Escribe el título", 400, "title")
   const raw = Array.isArray(input.sections) ? input.sections.slice(0, 60) : null
@@ -154,7 +154,7 @@ export async function saveDocument(actor: Actor, documentId: string, input: { ti
 export async function deleteDocument(actor: Actor, documentId: string) {
   const doc = await prisma.courseDocument.findFirst({ where: { id: documentId, organizationId: actor.organizationId } })
   if (!doc) throw new CrudError("Documento no encontrado", 404)
-  await courseManage(actor, doc.courseId)
+  await courseTeach(actor, doc.courseId)
   await prisma.courseDocument.delete({ where: { id: documentId } })
   await unlink(docPath(actor.organizationId, doc.fileName)).catch(() => {})
   return { ok: true }

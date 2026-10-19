@@ -122,3 +122,5 @@ Todo chat usa los componentes de shadcn instalados en `src/components/ui`: `Mess
 ## Una sola iglesia, una sola marca
 
 COMU-APP se opera para una iglesia (con posibles sedes); el multi-organización del esquema queda como capacidad, no como diseño. Toda la apariencia parte de la paleta de somoscomunidad.mx: azul comunidad `primaryHue` 245, apoyo cian `accentHue` 215 y superficies pizarra. La migración `20261018090000_brand_palette_reset` fija esos valores en `app_settings`; Apariencia incluye el preajuste «Comunidad (marca)» para volver a ellos. Los PDF usan `PALETTE` (`src/lib/pdf/kit.ts`: pizarra #303f4e y azul #2689cf).
+- **Logo y carga con marca**: todo logo es el que la iglesia cargó en «Datos de la iglesia» (`getChurchBrand`, `src/lib/brand/server.ts`; sin carga, el ícono de marca de `public/images`). Alimenta acceso, splash, ícono de la app (`/brand-icon`) y manifest. Fondo con círculos concéntricos (`HeroBackground`), cargando con `BrandLoader` (`src/app/loading.tsx`) y barra de progreso en los splash.
+- **Trayecto compacto**: «Mi trayecto» es una franja de nodos por año con el detalle del seleccionado debajo; no listas de tarjetas altas.

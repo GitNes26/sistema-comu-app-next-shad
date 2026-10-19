@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { getChurchBrand } from "@/lib/brand/server";
 import localFont from "next/font/local";
 import "./globals.css";
 import { Providers } from "@/providers";
@@ -56,7 +57,7 @@ export const metadata: Metadata = {
   },
   description: "COMU-APP: gestión integral de la iglesia, ministerios, células, escuela y crecimiento personal.",
   applicationName: "COMU-APP",
-  icons: { icon: "/images/icon_dark.png", apple: "/images/icon_dark.png" },
+  icons: { icon: "/brand-icon", apple: "/brand-icon" },
 };
 
 export const viewport: Viewport = {
@@ -69,11 +70,12 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const brand = await getChurchBrand();
   return (
     <html
       lang="es"
@@ -88,7 +90,7 @@ export default function RootLayout({
           }}
         />
         <Providers>
-          <SplashScreen />
+          <SplashScreen logoUrl={brand.logoUrl} name={brand.name} />
           <PwaLinkGuard />
           <HttpErrorToast />
           {children}

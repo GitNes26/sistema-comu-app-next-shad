@@ -83,7 +83,7 @@ export function Splash({
                   ? { duration: 0.15 }
                   : { type: "spring", stiffness: 200, damping: 18, delay: 0.05 }
               }
-              className="drop-shadow-[0_0_2.5rem_rgba(16,185,129,0.35)]"
+              className="drop-shadow-[0_0_2.5rem_color-mix(in_oklab,var(--primary)_55%,transparent)]"
             >
               <Logo logoUrl={logoUrl} className="h-20 w-auto" size={48} />
             </motion.div>
@@ -113,31 +113,16 @@ export function Splash({
               )}
             </motion.div>
 
-            {/* Loading indicator */}
+            {/* Cargando */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0, transition: { duration: 0.2 } }}
               transition={{ delay: prefersReduced ? 0.1 : 0.35 }}
-              className="flex items-center gap-1.5"
+              className="relative h-1 w-32 overflow-hidden rounded-full bg-white/10"
               aria-hidden
             >
-              {[0, 1, 2].map((i) => (
-                <motion.span
-                  key={i}
-                  className="size-1.5 rounded-full bg-success/50"
-                  animate={
-                    prefersReduced
-                      ? undefined
-                      : { opacity: [0.35, 1, 0.35], scale: [0.9, 1.15, 0.9] }
-                  }
-                  transition={
-                    prefersReduced
-                      ? undefined
-                      : { duration: 0.9, repeat: Infinity, ease: "easeInOut", delay: i * 0.15 }
-                  }
-                />
-              ))}
+              <span className="absolute inset-y-0 left-0 w-2/5 rounded-full bg-primary" style={{ animation: prefersReduced ? undefined : "brand-bar 1.2s ease-in-out infinite" }} />
             </motion.div>
           </div>
         </motion.div>

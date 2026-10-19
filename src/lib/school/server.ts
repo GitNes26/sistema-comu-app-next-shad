@@ -386,14 +386,37 @@ export async function courseManage(actor: Actor, courseId: string) {
   return course
 }
 
+/**
+ * Material y actividades de un libro: la dirección de la escuela (o quien tenga el permiso de
+ * gestión) y los maestros o apoyos de algún grupo de ese libro. La gestión de alumnos, pagos,
+ * grupos y del propio libro sigue siendo solo de la dirección (`courseManage`).
+ */
+export async function courseTeach(actor: Actor, courseId: string) {
+  const course = await prisma.course.findFirst({ where: { id: courseId, organizationId: actor.organizationId }, include: { school: true } })
+  if (!course) throw new CrudError("Libro no encontrado", 404)
+  const memberId = await memberIdOfUser(actor.organizationId, actor.userId)
+  const school = course.school
+  const isDirector = memberId !== null && (school.directorMemberId === memberId || school.subdirectorMemberId === memberId)
+  const canManage = Boolean(actor.canManageSchool) || isDirector
+  if (!canManage) {
+    const teaches = memberId
+      ? await prisma.courseGroup.count({ where: { courseId, organizationId: actor.organizationId, OR: [{ teacherMemberId: memberId }, { assistantMemberId: memberId }] } })
+      : 0
+    if (teaches === 0) throw new CrudError("No tienes permiso para configurar la escuela", 403)
+  }
+  return { ...course, canManage }
+}
+
 export interface CourseAdminDto {
+  /** Solo la dirección edita el libro, sus grupos, inscripciones y pagos; el maestro, el material y las actividades. */
+  access: { canManage: boolean }
   course: CourseDto & { schoolId: string; schoolKind: "ministry" | "university"; passScore: number }
   contents: { id: string; week: number; title: string; type: string; url: string | null; body: string | null; isPublished: boolean }[]
   assessments: { id: string; kind: "task" | "exercise"; number: number; week: number | null; title: string; isPublished: boolean; questions: number; submissions: number }[]
 }
 
 export async function getCourseAdmin(actor: Actor, courseId: string): Promise<CourseAdminDto> {
-  const c = await courseManage(actor, courseId)
+  const c = await courseTeach(actor, courseId)
   const [contents, assessments, groups] = await Promise.all([
     prisma.courseContent.findMany({ where: { courseId }, orderBy: [{ week: "asc" }, { sortOrder: "asc" }] }),
     prisma.assessment.findMany({
@@ -408,6 +431,7 @@ export async function getCourseAdmin(actor: Actor, courseId: string): Promise<Co
     }),
   ])
   return {
+    access: { canManage: c.canManage },
     course: {
       id: c.id,
       name: c.name,
@@ -454,7 +478,7 @@ export async function getCourseAdmin(actor: Actor, courseId: string): Promise<Co
 }
 
 export async function saveContent(actor: Actor, courseId: string, id: string | null, input: Record<string, unknown>) {
-  const course = await courseManage(actor, courseId)
+  const course = await courseTeach(actor, courseId)
   const title = text(input.title, 150)
   if (!title) throw new CrudError("Escribe el título del material", 400, "title")
   const week = Number(input.week)
@@ -474,7 +498,7 @@ export async function saveContent(actor: Actor, courseId: string, id: string | n
 }
 
 export async function deleteContent(actor: Actor, courseId: string, id: string) {
-  await courseManage(actor, courseId)
+  await courseTeach(actor, courseId)
   const r = await prisma.courseContent.deleteMany({ where: { id, courseId, organizationId: actor.organizationId } })
   if (r.count === 0) throw new CrudError("Material no encontrado", 404)
   return { ok: true }
@@ -519,7 +543,7 @@ export async function getAssessmentAdmin(actor: Actor, assessmentId: string): Pr
     include: { questions: { orderBy: { sortOrder: "asc" } }, _count: { select: { submissions: true } } },
   })
   if (!a) throw new CrudError("Actividad no encontrada", 404)
-  await courseManage(actor, a.courseId)
+  await courseTeach(actor, a.courseId)
   return {
     id: a.id,
     courseId: a.courseId,
@@ -545,7 +569,7 @@ export async function getAssessmentAdmin(actor: Actor, assessmentId: string): Pr
 }
 
 export async function saveAssessment(actor: Actor, courseId: string, id: string | null, input: Record<string, unknown>) {
-  const course = await courseManage(actor, courseId)
+  const course = await courseTeach(actor, courseId)
   const kind = input.kind === "exercise" ? "exercise" : "task"
   const limit = kind === "task" ? course.tasksCount : course.exercisesCount
   const number = Number(input.number)
@@ -621,7 +645,7 @@ export async function saveAssessment(actor: Actor, courseId: string, id: string 
 }
 
 export async function deleteAssessment(actor: Actor, courseId: string, id: string) {
-  await courseManage(actor, courseId)
+  await courseTeach(actor, courseId)
   const used = await prisma.submission.count({ where: { assessmentId: id } })
   if (used > 0) throw new CrudError("Ya tiene envíos; despublícala en lugar de eliminarla", 409)
   const r = await prisma.assessment.deleteMany({ where: { id, courseId, organizationId: actor.organizationId } })

@@ -36,7 +36,7 @@ const HEADER_X = 40;
 const HEADER_Y = 40;
 const EXIT_SCALE = 0.5;
 
-export function SplashScreen({ logoUrl }: { logoUrl?: string | null }) {
+export function SplashScreen({ logoUrl, name }: { logoUrl?: string | null; name?: string | null }) {
   const [visible, setVisible] = useState(true);
   // Etapas reales del arranque (en orden; cada punto se enciende al cumplirse).
   const [hydrated, setHydrated] = useState(false);
@@ -164,7 +164,7 @@ export function SplashScreen({ logoUrl }: { logoUrl?: string | null }) {
                       delay: 0.1,
                     }
               }
-              className="drop-shadow-[0_0_2.5rem_rgba(16,185,129,0.35)]"
+              className="drop-shadow-[0_0_2.5rem_color-mix(in_oklab,var(--primary)_55%,transparent)]"
             >
               <Logo logoUrl={logoUrl} className="h-20 w-auto" size={48} />
             </motion.div>
@@ -185,11 +185,11 @@ export function SplashScreen({ logoUrl }: { logoUrl?: string | null }) {
               }}
               className="text-center"
             >
-              <h1 className="font-heading text-3xl font-semibold tracking-tight text-white">
-                COMU-APP
+              <h1 className="font-heading text-3xl font-semibold tracking-tight text-white text-balance">
+                {name ?? "COMU-APP"}
               </h1>
-              <p className="mt-1.5 text-sm text-slate-400">
-                Gestión integral de la iglesia
+              <p className="mx-auto mt-2 max-w-xs text-sm text-slate-300/80 text-balance">
+                Familia es lo que somos, comunidad es lo que hacemos
               </p>
             </motion.div>
 
@@ -199,37 +199,17 @@ export function SplashScreen({ logoUrl }: { logoUrl?: string | null }) {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0, transition: { duration: 0.3 } }}
               transition={{ delay: prefersReduced ? 0.1 : 0.4 }}
-              className="flex items-center gap-1.5"
-              aria-hidden
+              className="h-1 w-40 overflow-hidden rounded-full bg-white/10"
+              role="progressbar"
+              aria-label="Cargando"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={ready ? 100 : loaded ? 66 : hydrated ? 33 : 10}
             >
-              {[hydrated, loaded, ready].map((done, i) => {
-                // El punto de la etapa en curso late; los cumplidos quedan fijos.
-                const active = !done && (i === 0 || (i === 1 && hydrated) || (i === 2 && hydrated && loaded));
-                return (
-                  <motion.span
-                    key={i}
-                    className={
-                      done
-                        ? "size-1.5 rounded-full bg-success"
-                        : active
-                          ? "size-1.5 rounded-full bg-success/50"
-                          : "size-1.5 rounded-full bg-slate-700"
-                    }
-                    animate={
-                      prefersReduced
-                        ? undefined
-                        : active
-                          ? { opacity: [0.35, 1, 0.35], scale: [0.9, 1.15, 0.9] }
-                          : { opacity: done ? 1 : 0.5 }
-                    }
-                    transition={
-                      active
-                        ? { duration: 0.9, repeat: Infinity, ease: "easeInOut" }
-                        : { duration: 0.2 }
-                    }
-                  />
-                );
-              })}
+              <span
+                className="block h-full rounded-full bg-primary transition-[width] duration-500 ease-out"
+                style={{ width: ready ? "100%" : loaded ? "66%" : hydrated ? "33%" : "10%" }}
+              />
             </motion.div>
           </div>
         </motion.div>

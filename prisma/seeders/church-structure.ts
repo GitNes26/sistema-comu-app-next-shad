@@ -97,6 +97,7 @@ export async function seedChurchStructure(organizationId: string): Promise<Map<s
     ids.set(n.name, row.id)
   }
   await seedTheologyTrack(organizationId)
+  await seedMinistryBooks(organizationId)
   return ids
 }
 
@@ -122,5 +123,27 @@ export async function seedTheologyTrack(organizationId: string) {
     await prisma.course.create({
       data: { organizationId, schoolId: school.id, name: step.name, year: step.year, credential: step.credential, sortOrder: step.year, weeks: 8, tasksCount: 7, exercisesCount: 0 },
     })
+  }
+}
+
+/** Los cuatro libros de la Escuela de Ministerio (según somoscomunidad.mx). */
+export const MINISTRY_BOOKS = [
+  { name: "¿Quién es Jesús?", description: "El primer paso: conocer a Jesús y lo que hizo por nosotros." },
+  { name: "Entrando en su presencia", description: "Aprende a acercarte a Dios en la adoración y la oración." },
+  { name: "Fundamentos para la vida cristiana", description: "Los cimientos de la fe: la Palabra, la comunidad y el carácter." },
+  { name: "Extendiendo el fuego", description: "Prepárate para servir y compartir lo que Dios hizo en ti." },
+] as const
+
+/** Idempotente: crea la escuela y los libros que falten, sin tocar los existentes. */
+export async function seedMinistryBooks(organizationId: string) {
+  const school =
+    (await prisma.school.findFirst({ where: { organizationId, kind: "ministry" } })) ??
+    (await prisma.school.create({
+      data: { organizationId, kind: "ministry", name: "Escuela de Ministerio", description: "El proceso para formar líderes, libro por libro." },
+    }))
+  for (const [i, book] of MINISTRY_BOOKS.entries()) {
+    const exists = await prisma.course.findFirst({ where: { schoolId: school.id, name: book.name }, select: { id: true } })
+    if (exists) continue
+    await prisma.course.create({ data: { organizationId, schoolId: school.id, name: book.name, description: book.description, sortOrder: i + 1 } })
   }
 }

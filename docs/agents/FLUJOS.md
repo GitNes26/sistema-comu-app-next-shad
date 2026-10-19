@@ -64,3 +64,9 @@ Es la hoja de papel que entrega cada hogar, ahora generada por el sistema: `GET 
 ## 8b. Formatos impresos (PDF)
 
 Todo reporte y planilla se exporta con el mismo lenguaje de las hojas de papel (`src/lib/pdf/kit.ts`): cuadro oscuro con logo, título en mayúsculas, campos con línea, tablas con rejilla, cifras en recuadros y renglones de firma. Reportes: `/api/reports/[id]?format=pdf`; hoja de seguimiento de célula; **lista de asistencia y calificaciones** de un grupo de escuela (`/api/school/groups/[groupId]/sheet`, botón «Lista (PDF)»).
+
+## 4b. Quién hace qué en la escuela
+
+- **Dirección (director y subdirector del programa, y roles con `school.manage`)**: inscribir alumnos, decidir solicitudes, registrar pagos y la compra del libro, crear y cerrar grupos, editar el libro (costos, semanas, credencial), datos del programa y diplomas.
+- **Maestro y apoyo del grupo**: material (textos, enlaces, libro digital y secciones), actividades (tareas y ejercicios), dar la clase, **pasar lista** y **calificar**. En el libro solo ven las pestañas Tareas y ejercicios, Material y Libro digital (`courseTeach` en `src/lib/school/server.ts`; las demás usan `courseManage`).
+- Los cuatro libros de la Escuela de Ministerio (¿Quién es Jesús?, Entrando en su presencia, Fundamentos para la vida cristiana, Extendiendo el fuego) los carga la migración `20261018120000_ministry_school_books` y `seedMinistryBooks`.

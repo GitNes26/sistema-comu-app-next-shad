@@ -1,4 +1,4 @@
-import { seedChurchStructure } from "./church-structure"
+import { MINISTRY_BOOKS, seedChurchStructure } from "./church-structure"
 import bcrypt from "bcryptjs"
 import type { $Enums } from "../../src/generated/prisma/client"
 import { prisma } from "../../src/lib/db/client"
@@ -656,17 +656,19 @@ export async function seedDemo() {
       update: {},
       create: { organizationId: org.id, kind: "university", name: "Universidad Teológica", description: "Cursos de teología con el pastor o discípulos.", directorMemberId: pastorMember ?? null, enrollmentFee: 300 },
     });
-    const books = ["¿Quién es Jesús?", "Identidad en Cristo", "Vida en el Espíritu", "Llamado y servicio"];
+    const books = MINISTRY_BOOKS.map((b) => b.name);
     const courses = [];
     for (const [i, name] of books.entries()) {
       courses.push(
-        await prisma.course.create({
-          data: {
+        await prisma.course.upsert({
+          where: { schoolId_name: { schoolId: ministry.id, name } },
+          update: { bookPrice: 120, digitalBookUrl: i === 0 ? "https://example.com/libro-1.pdf" : null },
+          create: {
             organizationId: org.id,
             schoolId: ministry.id,
             name,
             sortOrder: i + 1,
-            description: i === 0 ? "El primer paso: conocer a Jesús y lo que hizo por nosotros." : null,
+            description: MINISTRY_BOOKS[i].description,
             bookPrice: 120,
             digitalBookUrl: i === 0 ? "https://example.com/libro-1.pdf" : null,
           },

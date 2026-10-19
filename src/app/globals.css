@@ -524,6 +524,31 @@
   to { opacity: 1; }
 }
 
+/* Marca: círculos concéntricos que respiran (fondo) y que se expanden (cargando). */
+@keyframes brand-ring {
+  0%, 100% { transform: scale(0.97); opacity: 0.7; }
+  50% { transform: scale(1.04); opacity: 1; }
+}
+.brand-ring {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: brand-ring 5s ease-in-out infinite;
+}
+@keyframes brand-pulse {
+  0% { transform: scale(0.35); opacity: 0.9; }
+  100% { transform: scale(1); opacity: 0; }
+}
+.brand-pulse {
+  animation: brand-pulse 1.8s var(--ease-out-quart) infinite;
+}
+@keyframes brand-bar {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(260%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .brand-ring, .brand-pulse { animation: none; }
+}
+
 /* Blur fade: lo nuevo aparece desde el desenfoque y sube un poco. La demora (--blur-fade-delay)
    escalona varios elementos. Sin movimiento si la persona lo pidió. */
 @keyframes blur-fade-in {
