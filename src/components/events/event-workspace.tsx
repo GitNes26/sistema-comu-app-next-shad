@@ -20,9 +20,11 @@ import {
   Loader2,
   LogIn,
   Map as MapIcon,
+  Keyboard,
   Plus,
   ScanLine,
   Settings2,
+  Sparkles,
   Ticket,
   Trash2,
   UserPlus,
@@ -34,6 +36,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DialogComponent } from "@/components/ui/dialog"
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp"
+import { REGEXP_ONLY_DIGITS_AND_CHARS } from "input-otp"
 import { Attachment } from "@/components/base/attachment"
 import { DatePicker } from "@/components/base/date-picker"
 import { DateTimePicker } from "@/components/base/date-time-picker"
@@ -45,10 +49,10 @@ import { notify } from "@/lib/notify"
 import { swalConfirm, swalError } from "@/lib/swal"
 import { uploadFile } from "@/lib/uploads"
 import { apiJson, errorMessage } from "@/lib/ministries/client"
-import { computeSeats, type Layout } from "@/lib/events/rules"
+import { bestSeats, computeSeats, sellableSeats, stageAnchor, type Layout } from "@/lib/events/rules"
 import type { EventDetailDto, ExpenseDto, ItineraryDto, TicketDto, VenueDto } from "@/lib/events/server"
 import { EventFormDialog, STATUS_LABEL, STATUS_TONE, money } from "./events-admin"
-import { SeatLegend, SeatMap } from "./seat-map"
+import { SeatLegend, SeatMap, type SeatMapHandle } from "./seat-map"
 import { EventStaffTab } from "./event-staff"
 import { cn } from "@/lib/utils"
 import { GROWTH_CHECK_LABEL, growthCheckForEventKind } from "@/lib/school/growth-rules"
@@ -1130,14 +1134,9 @@ function SeatingTab({ event, canManage, onChanged }: { event: EventDetailDto; ca
 }
 
 function computeLabel(event: EventDetailDto, code: string): string {
-  const el = event.plan?.layout.elements
-  if (!el) return code
-  // La etiqueta legible se recompone igual que en el plano.
-  for (const e of el) {
-    if (e.type === "table" && code.startsWith(`${e.code}-`)) return `Mesa ${e.code} · lugar ${code.split("-")[1]}`
-  }
-  const m = /^([A-Z0-9]*?)([A-Z]+)-(\d+)$/.exec(code)
-  return m ? `Fila ${m[2]} · asiento ${m[3]}` : code
+  if (!event.plan) return code
+  // La etiqueta legible sale del mismo plano que dibuja los asientos.
+  return computeSeats(event.plan.layout).find((s) => s.code === code)?.label ?? code
 }
 
 // ── Gastos del evento ─────────────────────────────────────────────────────────
@@ -1290,36 +1289,56 @@ function ExpenseDialog({ eventId, expense, onClose, onSaved }: { eventId: string
 
 // ── Entrada por QR ────────────────────────────────────────────────────────────
 
+type EntryResult = { tone: "ok" | "warn" | "error"; title: string; detail?: string }
+
 function EntryTab({ event, onChanged }: { event: EventDetailDto; onChanged: () => Promise<void> }) {
   const reader = useId().replace(/:/g, "")
-  const [scanning, setScanning] = useState(false)
-  const [manual, setManual] = useState("")
-  const [last, setLast] = useState<{ ok: boolean; text: string } | null>(null)
+  const [method, setMethod] = useState<"scan" | "code">("scan")
+  const [otp, setOtp] = useState("")
+  const [last, setLast] = useState<EntryResult | null>(null)
   const busy = useRef(false)
+  const [sending, setSending] = useState(false)
   const [q, setQ] = useState("")
+  const scanning = method === "scan"
+
+  // El resultado se quita solo para dejar lista la siguiente persona.
+  useEffect(() => {
+    if (!last) return
+    const t = window.setTimeout(() => setLast(null), last.tone === "ok" ? 5000 : 9000)
+    return () => window.clearTimeout(t)
+  }, [last])
 
   const send = useCallback(
-    async (input: { code?: string; ticketId?: string; allowUnpaid?: boolean }) => {
+    async (input: { code?: string; shortCode?: string; ticketId?: string; allowUnpaid?: boolean }) => {
       if (busy.current) return
       busy.current = true
+      setSending(true)
       try {
-        const r = await apiJson<{ name: string; seatCode: string | null; balance: number }>(`/api/events/${event.id}/check-in`, { method: "POST", body: JSON.stringify(input) })
-        setLast({ ok: true, text: `${r.name} · entrada registrada${r.seatCode ? ` · lugar ${r.seatCode}` : ""}` })
-        notify.success(`${r.name} entró`)
+        const r = await apiJson<{ name: string; seatCode: string | null; seatLabel: string | null; zone: string | null; balance: number }>(`/api/events/${event.id}/check-in`, { method: "POST", body: JSON.stringify(input) })
+        const place = [r.zone, r.seatLabel].filter(Boolean).join(" · ")
+        setLast({ tone: "ok", title: r.name, detail: place ? `Su lugar: ${place}` : "Entrada registrada" })
+        navigator.vibrate?.(60)
+        setOtp("")
         await onChanged()
       } catch (e) {
         const msg = errorMessage(e)
-        if (/saldo pendiente/.test(msg) && input.code !== undefined) {
-          const yes = await swalConfirm("Tiene saldo pendiente", `${msg}. ¿Permitir la entrada de todos modos?`, { confirmText: "Permitir entrada", icon: "question" })
+        if (/saldo pendiente/.test(msg) && !input.allowUnpaid) {
           busy.current = false
+          setSending(false)
+          const yes = await swalConfirm("Tiene saldo pendiente", `${msg}. ¿Permitir la entrada de todos modos?`, { confirmText: "Permitir entrada", icon: "question" })
           if (yes) await send({ ...input, allowUnpaid: true })
+          else setLast({ tone: "warn", title: "Entrada en espera", detail: msg })
           return
         }
-        setLast({ ok: false, text: msg })
+        navigator.vibrate?.([80, 60, 80])
+        const already = /ya registr/.test(msg)
+        setLast({ tone: already ? "warn" : "error", title: already ? "Ya había entrado" : "No se pudo registrar", detail: msg })
+        setOtp("")
       } finally {
+        setSending(false)
         setTimeout(() => {
           busy.current = false
-        }, 1500)
+        }, 1200)
       }
     },
     [event.id, onChanged]
@@ -1336,11 +1355,11 @@ function EntryTab({ event, onChanged }: { event: EventDetailDto; onChanged: () =
         if (stopped || !document.getElementById(reader)) return
         const s = new Html5Qrcode(reader)
         scanner = s
-        await s.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 220, height: 220 } }, (text) => void send({ code: text }), () => {})
+        await s.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 240, height: 240 } }, (text) => void send({ code: text }), () => {})
       } catch {
         if (!stopped) {
-          setLast({ ok: false, text: "No se pudo usar la cámara. Escribe el código o elige el boleto en la lista." })
-          setScanning(false)
+          setLast({ tone: "warn", title: "No se pudo usar la cámara", detail: "Escribe el código de 6 caracteres del boleto." })
+          setMethod("code")
         }
       }
     })()
@@ -1352,68 +1371,168 @@ function EntryTab({ event, onChanged }: { event: EventDetailDto; onChanged: () =
     }
   }, [scanning, reader, send])
 
-  const pending = (event.tickets ?? []).filter((t) => t.status !== "cancelled" && !t.checkedInAt && (!q.trim() || matchesSearch(t.name, q)))
+  const all = (event.tickets ?? []).filter((t) => t.status !== "cancelled")
+  const pending = all.filter((t) => !t.checkedInAt && (!q.trim() || matchesSearch(t.name, q) || (t.shortCode ?? "").includes(q.trim().toUpperCase())))
+  const recent = all
+    .filter((t) => t.checkedInAt)
+    .sort((a, b) => (b.checkedInAt ?? "").localeCompare(a.checkedInAt ?? ""))
+    .slice(0, 5)
+  const total = event.stats.taken
+  const pct = total ? Math.min(100, Math.round((event.stats.checkedIn / total) * 100)) : 0
+  const initials = (n: string) =>
+    n
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w) => w[0]?.toUpperCase())
+      .join("")
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <Button onClick={() => setScanning((s) => !s)}>
-          <ScanLine className="size-4" />
-          {scanning ? "Detener cámara" : "Escanear boletos"}
-        </Button>
-        <span className="text-sm text-muted-foreground tabular-nums">
-          {event.stats.checkedIn} de {event.stats.taken} han entrado
-        </span>
+      {/* Avance de la asistencia */}
+      <div className="flex items-center gap-4 rounded-2xl border bg-card p-4">
+        <div className="relative grid size-16 shrink-0 place-items-center">
+          <svg viewBox="0 0 36 36" className="absolute inset-0 -rotate-90" aria-hidden>
+            <circle cx="18" cy="18" r="15.5" fill="none" strokeWidth="3.5" className="stroke-muted" />
+            <circle cx="18" cy="18" r="15.5" fill="none" strokeWidth="3.5" strokeLinecap="round" strokeDasharray={`${(pct / 100) * 97.4} 97.4`} className="stroke-primary transition-[stroke-dasharray] duration-500" />
+          </svg>
+          <span className="font-heading text-sm font-semibold tabular-nums">{pct}%</span>
+        </div>
+        <div className="min-w-0 flex-1" role="progressbar" aria-label="Asistencia registrada" aria-valuemin={0} aria-valuemax={total} aria-valuenow={event.stats.checkedIn}>
+          <p className="font-heading text-2xl font-semibold tabular-nums">
+            {event.stats.checkedIn} <span className="text-base font-normal text-muted-foreground">de {total} han entrado</span>
+          </p>
+          <p className="text-xs text-muted-foreground">{Math.max(0, total - event.stats.checkedIn)} por llegar</p>
+        </div>
       </div>
-      {scanning && (
-        <div className="overflow-hidden rounded-2xl border bg-muted/40">
-          <div id={reader} className="min-h-56 w-full" />
-        </div>
-      )}
-      {last && (
-        <p className={cn("flex items-start gap-2 rounded-xl p-3 text-sm", last.ok ? "bg-success/15 text-success-ink" : "bg-destructive/10 text-destructive")}>
-          {last.ok ? <Check className="mt-0.5 size-4 shrink-0" /> : <Ban className="mt-0.5 size-4 shrink-0" />}
-          {last.text}
-        </p>
-      )}
-      <form
-        className="flex items-end gap-2"
-        onSubmit={(e) => {
-          e.preventDefault()
-          if (manual.trim()) void send({ code: manual.trim() }).then(() => setManual(""))
-        }}
-      >
-        <div className="flex-1">
-          <InputGroupField label="¿Sin cámara? Escribe el código del boleto" value={manual} onChange={(e) => setManual(e.target.value)} autoComplete="off" />
-        </div>
-        <Button type="submit" disabled={!manual.trim()}>
-          Registrar
-        </Button>
-      </form>
 
+      {/* Resultado de la última persona */}
+      <div aria-live="polite">
+        {last && (
+          <div
+            className={cn(
+              "flex items-start gap-3 rounded-2xl border p-4 animate-in fade-in-0 zoom-in-95",
+              last.tone === "ok" && "border-success/40 bg-success/15 text-success-ink",
+              last.tone === "warn" && "border-warning/50 bg-warning/15 text-warning-ink",
+              last.tone === "error" && "border-destructive/40 bg-destructive/10 text-destructive"
+            )}
+          >
+            <span className="grid size-11 shrink-0 place-items-center rounded-full bg-current/15">
+              {last.tone === "ok" ? <Check className="size-6" /> : last.tone === "warn" ? <Clock className="size-6" /> : <Ban className="size-6" />}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="font-heading text-lg leading-tight font-semibold">{last.tone === "ok" ? `¡Bienvenido, ${last.title}!` : last.title}</p>
+              {last.detail && <p className="text-sm opacity-90">{last.detail}</p>}
+            </div>
+            <button type="button" aria-label="Cerrar aviso" className="press -m-1 rounded-full p-1 opacity-70 hover:opacity-100" onClick={() => setLast(null)}>
+              <X className="size-4" />
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Cómo se registra */}
+      <div className="space-y-3 rounded-2xl border bg-card p-4">
+        <div role="tablist" aria-label="Forma de registrar" className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1 text-sm font-medium">
+          {(
+            [
+              ["scan", "Escanear QR", ScanLine],
+              ["code", "Escribir código", Keyboard],
+            ] as const
+          ).map(([k, label, Icon]) => (
+            <button key={k} type="button" role="tab" aria-selected={method === k} onClick={() => setMethod(k)} className={cn("press inline-flex items-center justify-center gap-2 rounded-lg py-2", method === k ? "bg-card shadow-sm" : "text-muted-foreground")}>
+              <Icon className="size-4" /> {label}
+            </button>
+          ))}
+        </div>
+
+        {method === "scan" ? (
+          <div className="space-y-2">
+            <div className="relative overflow-hidden rounded-2xl border bg-black/80">
+              <div id={reader} className="min-h-64 w-full" />
+            </div>
+            <p className="text-center text-xs text-muted-foreground">Apunta la cámara al QR del boleto. Se registra solo y queda listo para el siguiente.</p>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center gap-3 py-2">
+            <p className="text-sm text-muted-foreground">Escribe el código de 6 caracteres del boleto</p>
+            <InputOTP
+              maxLength={6}
+              value={otp}
+              autoFocus
+              disabled={sending}
+              pattern={REGEXP_ONLY_DIGITS_AND_CHARS}
+              autoCapitalize="characters"
+              autoComplete="off"
+              aria-label="Código del boleto"
+              onChange={(v) => setOtp(v.toUpperCase())}
+              onComplete={(v) => void send({ shortCode: v.toUpperCase() })}
+              containerClassName="gap-2"
+            >
+              <InputOTPGroup className="gap-1.5 sm:gap-2">
+                {[0, 1, 2].map((i) => (
+                  <InputOTPSlot key={i} index={i} className="size-11 rounded-xl border text-xl font-semibold first:rounded-l-xl last:rounded-r-xl sm:size-14 sm:text-2xl" />
+                ))}
+              </InputOTPGroup>
+              <span aria-hidden className="text-muted-foreground">
+                –
+              </span>
+              <InputOTPGroup className="gap-1.5 sm:gap-2">
+                {[3, 4, 5].map((i) => (
+                  <InputOTPSlot key={i} index={i} className="size-11 rounded-xl border text-xl font-semibold first:rounded-l-xl last:rounded-r-xl sm:size-14 sm:text-2xl" />
+                ))}
+              </InputOTPGroup>
+            </InputOTP>
+            <p className="flex h-5 items-center gap-1.5 text-xs text-muted-foreground">
+              {sending ? (
+                <>
+                  <Loader2 className="size-3.5 animate-spin" /> Registrando…
+                </>
+              ) : (
+                "Al completar los 6 caracteres se registra la entrada."
+              )}
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Lista */}
       <section className="space-y-2">
         <div className="flex items-center gap-2">
-          <h3 className="flex-1 text-sm font-semibold">Pendientes de entrar ({pending.length})</h3>
-          <Input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar…" aria-label="Buscar boleto" className="max-w-48" />
+          <h3 className="flex-1 text-sm font-semibold">Por llegar ({pending.length})</h3>
+          <Input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar nombre o código…" aria-label="Buscar boleto" className="max-w-56" />
         </div>
-        <ul className="max-h-96 divide-y overflow-y-auto rounded-2xl border">
-          {pending.length === 0 && <li className="p-4 text-center text-sm text-muted-foreground">Nadie pendiente.</li>}
+        <ul className="max-h-96 divide-y overflow-y-auto rounded-2xl border bg-card">
+          {pending.length === 0 && <li className="p-6 text-center text-sm text-muted-foreground">{all.length > 0 && !q ? "¡Todos ya entraron!" : "Nadie pendiente."}</li>}
           {pending.map((t) => (
-            <li key={t.id} className="flex items-center gap-2 px-3 py-2">
+            <li key={t.id} className="flex items-center gap-3 px-3 py-2.5">
+              <span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary/10 text-xs font-semibold text-primary">{initials(t.name)}</span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-medium">{t.name}</span>
-                <span className="block truncate text-xs text-muted-foreground">
-                  {t.seatLabel ?? t.sectionName ?? "Sin lugar"}
-                  {t.balance > 0 ? ` · debe ${money(t.balance)}` : ""}
-                </span>
+                <span className="block truncate text-xs text-muted-foreground">{[t.shortCode, t.seatLabel ?? t.sectionName, t.balance > 0 ? `debe ${money(t.balance)}` : null].filter(Boolean).join(" · ")}</span>
               </span>
-              <Button size="sm" variant="outline" onClick={() => void send({ ticketId: t.id, allowUnpaid: false })}>
+              <Button size="sm" variant="outline" disabled={sending} onClick={() => void send({ ticketId: t.id })}>
                 <LogIn className="size-4" /> Entrada
               </Button>
             </li>
           ))}
         </ul>
       </section>
+
+      {recent.length > 0 && (
+        <section className="space-y-2">
+          <h3 className="text-sm font-semibold">Últimas entradas</h3>
+          <ul className="divide-y rounded-2xl border bg-card">
+            {recent.map((t) => (
+              <li key={t.id} className="flex items-center gap-3 px-3 py-2 text-sm">
+                <Check className="size-4 shrink-0 text-success-ink" />
+                <span className="min-w-0 flex-1 truncate">{t.name}</span>
+                <span className="text-xs text-muted-foreground tabular-nums">{t.checkedInAt ? new Date(t.checkedInAt).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" }) : ""}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </div>
   )
 }
@@ -1440,6 +1559,7 @@ function SeatSummary({ layout, code }: { layout: Layout; code: string | null }) 
   const info = code ? computeSeats(layout).find((s) => s.code === code) : null
   if (!info) return <p className="rounded-2xl border border-dashed p-3 text-center text-sm text-muted-foreground">Toca un asiento libre del plano para elegirlo.</p>
   const section = layout.sections.find((s) => s.id === info.sectionId)
+  const area = /^(.*) · Fila /.exec(info.label)?.[1] ?? null
   const table = info.rowName.startsWith("Mesa")
   return (
     <div className="flex items-center gap-3 rounded-2xl border border-primary/40 bg-primary/5 p-3">
@@ -1457,8 +1577,11 @@ function SeatSummary({ layout, code }: { layout: Layout; code: string | null }) 
         </div>
       </dl>
       {section && (
-        <span className="shrink-0 rounded-full px-2.5 py-1 text-xs font-medium text-white" style={{ background: section.color }}>
-          {section.name}
+        <span className="flex shrink-0 flex-col items-end gap-0.5">
+          <span className="rounded-full px-2.5 py-1 text-xs font-medium text-white" style={{ background: section.color }}>
+            {section.name}
+          </span>
+          {area && <span className="text-[0.7rem] text-muted-foreground">{area}</span>}
         </span>
       )}
     </div>
@@ -1471,6 +1594,7 @@ function AttendeeView({ event, onChanged }: { event: EventDetailDto; onChanged: 
   const [view3d, setView3d] = useState(false)
   const [busy, setBusy] = useState(false)
   const [qrOpen, setQrOpen] = useState(false)
+  const mapRef = useRef<SeatMapHandle>(null)
 
   useEffect(() => {
     setSectionId(event.sections.find((s) => s.taken < s.capacity)?.id ?? "")
@@ -1525,6 +1649,38 @@ function AttendeeView({ event, onChanged }: { event: EventDetailDto; onChanged: 
 
   const needsSeatPick = event.seating === "seats" && mayChoose && (!ticket || !ticket.seatCode) && (ticket || event.canRegister)
 
+  // Mientras se elige lugar, el mapa se actualiza solo (y se pausa si la pestaña no se ve).
+  useEffect(() => {
+    if (!needsSeatPick) return
+    const tick = () => {
+      if (document.visibilityState === "visible") void onChanged()
+    }
+    const timer = window.setInterval(tick, 12000)
+    document.addEventListener("visibilitychange", tick)
+    return () => {
+      window.clearInterval(timer)
+      document.removeEventListener("visibilitychange", tick)
+    }
+  }, [needsSeatPick, onChanged])
+
+  // Si alguien más tomó el asiento que tenías marcado, se quita y se avisa.
+  const takenSeats = event.plan?.takenSeats
+  useEffect(() => {
+    if (seat && takenSeats?.includes(seat)) {
+      notify.warning("Alguien más acaba de tomar ese lugar. Elige otro.")
+      setSeat(null)
+    }
+  }, [takenSeats, seat])
+
+  const suggest = () => {
+    if (!event.plan) return
+    const layout = event.plan.layout
+    const pick = bestSeats(sellableSeats(layout), new Set(event.plan.takenSeats), { count: 1, anchor: stageAnchor(layout, event.plan.width) })[0]
+    if (!pick) return notify.info("No quedan lugares libres")
+    setSeat(pick.code)
+    mapRef.current?.focusSeat(pick.code)
+  }
+
   return (
     <div className="space-y-4">
       {(event.topic || event.description) && (
@@ -1570,6 +1726,7 @@ function AttendeeView({ event, onChanged }: { event: EventDetailDto; onChanged: 
             seat={ticket.seatLabel}
             holder={ticket.holderName}
             code={ticket.code}
+            shortCode={ticket.shortCode}
             price={ticket.price}
             balance={ticket.balance}
             status={ticket.status}
@@ -1614,13 +1771,17 @@ function AttendeeView({ event, onChanged }: { event: EventDetailDto; onChanged: 
 
       {needsSeatPick && event.plan && (
         <section className="space-y-3">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <h2 className="flex-1 font-heading text-base font-semibold">Elige tu lugar</h2>
+            <Button size="sm" variant="outline" onClick={suggest}>
+              <Sparkles className="size-4" /> Mejor lugar disponible
+            </Button>
             <Button size="sm" variant={view3d ? "default" : "outline"} onClick={() => setView3d((v) => !v)}>
               <Box className="size-4" /> {view3d ? "Vista 2D" : "Vista 3D"}
             </Button>
           </div>
           <SeatMap
+            handleRef={mapRef}
             width={event.plan.width}
             height={event.plan.height}
             layout={event.plan.layout}
@@ -1628,9 +1789,10 @@ function AttendeeView({ event, onChanged }: { event: EventDetailDto; onChanged: 
             mine={event.plan.mySeat}
             selected={seat}
             interactive
+            overview
             view3d={view3d}
             onSeatClick={(c) => setSeat((cur) => (cur === c ? null : c))}
-            className="max-h-[60vh]"
+            className="max-h-[70dvh]"
           />
           <SeatLegend sections={event.plan.layout.sections} />
           <SeatSummary layout={event.plan.layout} code={seat} />

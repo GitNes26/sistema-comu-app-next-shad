@@ -6,8 +6,12 @@ import { memberIdOfUser, ministryAccess, type Actor } from "@/lib/ministries/ser
 import {
   attendeeMayChoose,
   audienceAllows,
-  autoAssignSeat,
+  bestSeats,
+  newShortCode,
+  normalizeShortCode,
+  stageAnchor,
   capacityOfLayout,
+  computeSeats,
   parseStoredLayout,
   sanitizeLayout,
   sellableSeats,
@@ -44,6 +48,15 @@ const toDateTime = (v: unknown): Date | null => {
   return Number.isNaN(d.getTime()) ? null : d
 }
 const newCode = () => randomBytes(18).toString("base64url")
+
+/** Código corto libre dentro del evento (para escribirlo en la puerta). */
+async function freeShortCode(eventId: string): Promise<string> {
+  for (let i = 0; i < 8; i++) {
+    const c = newShortCode()
+    if (!(await prisma.eventTicket.findFirst({ where: { eventId, shortCode: c }, select: { id: true } }))) return c
+  }
+  throw new CrudError("No se pudo generar el código del boleto; intenta de nuevo", 500)
+}
 const isUnique = (err: unknown) => typeof err === "object" && err !== null && (err as { code?: string }).code === "P2002"
 
 // ── Acceso ───────────────────────────────────────────────────────────────────
@@ -285,6 +298,7 @@ export async function listEvents(actor: Actor, filter: { scope: "all" | "mine"; 
 export interface TicketDto {
   id: string
   code: string
+  shortCode: string | null
   memberId: string | null
   name: string
   phone: string | null
@@ -334,7 +348,7 @@ export interface EventDetailDto {
   /** Gastos del evento (solo quien lo gestiona); son el mismo registro que ve Finanzas. */
   expenses: ExpenseDto[]
   tickets: TicketDto[] | null
-  myTicket: { id: string; code: string; status: "reserved" | "paid" | "cancelled"; seatCode: string | null; seatLabel: string | null; balance: number; checkedInAt: string | null; holderName: string; price: number } | null
+  myTicket: { id: string; code: string; shortCode: string | null; status: "reserved" | "paid" | "cancelled"; seatCode: string | null; seatLabel: string | null; balance: number; checkedInAt: string | null; holderName: string; price: number } | null
   canRegister: boolean
   access: { canManage: boolean; canCheckin: boolean; mayChooseSeat: boolean; staffMayAssign: boolean }
 }
@@ -404,6 +418,7 @@ export async function getEvent(actor: Actor, eventId: string): Promise<EventDeta
     return {
       id: t.id,
       code: t.code,
+      shortCode: t.shortCode,
       memberId: t.memberId,
       name: t.member?.fullName ?? t.guestName ?? "Invitado",
       phone: t.member?.phone ?? t.guestPhone,
@@ -461,7 +476,8 @@ export async function getEvent(actor: Actor, eventId: string): Promise<EventDeta
         ? {
             width: e.venue.planWidth,
             height: e.venue.planHeight,
-            layout,
+            // el plano de fondo para calcar es solo del editor
+            layout: { ...layout, background: undefined },
             takenSeats: active.filter((t) => t.seatCode).map((t) => t.seatCode as string),
             mySeat: mine?.seatCode ?? null,
           }
@@ -503,7 +519,7 @@ export async function getEvent(actor: Actor, eventId: string): Promise<EventDeta
     })),
     tickets: a.canView ? dtoTickets : null,
     myTicket: mineDto
-      ? { id: mineDto.id, code: mineDto.code, status: mineDto.status, seatCode: mineDto.seatCode, seatLabel: mineDto.seatLabel, balance: mineDto.balance, checkedInAt: mineDto.checkedInAt, holderName: mineDto.name, price: mineDto.price }
+      ? { id: mineDto.id, code: mineDto.code, shortCode: mineDto.shortCode, status: mineDto.status, seatCode: mineDto.seatCode, seatLabel: mineDto.seatLabel, balance: mineDto.balance, checkedInAt: mineDto.checkedInAt, holderName: mineDto.name, price: mineDto.price }
       : null,
     canRegister:
       e.status === "published" &&
@@ -777,7 +793,9 @@ async function seatContext(eventId: string, event: EventAccess["event"]) {
   const taken = new Set(
     (await prisma.eventTicket.findMany({ where: { eventId, status: { not: "cancelled" }, seatCode: { not: null } }, select: { seatCode: true } })).map((t) => t.seatCode as string)
   )
-  return { seats, taken }
+  // Referencia para «los mejores lugares»: el escenario del plano (o el frente).
+  const anchor = layout && event.venue ? stageAnchor(layout, event.venue.planWidth) : { x: 500, y: 0 }
+  return { seats, taken, anchor }
 }
 
 async function assertCapacity(event: EventAccess["event"], sectionId: string | null, exceptTicketId?: string) {
@@ -810,7 +828,7 @@ async function placeTicket(event: EventAccess["event"], eventId: string, input: 
   if (event.seating === "sections") {
     sectionId = text(input.sectionId, 40)
   } else if (event.seating === "seats") {
-    const { seats, taken } = await seatContext(eventId, event)
+    const { seats, taken, anchor } = await seatContext(eventId, event)
     const wanted = text(input.seatCode, 20)
     if (wanted) {
       if (!allowPick) throw new CrudError("En este evento el lugar lo asigna el personal", 403, "seatCode")
@@ -819,7 +837,7 @@ async function placeTicket(event: EventAccess["event"], eventId: string, input: 
       if (taken.has(wanted)) throw new CrudError("Ese lugar ya está ocupado", 409, "seatCode")
       seatCode = wanted
     } else if (input.autoAssign === true) {
-      const pick = autoAssignSeat(seats, taken)
+      const pick = bestSeats(seats, taken, { count: 1, anchor })[0]
       if (!pick) throw new CrudError("No quedan asientos disponibles", 409)
       seatCode = pick.code
     }
@@ -855,6 +873,7 @@ export async function createTicket(actor: Actor, eventId: string, input: TicketI
         organizationId: actor.organizationId,
         eventId,
         code: newCode(),
+        shortCode: await freeShortCode(eventId),
         memberId,
         guestName,
         guestPhone: text(input.guestPhone, 30),
@@ -912,6 +931,7 @@ export async function reserveMyTicket(actor: Actor, eventId: string, input: { se
         organizationId: actor.organizationId,
         eventId,
         code: newCode(),
+        shortCode: await freeShortCode(eventId),
         memberId: ctx.memberId,
         price,
         status: ticketStatusFor(price, []),
@@ -949,10 +969,10 @@ export async function updateTicket(actor: Actor, eventId: string, ticketId: stri
     if (e.seating === "seats" && input.seatCode === "") {
       data.seatCode = null
     } else if (e.seating === "seats") {
-      const { seats, taken } = await seatContext(eventId, e)
+      const { seats, taken, anchor } = await seatContext(eventId, e)
       if (t.seatCode) taken.delete(t.seatCode)
       let target: string | null = text(input.seatCode, 20)
-      if (!target && input.autoAssign === true && a.canManage) target = autoAssignSeat(seats, taken)?.code ?? null
+      if (!target && input.autoAssign === true && a.canManage) target = bestSeats(seats, taken, { count: 1, anchor })[0]?.code ?? null
       if (!target) throw new CrudError("Elige un asiento", 400, "seatCode")
       if (!seats.some((s) => s.code === target)) throw new CrudError("Ese asiento no existe o no se vende", 400, "seatCode")
       if (taken.has(target)) throw new CrudError("Ese lugar ya está ocupado", 409, "seatCode")
@@ -1039,20 +1059,25 @@ export async function addPayment(actor: Actor, eventId: string, ticketId: string
 }
 
 /** Entrada por QR o por boleto elegido. Requiere permiso de check-in o gestión. */
-export async function checkInTicket(actor: Actor, eventId: string, input: { code?: unknown; ticketId?: unknown; allowUnpaid?: unknown }) {
+export async function checkInTicket(actor: Actor, eventId: string, input: { code?: unknown; shortCode?: unknown; ticketId?: unknown; allowUnpaid?: unknown }) {
   const a = await eventAccess(actor, eventId)
   if (!a.canCheckin) throw new CrudError("No tienes permiso para registrar entradas", 403)
   const code = text(input.code, 80)?.replace(/^comuapp-event:/, "") ?? null
   const ticketId = text(input.ticketId, 40)
-  if (!code && !ticketId) throw new CrudError("Escanea el QR o elige el boleto", 400)
+  const short = input.shortCode === undefined ? null : normalizeShortCode(input.shortCode)
+  if (input.shortCode !== undefined && !short) throw new CrudError("El código del boleto tiene 6 letras o números", 400, "shortCode")
+  if (!code && !ticketId && !short) throw new CrudError("Escanea el QR o escribe el código del boleto", 400)
   const t = await prisma.eventTicket.findFirst({
-    where: { eventId, organizationId: actor.organizationId, ...(code ? { code } : { id: ticketId! }) },
+    where: { eventId, organizationId: actor.organizationId, ...(code ? { code } : short ? { shortCode: short } : { id: ticketId! }) },
     include: { member: { select: { fullName: true } }, payments: true },
   })
-  if (!t) throw new CrudError(code ? "QR no reconocido para este evento" : "Boleto no encontrado", 404)
+  if (!t) throw new CrudError(code || short ? "Código no reconocido para este evento" : "Boleto no encontrado", 404)
   const name = t.member?.fullName ?? t.guestName ?? "Invitado"
   if (t.status === "cancelled") throw new CrudError(`El boleto de ${name} está cancelado`, 409)
-  if (t.checkedInAt) throw new CrudError(`${name} ya registró su entrada`, 409)
+  if (t.checkedInAt) {
+    const at = t.checkedInAt.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })
+    throw new CrudError(`${name} ya registró su entrada a las ${at}`, 409)
+  }
   const balance = ticketBalance(Number(t.price), t.payments.map((p) => Number(p.amount)))
   if (balance > 0 && input.allowUnpaid !== true) {
     // No se bloquea la puerta por sí solo: se avisa y el personal decide.
@@ -1060,7 +1085,18 @@ export async function checkInTicket(actor: Actor, eventId: string, input: { code
   }
   await prisma.eventTicket.update({ where: { id: t.id }, data: { checkedInAt: new Date(), checkedInByUserId: actor.userId } })
   // La entrada solo registra la asistencia; los checks del camino se marcan al finalizar el evento.
-  return { name, seatCode: t.seatCode, balance }
+  // El lugar legible (zona, fila y asiento) para decirlo en la puerta.
+  let seatLabel: string | null = null
+  let zone: string | null = null
+  if (t.seatCode && a.event.venue) {
+    const layout = parseStoredLayout(a.event.venue.layout)
+    const seat = computeSeats(layout).find((x) => x.code === t.seatCode)
+    seatLabel = seat?.label ?? t.seatCode
+    zone = layout.sections.find((x) => x.id === seat?.sectionId)?.name ?? null
+  } else if (t.sectionId) {
+    zone = a.event.sections.find((x) => x.id === t.sectionId)?.name ?? null
+  }
+  return { name, seatCode: t.seatCode, seatLabel, zone, balance }
 }
 
 export async function listMyTickets(actor: Actor) {

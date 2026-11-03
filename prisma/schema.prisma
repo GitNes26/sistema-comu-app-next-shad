@@ -1773,6 +1773,8 @@ model EventTicket {
   eventId           String
   /// Valor del QR del boleto (secreto).
   code              String       @unique
+  /// Código corto para escribir en la puerta (6 caracteres; único dentro del evento).
+  shortCode         String?      @db.VarChar(8)
   memberId          String?
   guestName         String?
   guestPhone        String?
@@ -1795,6 +1797,7 @@ model EventTicket {
   payments     EventPayment[]
 
   @@unique([eventId, seatCode])
+  @@unique([eventId, shortCode])
   @@index([eventId, status])
   @@index([memberId])
   @@map("event_tickets")

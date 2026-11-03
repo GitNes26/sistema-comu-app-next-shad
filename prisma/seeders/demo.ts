@@ -578,13 +578,13 @@ export async function seedDemo() {
     });
     const lupita = await memberByEmail("demo.celula@comuapp.test");
     const ana = await memberByEmail("demo.admin@comuapp.test");
-    for (const [memberId, seatCode, paid] of [
-      [lupita, "A-1", true],
-      [ana, "A-2", false],
+    for (const [memberId, seatCode, paid, shortCode] of [
+      [lupita, "A-1", true, "DEMO2A"],
+      [ana, "A-2", false, "DEMO3B"],
     ] as const) {
       if (!memberId) continue;
       const ticket = await prisma.eventTicket.create({
-        data: { organizationId: org.id, eventId: taller.id, memberId, code: randomBytes(18).toString("base64url"), price: 150, seatCode, status: paid ? "paid" : "reserved" },
+        data: { organizationId: org.id, eventId: taller.id, memberId, code: randomBytes(18).toString("base64url"), shortCode, price: 150, seatCode, status: paid ? "paid" : "reserved" },
       });
       if (paid) await prisma.eventPayment.create({ data: { organizationId: org.id, ticketId: ticket.id, amount: 150, method: "cash" } });
     }

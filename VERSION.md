@@ -30,6 +30,10 @@ Formato: `MAJOR.MINOR.PATCH.REVISION` (X.X.X.X)
 
 ## Historial
 
+### [0.34.0.0] — 2026-11-03
+- **Tipo:** `feat` (Minor)
+- feat: diseñador de áreas con filas libres, zonas y plantillas, mapa por zonas para elegir lugar, mejor lugar disponible, entrada por QR con campo OTP de código corto y migración shortCode
+
 ### [0.33.0.0] — 2026-10-19
 - **Tipo:** `feat` (Minor)
 - feat: logo de la iglesia en toda la app, acceso, splash y cargando con la marca, trayecto de Teologia compacto, cuatro libros de la Escuela de Ministerio, icono del precio del libro y material de la escuela tambien para maestros

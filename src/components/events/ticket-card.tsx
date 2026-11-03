@@ -19,6 +19,8 @@ export interface TicketCardProps {
   seat?: string | null
   holder: string
   code: string
+  /** Código corto para escribir en la puerta. */
+  shortCode?: string | null
   price: number
   balance: number
   status: "reserved" | "paid" | "cancelled"
@@ -60,7 +62,7 @@ export function TicketCard(t: TicketCardProps) {
   const day = start.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" })
   const used = Boolean(t.checkedInAt)
   const paid = t.status === "paid"
-  const folio = t.code.slice(0, 8).toUpperCase()
+  const folio = t.shortCode ?? t.code.slice(0, 8).toUpperCase()
   const spot = parseSeatLabel(t.seat)
   const status = used ? "Entrada registrada" : paid ? (t.price > 0 ? "Pagado" : "Confirmado") : `Saldo ${money(t.balance)}`
   const mapsHref = t.venue ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(t.venue)}` : null

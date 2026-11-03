@@ -25,7 +25,7 @@ Recibo: al confirmar, el donativo recibe folio y la persona puede descargar su *
 
 ## 3. Eventos y boletos
 
-Organizador crea el evento y su público → publica → las personas **apartan** boleto (o se les asigna) → eligen asiento si hay plano → pagan (abonos) → **entrada por QR** → al finalizar se aplican los checks del camino. Avisos: boleto asignado/cancelado, abonos, saldo liquidado. El boleto mostrado es el comprobante (evento, fecha, hora, lugar, asiento, titular, folio, importe, QR).
+Organizador crea el evento y su público → publica → las personas **apartan** boleto (o se les asigna) → eligen asiento si hay plano (primero la zona, luego el asiento; o «mejor lugar disponible») → pagan (abonos; los eventos sin costo solo sirven para invitar y controlar asistencia) → **entrada por QR** → al finalizar se aplican los checks del camino. Avisos: boleto asignado/cancelado, abonos, saldo liquidado. El boleto mostrado es el comprobante (evento, fecha, hora, lugar, asiento, titular, folio, importe, QR).
 
 ## 4. Escuela (alumno ↔ maestro)
 
