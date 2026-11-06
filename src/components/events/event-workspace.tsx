@@ -13,6 +13,7 @@ import {
   Box,
   Check,
   CircleDollarSign,
+  Download,
   Receipt,
   ClipboardList,
   Clock,
@@ -22,6 +23,7 @@ import {
   Map as MapIcon,
   Keyboard,
   Plus,
+  Printer,
   ScanLine,
   Settings2,
   Sparkles,
@@ -43,6 +45,8 @@ import { DatePicker } from "@/components/base/date-picker"
 import { DateTimePicker } from "@/components/base/date-time-picker"
 import { FormCombobox } from "@/components/base/form-combobox"
 import { InputGroupField } from "@/components/base/input-group-field"
+import { NumberField } from "@/components/base/number-field"
+import { SwitchField } from "@/components/base/switch-field"
 import { StatusPill } from "@/components/base/status-pill"
 import { EmptyState } from "@/components/shared/empty-state"
 import { notify } from "@/lib/notify"
@@ -54,6 +58,8 @@ import type { EventDetailDto, ExpenseDto, ItineraryDto, TicketDto, VenueDto } fr
 import { EventFormDialog, STATUS_LABEL, STATUS_TONE, money } from "./events-admin"
 import { SeatLegend, SeatMap, type SeatMapHandle } from "./seat-map"
 import { EventStaffTab } from "./event-staff"
+import { EventPrintSheet } from "./event-print"
+import { downloadTicketPng } from "@/lib/events/ticket-image"
 import { cn } from "@/lib/utils"
 import { GROWTH_CHECK_LABEL, growthCheckForEventKind } from "@/lib/school/growth-rules"
 import type { GrowthResultDto } from "@/lib/school/growth"
@@ -74,6 +80,7 @@ export function EventWorkspace({ eventId, backHref }: { eventId: string; backHre
   const [error, setError] = useState<string | null>(null)
   const [venues, setVenues] = useState<VenueDto[]>([])
   const [editOpen, setEditOpen] = useState(false)
+  const [printOpen, setPrintOpen] = useState(false)
 
   const load = useCallback(async () => {
     try {
@@ -141,6 +148,10 @@ export function EventWorkspace({ eventId, backHref }: { eventId: string; backHre
           </p>
         </div>
         <StatusPill tone={STATUS_TONE[event.status]}>{STATUS_LABEL[event.status]}</StatusPill>
+        <Button variant="outline" size="sm" onClick={() => setPrintOpen(true)}>
+          <Printer className="size-4" />
+          Imprimir
+        </Button>
         {event.access.canManage && (
           <Button variant="outline" size="sm" onClick={() => void openEdit()}>
             <Settings2 className="size-4" />
@@ -151,6 +162,7 @@ export function EventWorkspace({ eventId, backHref }: { eventId: string; backHre
 
       {staff ? <StaffTabs event={event} onChanged={load} /> : <AttendeeView event={event} onChanged={load} />}
 
+      {printOpen && <EventPrintSheet event={event} onClose={() => setPrintOpen(false)} />}
       <EventFormDialog open={editOpen} event={event} venues={venues} onClose={() => setEditOpen(false)} onSaved={load} />
     </div>
   )
@@ -503,6 +515,11 @@ function ItineraryTab({ event, canManage, onChanged }: { event: EventDetailDto; 
                       <StatusPill tone={i.kind === "clinic" ? "info" : "neutral"} dot={false}>
                         {KIND_LABEL[i.kind]}
                       </StatusPill>
+                      {!i.isPublic && (
+                        <StatusPill tone="warning" dot={false}>
+                          Solo organizadores
+                        </StatusPill>
+                      )}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {i.durationMin} min{i.speakerName ? ` · ${i.speakerName}` : ""}
@@ -613,10 +630,12 @@ function ItineraryDialog({
   const [speaker, setSpeaker] = useState("")
   const [location, setLocation] = useState("")
   const [notes, setNotes] = useState("")
+  const [isPublic, setIsPublic] = useState(true)
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     if (item === null) return
+    setIsPublic(current?.isPublic ?? true)
     setTitle(current?.title ?? "")
     setStartsAt(current ? new Date(current.startsAt) : new Date(defaultDate))
     setDuration(String(current?.durationMin ?? 30))
@@ -631,7 +650,7 @@ function ItineraryDialog({
     try {
       await apiJson(`/api/events/${eventId}/itinerary`, {
         method: "POST",
-        body: JSON.stringify({ id: current?.id, title, startsAt: startsAt?.toISOString(), durationMin: Number(duration), kind, speakerName: speaker, location, notes }),
+        body: JSON.stringify({ id: current?.id, title, startsAt: startsAt?.toISOString(), durationMin: Number(duration), kind, speakerName: speaker, location, notes, isPublic }),
       })
       notify.success("Actividad guardada")
       onClose()
@@ -684,7 +703,7 @@ function ItineraryDialog({
           <InputGroupField label="Actividad" required value={title} maxLength={150} onChange={(e) => setTitle(e.target.value)} />
         </div>
         <DateTimePicker label="Inicia" required value={startsAt} onChange={setStartsAt} />
-        <InputGroupField label="Duración (minutos)" inputMode="numeric" value={duration} onChange={(e) => setDuration(e.target.value.replace(/\D/g, ""))} />
+        <NumberField label="Duración (minutos)" min={5} max={720} step={5} value={Number(duration) || 30} onChange={(v) => setDuration(String(v))} />
         <FormCombobox
           label="Tipo"
           options={Object.entries(KIND_LABEL).map(([value, label]) => ({ value, label }))}
@@ -697,12 +716,55 @@ function ItineraryDialog({
           <InputGroupField label="Lugar o salón" value={location} maxLength={150} onChange={(e) => setLocation(e.target.value)} />
         </div>
         <TextareaField id="it-notes" label="Notas" containerClassName="sm:col-span-2" rows={2} value={notes} maxLength={1000} onChange={(e) => setNotes(e.target.value)} />
+        <SwitchField
+          className="sm:col-span-2"
+          label="Visible para el público"
+          description="Si lo apagas, solo lo ven organizadores y servidores (las notas nunca son públicas)."
+          checked={isPublic}
+          onCheckedChange={setIsPublic}
+        />
       </div>
     </DialogComponent>
   )
 }
 
 // ── Boletos y pagos ───────────────────────────────────────────────────────────
+
+/** Color de la zona del lugar del boleto (o el del tema si no tiene lugar). */
+function zoneColor(event: EventDetailDto, t: TicketDto): string {
+  if (event.plan && t.seatCode) {
+    const seat = computeSeats(event.plan.layout).find((x) => x.code === t.seatCode)
+    const color = event.plan.layout.sections.find((z) => z.id === seat?.sectionId)?.color
+    if (color) return color
+  }
+  return "var(--primary)"
+}
+
+/** Descarga el boleto con diseño completo (sirve para enviarlo a quien lo pidió). */
+async function downloadTicket(event: EventDetailDto, t: TicketDto) {
+  try {
+    await downloadTicketPng({
+      eventName: event.name,
+      kind: event.kind,
+      groupName: event.groupName,
+      topic: event.topic,
+      startsAt: event.startsAt,
+      endsAt: event.endsAt,
+      venue: event.venueName ?? event.location,
+      seat: t.seatLabel ?? t.sectionName,
+      holder: t.name,
+      code: t.code,
+      folio: t.shortCode ?? t.code.slice(0, 8).toUpperCase(),
+      price: t.price,
+      status: t.status,
+      balance: t.balance,
+      checkedInAt: t.checkedInAt,
+      imageUrl: event.imageUrl,
+    })
+  } catch (e) {
+    swalError("No se pudo descargar el boleto", errorMessage(e))
+  }
+}
 
 function TicketsTab({ event, canManage, onChanged }: { event: EventDetailDto; canManage: boolean; onChanged: () => Promise<void> }) {
   const [q, setQ] = useState("")
@@ -740,17 +802,31 @@ function TicketsTab({ event, canManage, onChanged }: { event: EventDetailDto; ca
       ) : (
         <ul className="space-y-2">
           {tickets.map((t) => (
-            <li key={t.id} className={cn("flex flex-wrap items-center gap-2 rounded-2xl border bg-card p-3", t.status === "cancelled" && "opacity-55")}>
+            <li key={t.id} className={cn("relative flex flex-wrap items-center gap-2 overflow-hidden rounded-2xl border bg-card py-3 pr-3 pl-5", t.status === "cancelled" && "opacity-55")}>
+              {/* Franja con el color de su zona y muescas, como un boleto */}
+              <span aria-hidden className="absolute inset-y-0 left-0 w-2" style={{ background: zoneColor(event, t) }} />
+              <span aria-hidden className="absolute top-1/2 -left-2.5 size-5 -translate-y-1/2 rounded-full border bg-background" />
               <span className="min-w-0 flex-1 basis-44">
-                <span className="block truncate text-sm font-medium">{t.name}</span>
+                <span className="block truncate text-sm font-semibold">{t.name}</span>
                 <span className="block truncate text-xs text-muted-foreground">
                   {[t.phone, t.seatLabel ?? t.sectionName, t.memberId ? null : "Invitado"].filter(Boolean).join(" · ") || "Sin lugar"}
                 </span>
               </span>
+              {t.shortCode && (
+                <span className="hidden shrink-0 border-l border-dashed pl-3 text-center sm:block">
+                  <span className="block text-[0.6rem] tracking-wider text-muted-foreground uppercase">Código</span>
+                  <span className="block font-mono text-sm font-semibold tracking-widest">{t.shortCode}</span>
+                </span>
+              )}
               {t.checkedInAt && <StatusPill tone="success" dot={false}>Entró {fmtTime(t.checkedInAt)}</StatusPill>}
               <StatusPill tone={t.status === "paid" ? "success" : t.status === "reserved" ? "warning" : "neutral"}>
                 {t.status === "paid" ? (t.price > 0 ? "Pagado" : "Sin costo") : t.status === "reserved" ? `Debe ${money(t.balance)}` : "Cancelado"}
               </StatusPill>
+              {t.status !== "cancelled" && (
+                <Button size="icon-sm" variant="ghost" aria-label={`Descargar boleto de ${t.name}`} title="Descargar boleto" onClick={() => void downloadTicket(event, t)}>
+                  <Download className="size-4" />
+                </Button>
+              )}
               {canManage && t.status !== "cancelled" && (
                 <span className="flex shrink-0 gap-1">
                   {t.balance > 0 && (
@@ -1714,6 +1790,14 @@ function AttendeeView({ event, onChanged }: { event: EventDetailDto; onChanged: 
         </section>
       )}
 
+      {event.plan && !needsSeatPick && (
+        <section className="space-y-2">
+          <h2 className="font-heading text-base font-semibold">Plano del lugar</h2>
+          <SeatMap width={event.plan.width} height={event.plan.height} layout={event.plan.layout} mine={event.plan.mySeat} overview zoomable className="max-h-[70dvh]" />
+          <SeatLegend sections={event.plan.layout.sections} />
+        </section>
+      )}
+
       {ticket ? (
         <section className="space-y-3">
           <TicketCard
@@ -1732,6 +1816,7 @@ function AttendeeView({ event, onChanged }: { event: EventDetailDto; onChanged: 
             status={ticket.status}
             checkedInAt={ticket.checkedInAt}
             groupName={event.groupName}
+            imageUrl={event.imageUrl}
           />
           {event.seating === "seats" && !ticket.seatLabel && (
             <p className="text-center text-sm text-muted-foreground">{mayChoose ? "Elige tu lugar en el plano de abajo." : "El personal te asignará un lugar."}</p>

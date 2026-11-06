@@ -8,6 +8,15 @@ import {
   AlignEndVertical,
   AlignStartHorizontal,
   AlignStartVertical,
+  Armchair,
+  CircleDot,
+  Columns3,
+  Compass,
+  ListOrdered,
+  MoveHorizontal,
+  MoveVertical,
+  Spline,
+  TrendingUp,
   Box,
   Copy,
   CopyPlus,
@@ -46,6 +55,7 @@ import { Slider } from "@/components/ui/slider"
 import { Attachment } from "@/components/base/attachment"
 import { FormCombobox } from "@/components/base/form-combobox"
 import { InputGroupField } from "@/components/base/input-group-field"
+import { NumberField } from "@/components/base/number-field"
 import { SwitchField } from "@/components/base/switch-field"
 import { notify } from "@/lib/notify"
 import { swalConfirm } from "@/lib/swal"
@@ -1033,10 +1043,10 @@ export function VenueDesigner({ layout, onLayoutChange, planWidth, planHeight, o
                       <Slider min={5} max={100} step={5} value={[layout.background.opacity]} onValueChange={([v]) => patchBackground({ opacity: v })} />
                     </div>
                     <div className="grid grid-cols-2 gap-2">
-                      <InputGroupField label="Posición X" inputMode="numeric" value={String(layout.background.x)} onChange={(e) => patchBackground({ x: numeric(e.target.value, true) })} />
-                      <InputGroupField label="Posición Y" inputMode="numeric" value={String(layout.background.y)} onChange={(e) => patchBackground({ y: numeric(e.target.value, true) })} />
-                      <InputGroupField label="Ancho" inputMode="numeric" value={String(layout.background.w)} onChange={(e) => patchBackground({ w: Math.max(20, numeric(e.target.value)) })} />
-                      <InputGroupField label="Alto" inputMode="numeric" value={String(layout.background.h)} onChange={(e) => patchBackground({ h: Math.max(20, numeric(e.target.value)) })} />
+                      <NumberField icon={MoveHorizontal} min={-4000} max={4000} step={10} label="Posición X" value={layout.background.x} onChange={(v) => patchBackground({ x: v })} />
+                      <NumberField icon={MoveVertical} min={-4000} max={4000} step={10} label="Posición Y" value={layout.background.y} onChange={(v) => patchBackground({ y: v })} />
+                      <NumberField icon={MoveHorizontal} min={20} max={4000} step={10} label="Ancho" value={layout.background.w} onChange={(v) => patchBackground({ w: Math.max(20, v) })} />
+                      <NumberField icon={MoveVertical} min={20} max={4000} step={10} label="Alto" value={layout.background.h} onChange={(v) => patchBackground({ h: Math.max(20, v) })} />
                     </div>
                     <Button size="sm" variant="outline" onClick={() => patchBackground({ x: 0, y: 0, w: planWidth, h: planHeight })}>
                       <ImageIcon className="size-4" /> Ajustar al plano
@@ -1152,8 +1162,8 @@ function PropsPanel({
         <p className="text-xs text-muted-foreground">Selecciona algo del plano para ver sus propiedades. Tocar una fila selecciona toda su sección.</p>
         <p className="text-xs font-semibold">Tamaño del plano</p>
         <div className="grid grid-cols-2 gap-2">
-          <InputGroupField label="Ancho" inputMode="numeric" value={String(planWidth)} disabled={!canEdit} onChange={(e) => onPlanSize(clamp(numeric(e.target.value), 200, 4000), planHeight)} />
-          <InputGroupField label="Alto" inputMode="numeric" value={String(planHeight)} disabled={!canEdit} onChange={(e) => onPlanSize(planWidth, clamp(numeric(e.target.value), 200, 4000))} />
+          <NumberField icon={MoveHorizontal} min={200} max={4000} step={50} label="Ancho" value={planWidth} disabled={!canEdit} onChange={(v) => onPlanSize(clamp(v, 200, 4000), planHeight)} />
+          <NumberField icon={MoveVertical} min={200} max={4000} step={50} label="Alto" value={planHeight} disabled={!canEdit} onChange={(v) => onPlanSize(planWidth, clamp(v, 200, 4000))} />
         </div>
         <ul className="space-y-1 text-xs text-muted-foreground">
           <li>Alt + arrastrar duplica lo seleccionado.</li>
@@ -1192,10 +1202,10 @@ function PropsPanel({
       {selected.length === 1 && first.type === "row" && (
         <div className="space-y-2">
           <div className="grid grid-cols-2 gap-2">
-            <InputGroupField label="Fila" value={first.rowLabel} maxLength={4} disabled={!canEdit} onChange={(e) => patch((x) => ({ ...x, rowLabel: e.target.value.replace(/[^A-Za-z0-9]/g, "").toUpperCase() || "A" }) as LayoutElement)} />
+            <InputGroupField leftIcon={<Rows3 className="size-4" />} label="Fila" value={first.rowLabel} maxLength={4} disabled={!canEdit} onChange={(e) => patch((x) => ({ ...x, rowLabel: e.target.value.replace(/[^A-Za-z0-9]/g, "").toUpperCase() || "A" }) as LayoutElement)} />
             <InputGroupField label="Prefijo del código" value={first.prefix} maxLength={6} disabled={!canEdit} onChange={(e) => patch((x) => ({ ...x, prefix: e.target.value.replace(/[^A-Za-z0-9]/g, "").toUpperCase() }) as LayoutElement)} />
-            <InputGroupField label="Asientos" inputMode="numeric" value={String(first.seats)} disabled={!canEdit} onChange={(e) => num((n) => ({ seats: n }), 1, LIMITS.rowSeats)(e.target.value)} />
-            <InputGroupField label="Empieza en" inputMode="numeric" value={String(first.startNo)} disabled={!canEdit} onChange={(e) => num((n) => ({ startNo: n }), 0, 999)(e.target.value)} />
+            <NumberField icon={Armchair} min={1} max={LIMITS.rowSeats} step={1} label="Asientos" value={first.seats} disabled={!canEdit} onChange={(v) => num((n) => ({ seats: n }), 1, LIMITS.rowSeats)(String(v))} />
+            <NumberField icon={ListOrdered} min={0} max={999} step={1} label="Empieza en" value={first.startNo} disabled={!canEdit} onChange={(v) => num((n) => ({ startNo: n }), 0, 999)(String(v))} />
           </div>
           <div className="space-y-1.5">
             <p className="text-xs font-medium">Curva · {first.bend}</p>
@@ -1210,7 +1220,7 @@ function PropsPanel({
       )}
       {selected.length > 1 && rows.length > 1 && (
         <div className="space-y-2">
-          <InputGroupField label="Asientos por fila (todas)" inputMode="numeric" placeholder="—" value="" disabled={!canEdit} onChange={(e) => e.target.value && patch((x) => (x.type === "row" ? { ...x, seats: clamp(numeric(e.target.value), 1, LIMITS.rowSeats) } : x))} />
+          <NumberField icon={Armchair} label="Asientos por fila (todas)" min={1} max={LIMITS.rowSeats} value={rows[0]?.seats ?? 1} disabled={!canEdit} onChange={(v) => patch((x) => (x.type === "row" ? { ...x, seats: clamp(v, 1, LIMITS.rowSeats) } : x))} />
           <Button size="sm" variant="outline" disabled={!canEdit} onClick={renumberRows}>
             Nombrar filas A, B, C… de adelante hacia atrás
           </Button>
@@ -1222,16 +1232,16 @@ function PropsPanel({
       )}
       {selected.length === 1 && first.type === "block" && (
         <div className="grid grid-cols-2 gap-2">
-          <InputGroupField label="Filas" inputMode="numeric" value={String(first.rows)} disabled={!canEdit} onChange={(e) => num((n) => ({ rows: n }), 1, LIMITS.rows)(e.target.value)} />
-          <InputGroupField label="Asientos por fila" inputMode="numeric" value={String(first.cols)} disabled={!canEdit} onChange={(e) => num((n) => ({ cols: n }), 1, LIMITS.cols)(e.target.value)} />
+          <NumberField icon={Rows3} min={1} max={LIMITS.rows} step={1} label="Filas" value={first.rows} disabled={!canEdit} onChange={(v) => num((n) => ({ rows: n }), 1, LIMITS.rows)(String(v))} />
+          <NumberField icon={Armchair} min={1} max={LIMITS.cols} step={1} label="Asientos por fila" value={first.cols} disabled={!canEdit} onChange={(v) => num((n) => ({ cols: n }), 1, LIMITS.cols)(String(v))} />
           <InputGroupField label="Prefijo del código" value={first.prefix} maxLength={6} disabled={!canEdit} onChange={(e) => patch((x) => ({ ...x, prefix: e.target.value.replace(/[^A-Za-z0-9]/g, "").toUpperCase() }) as LayoutElement)} />
-          <InputGroupField label="Giro (°)" inputMode="numeric" value={String(first.rotation ?? 0)} disabled={!canEdit} onChange={(e) => patch((x) => ({ ...x, rotation: clamp(numeric(e.target.value, true), -360, 360) || undefined }) as LayoutElement)} />
+          <NumberField icon={RotateCw} min={-360} max={360} step={15} label="Giro (°)" value={first.rotation ?? 0} disabled={!canEdit} onChange={(v) => patch((x) => ({ ...x, rotation: clamp(v, -360, 360) || undefined }) as LayoutElement)} />
         </div>
       )}
       {selected.length === 1 && first.type === "table" && (
         <div className="grid grid-cols-2 gap-2">
-          <InputGroupField label="Código de mesa" value={first.code} maxLength={6} disabled={!canEdit} onChange={(e) => patch((x) => ({ ...x, code: e.target.value.replace(/[^A-Za-z0-9]/g, "").toUpperCase() }) as LayoutElement)} />
-          <InputGroupField label="Lugares" inputMode="numeric" value={String(first.seats)} disabled={!canEdit} onChange={(e) => num((n) => ({ seats: n }), 1, LIMITS.tableSeats)(e.target.value)} />
+          <InputGroupField leftIcon={<Table2 className="size-4" />} label="Código de mesa" value={first.code} maxLength={6} disabled={!canEdit} onChange={(e) => patch((x) => ({ ...x, code: e.target.value.replace(/[^A-Za-z0-9]/g, "").toUpperCase() }) as LayoutElement)} />
+          <NumberField icon={Armchair} min={1} max={LIMITS.tableSeats} step={1} label="Lugares" value={first.seats} disabled={!canEdit} onChange={(v) => num((n) => ({ seats: n }), 1, LIMITS.tableSeats)(String(v))} />
           <div className="col-span-2">
             <FormCombobox
               label="Forma"
@@ -1249,9 +1259,9 @@ function PropsPanel({
       )}
       {selected.length === 1 && first.type !== "row" && first.type !== "block" && first.type !== "table" && (
         <div className="grid grid-cols-2 gap-2">
-          <InputGroupField label="Ancho" inputMode="numeric" value={String(first.w)} disabled={!canEdit} onChange={(e) => num((n) => ({ w: n }), 10, 4000)(e.target.value)} />
-          <InputGroupField label="Alto" inputMode="numeric" value={String(first.h)} disabled={!canEdit} onChange={(e) => num((n) => ({ h: n }), 10, 4000)(e.target.value)} />
-          <InputGroupField label="Giro (°)" inputMode="numeric" value={String(first.rotation ?? 0)} disabled={!canEdit} onChange={(e) => patch((x) => ({ ...x, rotation: clamp(numeric(e.target.value, true), -360, 360) || undefined }) as LayoutElement)} />
+          <NumberField icon={MoveHorizontal} min={10} max={4000} step={10} label="Ancho" value={first.w} disabled={!canEdit} onChange={(v) => num((n) => ({ w: n }), 10, 4000)(String(v))} />
+          <NumberField icon={MoveVertical} min={10} max={4000} step={10} label="Alto" value={first.h} disabled={!canEdit} onChange={(v) => num((n) => ({ h: n }), 10, 4000)(String(v))} />
+          <NumberField icon={RotateCw} min={-360} max={360} step={15} label="Giro (°)" value={first.rotation ?? 0} disabled={!canEdit} onChange={(v) => patch((x) => ({ ...x, rotation: clamp(v, -360, 360) || undefined }) as LayoutElement)} />
         </div>
       )}
     </div>
@@ -1484,13 +1494,13 @@ function SectionWizard({
           <InputGroupField label="Nombre de la sección" value={name} maxLength={40} onChange={(e) => setName(e.target.value)} />
           <FormCombobox label="Zona" options={sectionOptions} value={zone} onChange={setZone} placeholder="Sin zona" clearable={false} />
           <div className="grid grid-cols-2 gap-2">
-            <InputGroupField label="Filas" inputMode="numeric" value={String(rows)} onChange={(e) => setRows(clamp(numeric(e.target.value), 1, LIMITS.rows))} />
-            {!curved && <InputGroupField label="Asientos por fila" inputMode="numeric" value={String(per)} onChange={(e) => setPer(clamp(numeric(e.target.value), 1, LIMITS.rowSeats))} />}
-            <InputGroupField label={curved ? "Más por fila (extra)" : "Crece por fila"} inputMode="numeric" value={String(growth)} onChange={(e) => setGrowth(clamp(numeric(e.target.value, true), -20, 20))} />
-            {!curved && <InputGroupField label="Curva de filas" inputMode="numeric" value={String(bend)} onChange={(e) => setBend(clamp(numeric(e.target.value, true), -200, 200))} />}
-            {curved && <InputGroupField label="Radio interior" inputMode="numeric" value={String(radius)} onChange={(e) => setRadius(clamp(numeric(e.target.value), 60, 1500))} />}
-            {curved && <InputGroupField label="Ángulo inicial" inputMode="numeric" value={String(start)} onChange={(e) => setStart(clamp(numeric(e.target.value, true), -360, 360))} />}
-            {curved && <InputGroupField label="Ángulo final" inputMode="numeric" value={String(end)} onChange={(e) => setEnd(clamp(numeric(e.target.value, true), -360, 720))} />}
+            <NumberField icon={Rows3} min={1} max={LIMITS.rows} step={1} label="Filas" value={rows} onChange={(v) => setRows(clamp(v, 1, LIMITS.rows))} />
+            {!curved && <NumberField icon={Armchair} min={1} max={LIMITS.rowSeats} step={1} label="Asientos por fila" value={per} onChange={(v) => setPer(clamp(v, 1, LIMITS.rowSeats))} />}
+            <NumberField icon={TrendingUp} min={0} max={20} step={1} label={curved ? "Más por fila (extra)" : "Crece por fila"} value={growth} onChange={(v) => setGrowth(clamp(v, -20, 20))} />
+            {!curved && <NumberField icon={Spline} min={-200} max={200} step={5} label="Curva de filas" value={bend} onChange={(v) => setBend(clamp(v, -200, 200))} />}
+            {curved && <NumberField icon={CircleDot} min={60} max={1500} step={10} label="Radio interior" value={radius} onChange={(v) => setRadius(clamp(v, 60, 1500))} />}
+            {curved && <NumberField icon={Compass} min={-360} max={360} step={5} label="Ángulo inicial" value={start} onChange={(v) => setStart(clamp(v, -360, 360))} />}
+            {curved && <NumberField icon={Compass} min={-360} max={720} step={5} label="Ángulo final" value={end} onChange={(v) => setEnd(clamp(v, -360, 720))} />}
           </div>
           <SwitchField label="Numerar las filas 1, 2, 3…" description="Si no, se nombran A, B, C…" checked={numbers} onCheckedChange={setNumbers} />
           {curved && <p className="text-xs text-muted-foreground">{stage ? "Se centra en tu escenario." : "No hay escenario: se centra en la vista actual."} Ángulos: 90° = abajo del centro, 0° = derecha.</p>}
@@ -1540,13 +1550,13 @@ function TemplateWizard({ open, onClose, planWidth, planHeight, onApply }: { ope
             ))}
           </ul>
           <div className="grid grid-cols-2 gap-2">
-            <InputGroupField label="Zonas (niveles)" inputMode="numeric" value={String(opts.levels)} onChange={(e) => set({ levels: clamp(numeric(e.target.value), 1, 4) })} />
-            {!tables && <InputGroupField label="Filas en total" inputMode="numeric" value={String(opts.rows)} onChange={(e) => set({ rows: clamp(numeric(e.target.value), 1, 40) })} />}
-            {!tables && opts.kind === "theater" && <InputGroupField label="Asientos por fila" inputMode="numeric" value={String(opts.seatsPerRow)} onChange={(e) => set({ seatsPerRow: clamp(numeric(e.target.value), 2, 40) })} />}
-            {!tables && opts.kind === "theater" && <InputGroupField label="Columnas" inputMode="numeric" value={String(opts.columns)} onChange={(e) => set({ columns: clamp(numeric(e.target.value), 1, 4) })} />}
-            {tables && <InputGroupField label="Mesas a lo ancho" inputMode="numeric" value={String(opts.tablesAcross)} onChange={(e) => set({ tablesAcross: clamp(numeric(e.target.value), 1, 10) })} />}
-            {tables && <InputGroupField label="Mesas a lo largo" inputMode="numeric" value={String(opts.tablesDown)} onChange={(e) => set({ tablesDown: clamp(numeric(e.target.value), 1, 10) })} />}
-            {tables && <InputGroupField label="Lugares por mesa" inputMode="numeric" value={String(opts.tableSeats)} onChange={(e) => set({ tableSeats: clamp(numeric(e.target.value), 2, LIMITS.tableSeats) })} />}
+            <NumberField icon={Layers} min={1} max={4} step={1} label="Zonas (niveles)" value={opts.levels} onChange={(v) => set({ levels: clamp(v, 1, 4) })} />
+            {!tables && <NumberField icon={Rows3} min={1} max={40} step={1} label="Filas en total" value={opts.rows} onChange={(v) => set({ rows: clamp(v, 1, 40) })} />}
+            {!tables && opts.kind === "theater" && <NumberField icon={Armchair} min={2} max={40} step={1} label="Asientos por fila" value={opts.seatsPerRow} onChange={(v) => set({ seatsPerRow: clamp(v, 2, 40) })} />}
+            {!tables && opts.kind === "theater" && <NumberField icon={Columns3} min={1} max={4} step={1} label="Columnas" value={opts.columns} onChange={(v) => set({ columns: clamp(v, 1, 4) })} />}
+            {tables && <NumberField icon={Table2} min={1} max={10} step={1} label="Mesas a lo ancho" value={opts.tablesAcross} onChange={(v) => set({ tablesAcross: clamp(v, 1, 10) })} />}
+            {tables && <NumberField icon={Table2} min={1} max={10} step={1} label="Mesas a lo largo" value={opts.tablesDown} onChange={(v) => set({ tablesDown: clamp(v, 1, 10) })} />}
+            {tables && <NumberField icon={Armchair} min={2} max={LIMITS.tableSeats} step={1} label="Lugares por mesa" value={opts.tableSeats} onChange={(v) => set({ tableSeats: clamp(v, 2, LIMITS.tableSeats) })} />}
           </div>
         </div>
         <div className="min-w-0 space-y-2">
@@ -1589,9 +1599,9 @@ function RepeatDialog({ open, onClose, onApply, defaultStep }: { open: boolean; 
       }
     >
       <div className="grid grid-cols-3 gap-3">
-        <InputGroupField label="Copias" inputMode="numeric" value={String(n)} onChange={(e) => setN(clamp(numeric(e.target.value), 1, 20))} />
-        <InputGroupField label="Separación X" inputMode="numeric" value={String(dx)} onChange={(e) => setDx(clamp(numeric(e.target.value, true), -2000, 2000))} />
-        <InputGroupField label="Separación Y" inputMode="numeric" value={String(dy)} onChange={(e) => setDy(clamp(numeric(e.target.value, true), -2000, 2000))} />
+        <NumberField icon={Copy} min={1} max={20} step={1} label="Copias" value={n} onChange={(v) => setN(clamp(v, 1, 20))} />
+        <NumberField icon={MoveHorizontal} min={-2000} max={2000} step={10} label="Separación X" value={dx} onChange={(v) => setDx(clamp(v, -2000, 2000))} />
+        <NumberField icon={MoveVertical} min={-2000} max={2000} step={10} label="Separación Y" value={dy} onChange={(v) => setDy(clamp(v, -2000, 2000))} />
       </div>
     </DialogComponent>
   )

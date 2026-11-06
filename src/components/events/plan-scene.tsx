@@ -1,7 +1,7 @@
 "use client"
 
 import { memo, useMemo } from "react"
-import { SEAT_PITCH, TABLE_RADIUS, rowControl, type BlockElement, type Layout, type LayoutElement, type RowElement, type Seat } from "@/lib/events/rules"
+import { SEAT_PITCH, TABLE_RADIUS, rowControl, tableHalf, type BlockElement, type Layout, type LayoutElement, type RowElement, type Seat } from "@/lib/events/rules"
 
 // Dibujo del plano de un área (fondo, escenario, mesas, filas y asientos). Es solo SVG:
 // el zoom, el desplazamiento y los gestos los pone quien lo usa (SeatMap o el editor).
@@ -134,10 +134,11 @@ export const PlanScene = memo(function PlanScene({
           )
         }
         if (el.type === "table") {
+          const half = tableHalf(el)
           return (
             <g key={el.id} data-el={el.id} {...handlers} style={onElementPointerDown ? { cursor: "grab" } : undefined}>
               {el.shape === "rect" ? (
-                <rect x={el.x - TABLE_RADIUS} y={el.y - TABLE_RADIUS * 0.7} width={TABLE_RADIUS * 2} height={TABLE_RADIUS * 1.4} rx={8} className="fill-card" stroke={sel ? "var(--primary)" : "#94a3b8"} strokeWidth={sel ? 3 : 1.5} />
+                <rect x={el.x - half.a} y={el.y - half.b} width={half.a * 2} height={half.b * 2} rx={8} className="fill-card" stroke={sel ? "var(--primary)" : "#94a3b8"} strokeWidth={sel ? 3 : 1.5} />
               ) : (
                 <circle cx={el.x} cy={el.y} r={TABLE_RADIUS} className="fill-card" stroke={sel ? "var(--primary)" : "#94a3b8"} strokeWidth={sel ? 3 : 1.5} />
               )}

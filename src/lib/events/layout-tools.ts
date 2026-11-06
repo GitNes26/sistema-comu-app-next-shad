@@ -11,6 +11,7 @@ import {
   rowControl,
   rowLength,
   rowName,
+  tableHalf,
   type DecorElement,
   type Layout,
   type LayoutElement,
@@ -47,8 +48,8 @@ export function elementBox(el: LayoutElement, seats?: Seat[]): Box {
     }
   }
   if (el.type === "table") {
-    const r = TABLE_RADIUS + 26
-    return { minX: el.x - r, minY: el.y - r, maxX: el.x + r, maxY: el.y + r }
+    const h = tableHalf(el)
+    return { minX: el.x - h.a - 26, minY: el.y - h.b - 26, maxX: el.x + h.a + 26, maxY: el.y + h.b + 26 }
   }
   const rot = rad(el.rotation ?? 0)
   const cx = el.x + el.w / 2

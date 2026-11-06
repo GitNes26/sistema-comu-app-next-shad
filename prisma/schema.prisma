@@ -1737,6 +1737,8 @@ model EventItineraryItem {
   location            String?
   notes               String?       @db.Text
   sortOrder           Int           @default(0)
+  /// true = lo ve el público; false = solo organizadores y servidores del evento.
+  isPublic            Boolean       @default(true)
 
   organization Organization         @relation(fields: [organizationId], references: [id])
   event        Event                @relation(fields: [eventId], references: [id], onDelete: Cascade)

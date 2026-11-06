@@ -350,7 +350,7 @@ export interface EventDetailDto {
   tickets: TicketDto[] | null
   myTicket: { id: string; code: string; shortCode: string | null; status: "reserved" | "paid" | "cancelled"; seatCode: string | null; seatLabel: string | null; balance: number; checkedInAt: string | null; holderName: string; price: number } | null
   canRegister: boolean
-  access: { canManage: boolean; canCheckin: boolean; mayChooseSeat: boolean; staffMayAssign: boolean }
+  access: { canManage: boolean; canCheckin: boolean; mayChooseSeat: boolean; staffMayAssign: boolean; /** Ve lo interno: organizadores, personal y servidores asignados. */ internalView: boolean }
 }
 
 export interface ExpenseDto {
@@ -374,6 +374,8 @@ export interface ItineraryDto {
   speakerName: string | null
   location: string | null
   notes: string | null
+  /** Visible para el público (si no, solo organizadores y servidores). */
+  isPublic: boolean
 }
 export interface ChecklistDto {
   id: string
@@ -400,6 +402,11 @@ export async function getEvent(actor: Actor, eventId: string): Promise<EventDeta
     prisma.eventItineraryItem.findMany({ where: { eventId }, orderBy: [{ startsAt: "asc" }, { sortOrder: "asc" }] }),
     prisma.eventChecklistItem.findMany({ where: { eventId }, orderBy: [{ sortOrder: "asc" }, { title: "asc" }] }),
   ])
+  // Servidores del evento (asignados o confirmados): ven lo interno igual que los organizadores.
+  const isServer = ctx.memberId
+    ? (await prisma.eventStaffAssignment.count({ where: { organizationId: actor.organizationId, memberId: ctx.memberId, status: { in: ["assigned", "confirmed"] }, request: { eventId } } })) > 0
+    : false
+  const internalView = a.canManage || a.canCheckin || staff || isServer
   const mine = ctx.memberId ? tickets.find((t) => t.memberId === ctx.memberId && t.status !== "cancelled") : undefined
   if (!staff && !a.canManage) {
     const visible = e.status !== "draft" && (audienceAllows(e.audience, ctx, allowedMinistryIds) || Boolean(mine))
@@ -482,7 +489,9 @@ export async function getEvent(actor: Actor, eventId: string): Promise<EventDeta
             mySeat: mine?.seatCode ?? null,
           }
         : null,
-    itinerary: itinerary.map((i) => ({
+    itinerary: itinerary
+      .filter((i) => internalView || i.isPublic)
+      .map((i) => ({
       id: i.id,
       startsAt: i.startsAt.toISOString(),
       durationMin: i.durationMin,
@@ -490,7 +499,8 @@ export async function getEvent(actor: Actor, eventId: string): Promise<EventDeta
       title: i.title,
       speakerName: i.speakerName,
       location: i.location,
-      notes: i.notes,
+      notes: internalView ? i.notes : null,
+      isPublic: i.isPublic,
     })),
     // El checklist de material es interno: solo lo ve quien gestiona.
     checklist: a.canManage ? checklist.map((c) => ({ id: c.id, itineraryId: c.itineraryId, title: c.title, isDone: c.isDone })) : [],
@@ -527,7 +537,7 @@ export async function getEvent(actor: Actor, eventId: string): Promise<EventDeta
       !mine &&
       (cap === null || active.length < cap) &&
       audienceAllows(e.audience, ctx, allowedMinistryIds),
-    access: { canManage: a.canManage, canCheckin: a.canCheckin, mayChooseSeat: mayChoose, staffMayAssign: staffMayAssign(e.seating, e.seatSelection) },
+    access: { canManage: a.canManage, canCheckin: a.canCheckin, mayChooseSeat: mayChoose, staffMayAssign: staffMayAssign(e.seating, e.seatSelection), internalView },
   }
 }
 
@@ -736,7 +746,7 @@ export async function saveItineraryItem(actor: Actor, eventId: string, id: strin
   const durationMin = Number(input.durationMin)
   if (!Number.isInteger(durationMin) || durationMin < 1 || durationMin > 24 * 60) throw new CrudError("Duración inválida (minutos)", 400, "durationMin")
   const kind = ["activity", "clinic", "break", "meal"].includes(String(input.kind)) ? (String(input.kind) as "activity" | "clinic" | "break" | "meal") : "activity"
-  const data = { title, startsAt, durationMin, kind, speakerName: text(input.speakerName, 150), location: text(input.location, 150), notes: text(input.notes, 1000) }
+  const data = { title, startsAt, durationMin, kind, speakerName: text(input.speakerName, 150), location: text(input.location, 150), notes: text(input.notes, 1000), isPublic: input.isPublic !== false }
   if (id) {
     const r = await prisma.eventItineraryItem.updateMany({ where: { id, eventId, organizationId: actor.organizationId }, data })
     if (r.count === 0) throw new CrudError("Actividad no encontrada", 404)

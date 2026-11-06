@@ -114,6 +114,35 @@ export const LIMITS = { elements: 400, seats: 4000, rows: 60, cols: 60, tableSea
 
 const rad = (d: number) => (d * Math.PI) / 180
 
+/** Medio ancho y medio alto de la mesa: la redonda es un círculo; la rectangular crece con sus lugares. */
+export function tableHalf(el: Pick<TableElement, "shape" | "seats">): { a: number; b: number } {
+  if (el.shape === "rect") return { a: Math.max(TABLE_RADIUS, (Math.ceil(el.seats / 2) * SEAT_PITCH) / 2), b: TABLE_RADIUS * 0.7 }
+  return { a: TABLE_RADIUS, b: TABLE_RADIUS }
+}
+
+/** Posición y giro del lugar `i` de una mesa: en círculo, o repartidos por el contorno del rectángulo. */
+export function tableSeatPos(el: Pick<TableElement, "x" | "y" | "shape" | "seats">, i: number): { x: number; y: number; angle: number } {
+  if (el.shape !== "rect") {
+    const angle = (2 * Math.PI * i) / el.seats - Math.PI / 2
+    return { x: el.x + Math.cos(angle) * (TABLE_RADIUS + 14), y: el.y + Math.sin(angle) * (TABLE_RADIUS + 14), angle: (angle * 180) / Math.PI + 90 }
+  }
+  // Rectángulo: los lugares se reparten a lo largo del contorno, a 14 de la orilla.
+  const { a, b } = tableHalf(el)
+  const w = 2 * (a + 14)
+  const h = 2 * (b + 14)
+  const per = 2 * (w + h)
+  let d = ((i + 0.5) / el.seats) * per
+  // Empieza al centro del lado de arriba y avanza en sentido horario.
+  d = (d + w / 2) % per
+  if (d < w) return { x: el.x - w / 2 + d, y: el.y - h / 2, angle: 180 }
+  d -= w
+  if (d < h) return { x: el.x + w / 2, y: el.y - h / 2 + d, angle: 270 }
+  d -= h
+  if (d < w) return { x: el.x + w / 2 - d, y: el.y + h / 2, angle: 0 }
+  d -= w
+  return { x: el.x - w / 2, y: el.y + h / 2 - d, angle: 90 }
+}
+
 /** Centro de un bloque (para girarlo). */
 export const blockCenter = (el: BlockElement) => ({ x: el.x + ((el.cols - 1) * SEAT_PITCH) / 2, y: el.y + ((el.rows - 1) * SEAT_PITCH) / 2 })
 
@@ -237,19 +266,19 @@ export function computeSeats(layout: Layout): Seat[] {
       })
     } else if (el.type === "table") {
       for (let i = 0; i < el.seats; i++) {
-        const angle = (2 * Math.PI * i) / el.seats - Math.PI / 2
+        const pos = tableSeatPos(el, i)
         const code = `${el.code}-${i + 1}`
         seats.push({
           code,
-          x: el.x + Math.cos(angle) * (TABLE_RADIUS + 14),
-          y: el.y + Math.sin(angle) * (TABLE_RADIUS + 14),
+          x: Math.round(pos.x * 10) / 10,
+          y: Math.round(pos.y * 10) / 10,
           sectionId: zone(code, el.sectionId),
           elementId: el.id,
           label: `Mesa ${el.code} · lugar ${i + 1}`,
           rowName: `Mesa ${el.code}`,
           seatNo: i + 1,
           rowKey: `table:${el.id}`,
-          angle: (angle * 180) / Math.PI + 90,
+          angle: pos.angle,
         })
       }
     }

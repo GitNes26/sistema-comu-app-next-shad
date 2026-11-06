@@ -30,6 +30,10 @@ Formato: `MAJOR.MINOR.PATCH.REVISION` (X.X.X.X)
 
 ## Historial
 
+### [0.35.0.0] — 2026-11-06
+- **Tipo:** `feat` (Minor)
+- feat: mesas rectangulares con lugares por el contorno, campos numericos con botones e iconos, impresion de flyer, informacion, resumen, itinerario publico o interno y plano, boleto descargable con diseno completo y migracion de visibilidad del itinerario
+
 ### [0.34.0.0] — 2026-11-03
 - **Tipo:** `feat` (Minor)
 - feat: diseñador de áreas con filas libres, zonas y plantillas, mapa por zonas para elegir lugar, mejor lugar disponible, entrada por QR con campo OTP de código corto y migración shortCode

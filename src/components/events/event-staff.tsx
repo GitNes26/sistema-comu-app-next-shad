@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { DialogComponent } from "@/components/ui/dialog"
 import { FormCombobox } from "@/components/base/form-combobox"
 import { InputGroupField } from "@/components/base/input-group-field"
+import { NumberField } from "@/components/base/number-field"
 import { StatusPill } from "@/components/base/status-pill"
 import { EmptyState } from "@/components/shared/empty-state"
 import { notify } from "@/lib/notify"
@@ -195,7 +196,7 @@ function RequestDialog({ open, eventId, taken, onClose, onSaved }: { open: boole
           onChange={setMinistryId}
           clearable={false}
         />
-        <InputGroupField label="¿Cuántos servidores?" inputMode="numeric" value={quantity} onChange={(e) => setQuantity(e.target.value.replace(/\D/g, ""))} />
+        <NumberField label="¿Cuántos servidores?" min={1} max={500} value={Number(quantity) || 1} onChange={(v) => setQuantity(String(v))} />
         <TextareaField id="staff-notes" label="¿Qué harán? (opcional)" rows={3} value={notes} maxLength={300} onChange={(e) => setNotes(e.target.value)} placeholder="Ujieres en la puerta principal desde las 8:30" />
       </div>
     </DialogComponent>

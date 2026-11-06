@@ -34,8 +34,9 @@ export function MyEvents() {
         const d = new Date(e.startsAt)
         return (
           <li key={e.id}>
-            <Link href={`/mi/eventos/${e.id}`} className="press group flex h-full gap-3 overflow-hidden rounded-2xl border bg-card p-3 transition-colors hover:border-primary/40">
-              <span className="flex w-14 shrink-0 flex-col items-center justify-center rounded-xl bg-primary/10 py-2 text-primary">
+            <Link href={`/mi/eventos/${e.id}`} className="press group relative flex h-full gap-3 overflow-hidden rounded-2xl border bg-card p-3 pl-4 transition-colors hover:border-primary/40">
+              <span aria-hidden className="absolute top-1/2 -left-2.5 size-5 -translate-y-1/2 rounded-full border bg-background" />
+              <span className="flex w-14 shrink-0 flex-col items-center justify-center rounded-xl border-r border-dashed bg-primary/10 py-2 text-primary">
                 <span className="font-heading text-2xl leading-none font-semibold tabular-nums">{d.getDate()}</span>
                 <span className="text-[0.7rem] font-semibold tracking-wide uppercase">{d.toLocaleDateString("es-MX", { month: "short" }).replace(".", "")}</span>
               </span>

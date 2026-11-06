@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react"
 import QRCode from "qrcode"
-import { CalendarDays, Clock, Download, Link2, MapPin, QrCode, Share2, Ticket, User2 } from "lucide-react"
+import { CalendarDays, Clock, Download, Link2, Loader2, MapPin, QrCode, Share2, Ticket, User2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { parseSeatLabel } from "@/lib/events/rules"
+import { downloadTicketPng } from "@/lib/events/ticket-image"
 
 // Boleto: cabecera con el evento, perforación con muescas y, abajo, lugar (fila y asiento),
 // estado, importe y acciones (compartir, ver el QR, descargarlo). Pensado para el teléfono.
@@ -76,12 +77,32 @@ export function TicketCard(t: TicketCardProps) {
       /* cancelado por la persona */
     }
   }
-  const download = () => {
-    if (!qr) return
-    const a = document.createElement("a")
-    a.href = qr
-    a.download = `boleto-${folio}.png`
-    a.click()
+  const [downloading, setDownloading] = useState(false)
+  // Descarga el boleto completo (diseño, datos y QR), no solo el código.
+  const download = async () => {
+    setDownloading(true)
+    try {
+      await downloadTicketPng({
+        eventName: t.eventName,
+        kind: t.kind,
+        groupName: t.groupName,
+        topic: t.topic,
+        startsAt: t.startsAt,
+        endsAt: t.endsAt,
+        venue: t.venue,
+        seat: t.seat,
+        holder: t.holder,
+        code: t.code,
+        folio,
+        price: t.price,
+        status: t.status,
+        balance: t.balance,
+        checkedInAt: t.checkedInAt,
+        imageUrl: t.imageUrl,
+      })
+    } finally {
+      setDownloading(false)
+    }
   }
 
   return (
@@ -171,8 +192,8 @@ export function TicketCard(t: TicketCardProps) {
             >
               <QrCode className="size-5" />
             </button>
-            <button type="button" onClick={download} disabled={!qr} aria-label="Descargar código QR" className="press grid size-10 place-items-center rounded-full hover:bg-muted disabled:opacity-40">
-              <Download className="size-5" />
+            <button type="button" onClick={() => void download()} disabled={downloading} aria-label="Descargar boleto" title="Descargar boleto" className="press grid size-10 place-items-center rounded-full hover:bg-muted disabled:opacity-40">
+              {downloading ? <Loader2 className="size-5 animate-spin" /> : <Download className="size-5" />}
             </button>
           </span>
         </div>

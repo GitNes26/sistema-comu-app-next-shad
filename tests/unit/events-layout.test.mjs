@@ -190,3 +190,25 @@ test("código corto de puerta: alfabeto sin confusiones, normaliza lo que se esc
   assert.equal(normalizeShortCode("K7M2Q"), null)
   assert.equal(normalizeShortCode(null), null)
 })
+
+test("mesa rectangular: los lugares se reparten por el contorno, sin amontonarse ni salirse de la forma circular", async () => {
+  const { computeSeats: seatsOf, tableHalf } = await import("../../src/lib/events/rules.ts")
+  const mk = (shape, seats) => ({ sections: [], blocked: [], elements: [{ id: "t", type: "table", x: 300, y: 300, code: "M1", seats, shape }] })
+  const rect = seatsOf(mk("rect", 10))
+  assert.equal(rect.length, 10)
+  assert.equal(new Set(rect.map((s) => `${s.x},${s.y}`)).size, 10)
+  const { a, b } = tableHalf({ shape: "rect", seats: 10 })
+  // todos quedan fuera del rectángulo de la mesa y pegados a su orilla
+  for (const s of rect) {
+    const dx = Math.abs(s.x - 300)
+    const dy = Math.abs(s.y - 300)
+    assert.ok(dx >= a - 1 || dy >= b - 1, `asiento dentro de la mesa: ${s.x},${s.y}`)
+    assert.ok(dx <= a + 15 && dy <= b + 15, `asiento lejos de la mesa: ${s.x},${s.y}`)
+  }
+  // la redonda sigue en círculo
+  const round = seatsOf(mk("round", 8))
+  const radii = round.map((s) => Math.round(Math.hypot(s.x - 300, s.y - 300)))
+  assert.ok(radii.every((r) => r === radii[0]))
+  // más lugares → mesa más larga
+  assert.ok(tableHalf({ shape: "rect", seats: 16 }).a > tableHalf({ shape: "rect", seats: 6 }).a)
+})
