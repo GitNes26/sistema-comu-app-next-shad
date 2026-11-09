@@ -414,6 +414,8 @@ model AppSettings {
   borderRadius   Decimal  @default(0.75) @db.Decimal(3, 2)
   sidebarStyle   String   @default("full")
   surfaceTone    String   @default("subtle")
+  /// Nombres, descripciones y visibilidad de los niveles de la jerarquía eclesiástica (editables).
+  hierarchyLabels Json?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 

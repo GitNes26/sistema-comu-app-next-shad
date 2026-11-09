@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { useHierarchy } from "@/providers/hierarchy-provider"
 import {
   BookOpen,
   CalendarDays,
@@ -36,7 +37,6 @@ import { StatusPill } from "@/components/base"
 import { cn } from "@/lib/utils"
 import { MINISTRY_ROLE_LABEL } from "@/lib/ministries/rules"
 import {
-  HIERARCHY_OPTIONS,
   VISION_STAGE_OPTIONS,
 } from "@/components/admin/crud/crud-config"
 import type { MySpace } from "@/lib/mi/server"
@@ -58,9 +58,6 @@ const STAGE_HINT: Record<string, string> = {
     "Reuniones directas con el pastor; ahora te toca discipular a otros.",
 }
 
-const HIERARCHY_LABEL = Object.fromEntries(
-  HIERARCHY_OPTIONS.map((o) => [o.value, o.label])
-)
 
 const SOCIAL_LABEL: Record<string, string> = {
   facebook: "Facebook",
@@ -203,6 +200,7 @@ export function MySpaceView({
   space: MySpace
   firstName: string | null
 }) {
+  const hierarchyLabels = useHierarchy()
   const { member, church, stages, ministries } = space
   const currentIndex = member
     ? VISION_STAGE_OPTIONS.findIndex((s) => s.value === member.visionStage)
@@ -254,7 +252,7 @@ export function MySpaceView({
               {member && (
                 <span className="inline-flex items-center gap-1.5">
                   <UserRound className="size-4" />
-                  {HIERARCHY_LABEL[member.hierarchy] ?? member.hierarchy}
+                  {hierarchyLabels.labelOf(member.hierarchy)}
                 </span>
               )}
               {member?.locationName && (

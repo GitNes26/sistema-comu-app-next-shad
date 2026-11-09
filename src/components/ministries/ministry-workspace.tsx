@@ -1,6 +1,7 @@
 "use client"
 
 import { TextareaField } from "@/components/base/textarea-field"
+import { BrandMark } from "@/components/shared/brand-mark"
 import { useCallback, useEffect, useId, useMemo, useState } from "react"
 import Link from "next/link"
 import { Controller, useForm } from "react-hook-form"
@@ -204,9 +205,16 @@ export function MinistryWorkspace({
         </div>
         <CardContent className="space-y-3 p-5">
           <div className="flex flex-wrap items-start gap-3">
-            <span className="grid size-14 shrink-0 place-items-center rounded-3xl bg-primary/10 text-primary">
-              <HandHeart className="size-7" />
-            </span>
+            <BrandMark
+              names={[ministry.name, ministry.kind]}
+              size={64}
+              className="rounded-3xl"
+              fallback={
+                <span className="grid size-14 shrink-0 place-items-center rounded-3xl bg-primary/10 text-primary">
+                  <HandHeart className="size-7" />
+                </span>
+              }
+            />
             <div className="min-w-0 flex-1">
               <h1 className="font-heading text-xl font-semibold tracking-tight">{ministry.name}</h1>
               {ministry.parent && (

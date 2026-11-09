@@ -14,7 +14,8 @@ import {
 } from "recharts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AnimatedNumber } from "@/components/base/animated-number";
-import { VISION_STAGE_OPTIONS, HIERARCHY_OPTIONS } from "@/components/admin/crud/crud-config";
+import { useHierarchy } from "@/providers/hierarchy-provider";
+import { VISION_STAGE_OPTIONS } from "@/components/admin/crud/crud-config";
 import type { PanelSummary } from "@/lib/panel/server";
 
 // Panel de la iglesia: cifras que cambian decisiones. Los datos llegan del
@@ -23,7 +24,6 @@ import type { PanelSummary } from "@/lib/panel/server";
 const STAGE_LABEL = Object.fromEntries(VISION_STAGE_OPTIONS.map((o) => [o.value, o.label]));
 // Etiquetas cortas para el eje de la gráfica.
 const STAGE_SHORT: Record<string, string> = { encounter: "Encuentro", school: "Escuela" };
-const HIERARCHY_LABEL = Object.fromEntries(HIERARCHY_OPTIONS.map((o) => [o.value, o.label]));
 
 function MetricCard({
   label,
@@ -70,6 +70,7 @@ export function AdminDashboard({
   canViewMembers: boolean;
   canViewReports?: boolean;
 }) {
+  const hierarchyLabels = useHierarchy();
   const stageData = summary.byStage.map((s) => ({ name: STAGE_SHORT[s.stage] ?? STAGE_LABEL[s.stage] ?? s.stage, value: s.count }));
   const maxStage = Math.max(1, ...stageData.map((s) => s.value));
 
@@ -179,7 +180,7 @@ export function AdminDashboard({
               {summary.byHierarchy.length === 0 && <li className="text-sm text-muted-foreground">Sin datos todavía.</li>}
               {summary.byHierarchy.map((h) => (
                 <li key={h.hierarchy} className="flex items-center justify-between text-sm">
-                  <span>{HIERARCHY_LABEL[h.hierarchy] ?? h.hierarchy}</span>
+                  <span>{hierarchyLabels.labelOf(h.hierarchy)}</span>
                   <span className="font-heading font-semibold tabular-nums">{h.count}</span>
                 </li>
               ))}

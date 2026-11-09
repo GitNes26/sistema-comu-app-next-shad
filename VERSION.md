@@ -30,6 +30,10 @@ Formato: `MAJOR.MINOR.PATCH.REVISION` (X.X.X.X)
 
 ## Historial
 
+### [0.36.0.0] — 2026-11-09
+- **Tipo:** `feat` (Minor)
+- feat: boleto vertical, favicon e iconos por tema, imagenes de marca de ministerios, jerarquia editable con migracion y accesos por rol en el login de desarrollo
+
 ### [0.35.0.0] — 2026-11-06
 - **Tipo:** `feat` (Minor)
 - feat: mesas rectangulares con lugares por el contorno, campos numericos con botones e iconos, impresion de flyer, informacion, resumen, itinerario publico o interno y plano, boleto descargable con diseno completo y migracion de visibilidad del itinerario

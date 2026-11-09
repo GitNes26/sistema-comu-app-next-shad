@@ -29,10 +29,12 @@ export interface TicketImageData {
   imageUrl?: string | null
 }
 
-const W = 1600
-const H = 660
+// Boleto vertical (como los de Ticketmaster o Boletia): cabecera, datos, lugar y, abajo, el talón con el QR.
+const W = 820
+const H = 1500
 const PAD = 44
-const STUB_X = 1100
+// Altura donde está la perforación (de ahí hacia abajo es el talón).
+const STUB_Y = 1090
 const FONT = '"Inter", "Segoe UI", system-ui, -apple-system, sans-serif'
 const MONO = '"JetBrains Mono", "SFMono-Regular", Consolas, monospace'
 
@@ -108,6 +110,7 @@ export async function renderTicketPng(t: TicketImageData): Promise<Blob> {
   const accent = t.accent ?? "#1d4ed8"
   const x0 = PAD
   const y0 = PAD
+  const inner = W - PAD * 2
   const used = Boolean(t.checkedInAt)
   const paid = t.status === "paid"
 
@@ -118,167 +121,163 @@ export async function renderTicketPng(t: TicketImageData): Promise<Blob> {
   ctx.shadowColor = "rgba(15,23,42,0.25)"
   ctx.shadowBlur = 40
   ctx.shadowOffsetY = 14
-  rr(ctx, x0, y0, W, H, 32)
+  rr(ctx, x0, y0, W, H, 36)
   ctx.fillStyle = "#ffffff"
   ctx.fill()
   ctx.restore()
 
-  // Cuerpo recortado con esquinas redondeadas
   ctx.save()
-  rr(ctx, x0, y0, W, H, 32)
+  rr(ctx, x0, y0, W, H, 36)
   ctx.clip()
 
   // Cabecera con degradado (y flyer si hay)
-  const headH = 250
-  const grad = ctx.createLinearGradient(x0, y0, x0 + STUB_X, y0 + headH)
+  const headH = 380
+  const grad = ctx.createLinearGradient(x0, y0, x0 + W, y0 + headH)
   grad.addColorStop(0, "#0f172a")
   grad.addColorStop(1, accent)
   ctx.fillStyle = grad
-  ctx.fillRect(x0, y0, STUB_X, headH)
+  ctx.fillRect(x0, y0, W, headH)
   if (t.imageUrl) {
     try {
       const img = await loadImage(t.imageUrl, true)
-      const r = Math.max(STUB_X / img.width, headH / img.height)
+      const r = Math.max(W / img.width, headH / img.height)
       ctx.globalAlpha = 0.35
-      ctx.drawImage(img, x0 + (STUB_X - img.width * r) / 2, y0 + (headH - img.height * r) / 2, img.width * r, img.height * r)
+      ctx.drawImage(img, x0 + (W - img.width * r) / 2, y0 + (headH - img.height * r) / 2, img.width * r, img.height * r)
       ctx.globalAlpha = 1
     } catch {
       /* sin flyer: queda el degradado */
     }
   }
-  // Círculos decorativos
   ctx.fillStyle = "rgba(255,255,255,0.07)"
   ctx.beginPath()
-  ctx.arc(x0 + STUB_X - 40, y0 - 30, 190, 0, Math.PI * 2)
+  ctx.arc(x0 + W - 60, y0 - 40, 230, 0, Math.PI * 2)
   ctx.fill()
   ctx.beginPath()
-  ctx.arc(x0 + STUB_X - 260, y0 + headH + 30, 120, 0, Math.PI * 2)
+  ctx.arc(x0 + 80, y0 + headH + 20, 140, 0, Math.PI * 2)
   ctx.fill()
 
   // Tipo / grupo
   ctx.fillStyle = "rgba(255,255,255,0.85)"
-  ctx.font = `700 20px ${FONT}`
+  ctx.font = `700 22px ${FONT}`
   ctx.letterSpacing = "4px"
-  ctx.fillText([t.kind, t.groupName].filter(Boolean).join("  ·  ").toUpperCase(), x0 + PAD, y0 + 58)
+  ctx.fillText(wrap(ctx, [t.kind, t.groupName].filter(Boolean).join("  ·  ").toUpperCase(), inner, 1)[0], x0 + PAD, y0 + 76)
   ctx.letterSpacing = "0px"
 
-  // Nombre del evento
+  // Nombre del evento (hasta 3 líneas) y tema
   ctx.fillStyle = "#ffffff"
-  ctx.font = `800 54px ${FONT}`
-  const nameLines = wrap(ctx, t.eventName, STUB_X - PAD * 2, 2)
-  nameLines.forEach((l, i) => ctx.fillText(l, x0 + PAD, y0 + 128 + i * 60))
+  ctx.font = `800 62px ${FONT}`
+  const nameLines = wrap(ctx, t.eventName, inner, 3)
+  nameLines.forEach((l, i) => ctx.fillText(l, x0 + PAD, y0 + 170 + i * 70))
   if (t.topic) {
-    ctx.fillStyle = "rgba(255,255,255,0.8)"
-    ctx.font = `500 26px ${FONT}`
-    ctx.fillText(wrap(ctx, t.topic, STUB_X - PAD * 2, 1)[0], x0 + PAD, y0 + (nameLines.length > 1 ? 128 + 60 + 40 : 128 + 44))
+    ctx.fillStyle = "rgba(255,255,255,0.82)"
+    ctx.font = `500 28px ${FONT}`
+    ctx.fillText(wrap(ctx, t.topic, inner, 1)[0], x0 + PAD, y0 + 170 + nameLines.length * 70 + 8)
   }
 
-  // Fecha, hora y lugar
+  // Fecha, hora y lugar (en filas)
   const start = new Date(t.startsAt)
   const day = start.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
   const hm = (d: Date) => d.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })
   const time = `${hm(start)}${t.endsAt ? ` – ${hm(new Date(t.endsAt))}` : ""}`
-  const infoY = y0 + headH + 50
-  label(ctx, "Fecha", x0 + PAD, infoY)
-  ctx.fillStyle = "#0f172a"
-  ctx.font = `700 28px ${FONT}`
-  wrap(ctx, day.charAt(0).toUpperCase() + day.slice(1), 380, 2).forEach((l, i) => ctx.fillText(l, x0 + PAD, infoY + 38 + i * 34))
-  label(ctx, "Hora", x0 + 470, infoY)
-  ctx.fillStyle = "#0f172a"
-  ctx.font = `700 26px ${FONT}`
-  wrap(ctx, time, 280, 2).forEach((l, i) => ctx.fillText(l, x0 + 470, infoY + 38 + i * 32))
-  label(ctx, "Lugar", x0 + 790, infoY)
-  ctx.fillStyle = "#0f172a"
-  ctx.font = `700 26px ${FONT}`
-  wrap(ctx, t.venue ?? "Por confirmar", STUB_X - 790 - PAD + 10, 2).forEach((l, i) => ctx.fillText(l, x0 + 790, infoY + 38 + i * 32))
+  let y = y0 + headH + 62
+  const info = (k: string, v: string, x: number, w: number, lines = 2) => {
+    label(ctx, k, x, y)
+    ctx.fillStyle = "#0f172a"
+    ctx.font = `700 29px ${FONT}`
+    wrap(ctx, v, w, lines).forEach((l, i) => ctx.fillText(l, x, y + 40 + i * 36))
+  }
+  info("Fecha", day.charAt(0).toUpperCase() + day.slice(1), x0 + PAD, inner)
+  y += 104
+  info("Hora", time, x0 + PAD, 330, 2)
+  info("Lugar", t.venue ?? "Por confirmar", x0 + PAD + 360, inner - 360)
 
   // Lugar asignado: zona, fila y asiento en cajas
   const spot = parseSeatLabel(t.seat)
-  const boxY = infoY + 120
+  const boxY = y + 112
   const boxes: [string, string][] = spot
     ? [...(spot.area ? ([["Zona", spot.area]] as [string, string][]) : []), [spot.kind === "mesa" ? "Mesa" : "Fila", spot.row], [spot.kind === "mesa" ? "Lugar" : "Asiento", spot.seatNo]]
     : [["Lugar", t.seat ?? "Por asignar"]]
-  let bx = x0 + PAD
-  const boxW = spot ? (spot.area ? 230 : 190) : 420
-  for (const [k, v] of boxes) {
-    rr(ctx, bx, boxY, boxW, 108, 20)
+  const gap = 16
+  const boxW = (inner - gap * (boxes.length - 1)) / boxes.length
+  boxes.forEach(([k, v], i) => {
+    const bx = x0 + PAD + i * (boxW + gap)
+    rr(ctx, bx, boxY, boxW, 128, 22)
     ctx.fillStyle = "#f1f5f9"
     ctx.fill()
     ctx.fillStyle = accent
-    rr(ctx, bx, boxY, 8, 108, [20, 0, 0, 20])
+    rr(ctx, bx, boxY, 9, 128, [22, 0, 0, 22])
     ctx.fill()
-    label(ctx, k, bx + 28, boxY + 34)
+    label(ctx, k, bx + 30, boxY + 40)
     ctx.fillStyle = "#0f172a"
-    ctx.font = `800 ${v.length > 6 ? 30 : 44}px ${FONT}`
-    ctx.fillText(wrap(ctx, v, boxW - 48, 1)[0], bx + 28, boxY + 82)
-    bx += boxW + 18
-  }
+    ctx.font = `800 ${v.length > 6 ? 32 : 54}px ${FONT}`
+    ctx.fillText(wrap(ctx, v, boxW - 50, 1)[0], bx + 30, boxY + 100)
+  })
 
   // Titular, importe y estado
-  const footY = y0 + H - 50
-  label(ctx, "Titular", x0 + PAD, footY - 40)
+  const holderY = boxY + 128 + 60
+  label(ctx, "Titular", x0 + PAD, holderY)
   ctx.fillStyle = "#0f172a"
-  ctx.font = `700 30px ${FONT}`
-  ctx.fillText(wrap(ctx, t.holder, 520, 1)[0], x0 + PAD, footY)
-  label(ctx, "Importe", x0 + 620, footY - 40)
+  ctx.font = `700 32px ${FONT}`
+  ctx.fillText(wrap(ctx, t.holder, inner, 1)[0], x0 + PAD, holderY + 42)
+  label(ctx, "Importe", x0 + PAD, holderY + 102)
   ctx.fillStyle = "#0f172a"
-  ctx.font = `700 30px ${FONT}`
-  ctx.fillText(t.price > 0 ? money(t.price) : "Sin costo", x0 + 620, footY)
+  ctx.font = `700 32px ${FONT}`
+  const priceTxt = t.price > 0 ? money(t.price) : "Sin costo"
+  ctx.fillText(priceTxt, x0 + PAD, holderY + 144)
   const statusText = used ? "Entrada registrada" : paid ? (t.price > 0 ? "Pagado" : "Confirmado") : `Saldo ${money(t.balance)}`
-  const statusColor = used ? "#64748b" : paid ? "#15803d" : "#b45309"
-  ctx.font = `700 22px ${FONT}`
-  const sw = ctx.measureText(statusText).width + 40
-  rr(ctx, x0 + STUB_X - PAD - sw, footY - 34, sw, 48, 24)
+  ctx.font = `700 24px ${FONT}`
+  const sw = ctx.measureText(statusText).width + 44
+  rr(ctx, x0 + W - PAD - sw, holderY + 104, sw, 52, 26)
   ctx.fillStyle = used ? "#e2e8f0" : paid ? "#dcfce7" : "#fef3c7"
   ctx.fill()
-  ctx.fillStyle = statusColor
-  ctx.fillText(statusText, x0 + STUB_X - PAD - sw + 20, footY)
+  ctx.fillStyle = used ? "#64748b" : paid ? "#15803d" : "#b45309"
+  ctx.fillText(statusText, x0 + W - PAD - sw + 22, holderY + 140)
 
-  // Talón: fondo, perforación y QR
+  // Talón: fondo y QR
+  const stubY = y0 + STUB_Y
   ctx.fillStyle = "#f8fafc"
-  ctx.fillRect(x0 + STUB_X, y0, W - STUB_X, H)
+  ctx.fillRect(x0, stubY, W, H - STUB_Y)
   const qrData = await QRCode.toDataURL(`comuapp-event:${t.code}`, { width: 560, margin: 1, errorCorrectionLevel: "M" })
   const qr = await loadImage(qrData)
-  const qrSize = 330
-  const cx = x0 + STUB_X + (W - STUB_X) / 2
-  rr(ctx, cx - qrSize / 2 - 22, y0 + 64, qrSize + 44, qrSize + 44, 24)
+  const qrSize = 250
+  const cx = x0 + W / 2
+  rr(ctx, cx - qrSize / 2 - 20, stubY + 40, qrSize + 40, qrSize + 40, 24)
   ctx.fillStyle = "#ffffff"
   ctx.fill()
   ctx.strokeStyle = "#e2e8f0"
   ctx.lineWidth = 2
   ctx.stroke()
-  ctx.drawImage(qr, cx - qrSize / 2, y0 + 86, qrSize, qrSize)
+  ctx.drawImage(qr, cx - qrSize / 2, stubY + 60, qrSize, qrSize)
   ctx.textAlign = "center"
   ctx.fillStyle = "#64748b"
   ctx.font = `600 18px ${FONT}`
   ctx.letterSpacing = "2px"
-  ctx.fillText("CÓDIGO DEL BOLETO", cx, y0 + 482)
+  ctx.fillText("CÓDIGO DEL BOLETO", cx, stubY + 376)
   ctx.letterSpacing = "6px"
   ctx.fillStyle = "#0f172a"
-  ctx.font = `700 46px ${MONO}`
-  ctx.fillText(t.folio, cx, y0 + 538)
+  ctx.font = `700 44px ${MONO}`
+  ctx.fillText(t.folio, cx, stubY + 428)
   ctx.letterSpacing = "0px"
   ctx.fillStyle = "#64748b"
   ctx.font = `500 20px ${FONT}`
-  ctx.fillText("Escanea el QR en la entrada", cx, y0 + 584)
-  ctx.fillText("o escribe el código", cx, y0 + 610)
+  ctx.fillText("Escanea el QR en la entrada o escribe el código", cx, stubY + 466)
   ctx.textAlign = "left"
   ctx.restore()
 
-  // Perforación: línea punteada y muescas
+  // Perforación horizontal: línea punteada y muescas a los lados
   ctx.save()
   ctx.strokeStyle = "#cbd5e1"
   ctx.lineWidth = 3
   ctx.setLineDash([12, 10])
   ctx.beginPath()
-  ctx.moveTo(x0 + STUB_X, y0 + 30)
-  ctx.lineTo(x0 + STUB_X, y0 + H - 30)
+  ctx.moveTo(x0 + 34, y0 + STUB_Y)
+  ctx.lineTo(x0 + W - 34, y0 + STUB_Y)
   ctx.stroke()
   ctx.setLineDash([])
   ctx.fillStyle = "#e2e8f0"
-  for (const cy of [y0, y0 + H]) {
+  for (const cxn of [x0, x0 + W]) {
     ctx.beginPath()
-    ctx.arc(x0 + STUB_X, cy, 26, 0, Math.PI * 2)
+    ctx.arc(cxn, y0 + STUB_Y, 28, 0, Math.PI * 2)
     ctx.fill()
   }
   ctx.restore()
@@ -286,14 +285,14 @@ export async function renderTicketPng(t: TicketImageData): Promise<Blob> {
   // Sello si ya se usó
   if (used) {
     ctx.save()
-    ctx.translate(x0 + 800, y0 + 480)
-    ctx.rotate(-0.18)
+    ctx.translate(x0 + W / 2, y0 + STUB_Y - 90)
+    ctx.rotate(-0.16)
     ctx.strokeStyle = "rgba(100,116,139,0.6)"
     ctx.lineWidth = 6
-    rr(ctx, -150, -42, 300, 84, 14)
+    rr(ctx, -160, -44, 320, 88, 14)
     ctx.stroke()
     ctx.fillStyle = "rgba(100,116,139,0.6)"
-    ctx.font = `800 38px ${FONT}`
+    ctx.font = `800 40px ${FONT}`
     ctx.textAlign = "center"
     ctx.fillText("UTILIZADO", 0, 14)
     ctx.restore()

@@ -1,4 +1,6 @@
 import { ThumbImage } from "@/components/base/thumb-image"
+import { BrandMark } from "@/components/shared/brand-mark"
+import { brandImageFor } from "@/lib/brand/ministry-images"
 import { cn } from "@/lib/utils"
 
 // Celda de "entidad" para listados: imagen (o inicial / ícono), título y una
@@ -13,6 +15,7 @@ export function EntityCell({
   muted = false,
   size = "md",
   className,
+  brandNames,
 }: {
   title: string
   subtitle?: React.ReactNode
@@ -25,12 +28,16 @@ export function EntityCell({
   muted?: boolean
   size?: "sm" | "md" | "lg"
   className?: string
+  /** Nombres con los que se busca la imagen de marca cuando no hay foto (ministerios, eventos…). */
+  brandNames?: (string | null | undefined)[]
 }) {
   const box = size === "sm" ? "size-8 rounded-lg" : size === "lg" ? "size-14 rounded-2xl" : "size-10 rounded-xl"
   return (
     <div className={cn("flex min-w-0 items-center gap-3", className)}>
       {image ? (
         <ThumbImage src={image} alt="" className={cn("shrink-0 object-cover", box)} />
+      ) : brandImageFor(...(brandNames ?? [])) ? (
+        <BrandMark names={brandNames ?? []} size={size === "sm" ? 32 : size === "lg" ? 56 : 40} className="rounded-xl" />
       ) : (
         <span
           aria-hidden

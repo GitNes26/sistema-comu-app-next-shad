@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useHierarchy } from "@/providers/hierarchy-provider"
 import Link from "next/link"
 import { Crown, HandHeart, Network, Users, Wrench } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -70,6 +71,7 @@ function NodeCard({ node, link }: { node: OrgNode; link: boolean }) {
 }
 
 export function OrgChart() {
+  const hierarchyLabels = useHierarchy()
   const [chart, setChart] = useState<OrgChartDto | null>(null)
   const [error, setError] = useState<string | null>(null)
   useEffect(() => {
@@ -98,7 +100,7 @@ export function OrgChart() {
                 <Crown className="size-5" />
                 <span className="leading-tight">
                   <span className="block font-heading font-semibold">{p.name}</span>
-                  <span className="block text-xs opacity-80">{p.senior ? "Pastor principal" : "Pastor"}</span>
+                  <span className="block text-xs opacity-80">{hierarchyLabels.labelOf(p.senior ? "senior_pastor" : "pastor")}</span>
                 </span>
               </li>
             ))}

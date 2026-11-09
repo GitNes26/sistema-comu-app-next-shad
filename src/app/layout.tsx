@@ -50,15 +50,32 @@ const spaceMono = localFont({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  title: {
-    default: "COMU-APP",
-    template: "%s | COMU-APP",
-  },
-  description: "COMU-APP: gestión integral de la iglesia, ministerios, células, escuela y crecimiento personal.",
-  applicationName: "COMU-APP",
-  icons: { icon: "/brand-icon", apple: "/brand-icon" },
-};
+// Ícono de la pestaña: si la iglesia cargó su logo, ese; si no, el de marca según el tema del
+// navegador o del sistema. Convención: «icon» (claro) para tema oscuro y «icon_dark» (oscuro)
+// para tema claro. /favicon.ico (public) cubre navegadores y bots que lo piden directo.
+export async function generateMetadata(): Promise<Metadata> {
+  const brand = await getChurchBrand();
+  return {
+    title: {
+      default: "COMU-APP",
+      template: "%s | COMU-APP",
+    },
+    description: "COMU-APP: gestión integral de la iglesia, ministerios, células, escuela y crecimiento personal.",
+    applicationName: "COMU-APP",
+    icons: brand.logoUrl
+      ? { icon: "/brand-icon", apple: "/brand-icon" }
+      : {
+          icon: [
+            { url: "/icons/icon_dark.ico", type: "image/x-icon", media: "(prefers-color-scheme: light)" },
+            { url: "/icons/icon.ico", type: "image/x-icon", media: "(prefers-color-scheme: dark)" },
+            { url: "/icons/favicon-32.png", type: "image/png", sizes: "32x32", media: "(prefers-color-scheme: light)" },
+            { url: "/icons/favicon-32-dark.png", type: "image/png", sizes: "32x32", media: "(prefers-color-scheme: dark)" },
+          ],
+          shortcut: "/favicon.ico",
+          apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+        },
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: [

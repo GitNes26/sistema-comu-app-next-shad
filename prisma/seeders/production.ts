@@ -77,8 +77,9 @@ export const SYSTEM_MENUS: SystemMenuDef[] = [
   { id: "menu-ajustes", parentId: null, type: "section", label: "Ajustes", icon: "Settings", sortOrder: 5 },
   { id: "menu-apariencia", parentId: "menu-ajustes", type: "item", label: "Apariencia", icon: "Palette", href: "/admin/settings/appearance", permissionKey: "settings.manage", sortOrder: 1 },
   { id: "menu-empresa", parentId: "menu-ajustes", type: "item", label: "Iglesia", icon: "Building2", href: "/admin/settings/company", permissionKey: "settings.manage", sortOrder: 2 },
-  { id: "menu-my-plan", parentId: "menu-ajustes", type: "item", label: "Mi plan", icon: "BadgeDollarSign", href: "/admin/settings/my-plan", permissionKey: "settings.manage", sortOrder: 3 },
-  { id: "menu-usuarios", parentId: "menu-ajustes", type: "item", label: "Usuarios y permisos", icon: "ShieldCheck", href: "/admin/settings/users", permissionKey: "users.manage", sortOrder: 4 },
+  { id: "menu-hierarchy", parentId: "menu-ajustes", type: "item", label: "Jerarquía", icon: "Crown", href: "/admin/settings/hierarchy", permissionKey: "settings.manage", sortOrder: 3 },
+  { id: "menu-my-plan", parentId: "menu-ajustes", type: "item", label: "Mi plan", icon: "BadgeDollarSign", href: "/admin/settings/my-plan", permissionKey: "settings.manage", sortOrder: 4 },
+  { id: "menu-usuarios", parentId: "menu-ajustes", type: "item", label: "Usuarios y permisos", icon: "ShieldCheck", href: "/admin/settings/users", permissionKey: "users.manage", sortOrder: 5 },
 
   // Plataforma: páginas exclusivas del superadministrador (todas las iglesias).
   { id: "menu-plataforma", parentId: null, type: "section", label: "Plataforma", icon: "ShieldCheck", sortOrder: 6 },

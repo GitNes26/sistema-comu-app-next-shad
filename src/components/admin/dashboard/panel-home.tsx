@@ -56,6 +56,7 @@ const HINT: Record<string, string> = {
   "/admin/locations": "Sedes de la iglesia",
   "/admin/settings/appearance": "Colores, letra y tema",
   "/admin/settings/company": "Datos y página pública",
+  "/admin/settings/hierarchy": "Nombres de cada nivel",
   "/admin/settings/my-plan": "Tu plan y sus funciones",
   "/admin/settings/users": "Personas y permisos",
 }

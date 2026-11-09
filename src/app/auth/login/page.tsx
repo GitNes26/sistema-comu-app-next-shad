@@ -6,6 +6,7 @@ import { authOptions } from "@/lib/auth/options"
 import { homeForSession } from "@/lib/auth/redirect"
 import { AuthShell } from "@/components/auth/auth-shell"
 import { LoginForm } from "@/components/auth/login-form"
+import { devAccounts, devPassword } from "@/lib/auth/dev-accounts"
 import packageJson from "../../../../package.json"
 
 export const metadata: Metadata = {
@@ -41,7 +42,7 @@ export default async function LoginPage({
         </>
       }
     >
-      <LoginForm callbackUrl={callbackUrl} error={error} />
+      <LoginForm callbackUrl={callbackUrl} error={error} devAccounts={devAccounts()} devPassword={devPassword()} />
     </AuthShell>
   )
 }

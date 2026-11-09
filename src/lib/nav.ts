@@ -8,6 +8,7 @@ import {
   Building2,
   Car,
   Church,
+  Crown,
   GraduationCap,
   HandCoins,
   HandHeart,
@@ -118,6 +119,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { href: "/admin/settings/appearance", label: "Apariencia", icon: Palette, permission: "settings.manage" },
       { href: "/admin/settings/company", label: "Iglesia", icon: Building2, permission: "settings.manage" },
+      { href: "/admin/settings/hierarchy", label: "Jerarquía", icon: Crown, permission: "settings.manage" },
       { href: "/admin/settings/my-plan", label: "Mi plan", icon: BadgeDollarSign, permission: "settings.manage" },
       { href: "/admin/settings/users", label: "Usuarios y permisos", icon: ShieldCheck, permission: "users.manage" },
     ],

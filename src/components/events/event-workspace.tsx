@@ -59,6 +59,7 @@ import { EventFormDialog, STATUS_LABEL, STATUS_TONE, money } from "./events-admi
 import { SeatLegend, SeatMap, type SeatMapHandle } from "./seat-map"
 import { EventStaffTab } from "./event-staff"
 import { EventPrintSheet } from "./event-print"
+import { BrandMark } from "@/components/shared/brand-mark"
 import { downloadTicketPng } from "@/lib/events/ticket-image"
 import { cn } from "@/lib/utils"
 import { GROWTH_CHECK_LABEL, growthCheckForEventKind } from "@/lib/school/growth-rules"
@@ -136,9 +137,15 @@ export function EventWorkspace({ eventId, backHref }: { eventId: string; backHre
           // eslint-disable-next-line @next/next/no-img-element
           <img src={event.imageUrl} alt="" className="size-16 shrink-0 rounded-2xl object-cover" />
         ) : (
-          <span className="grid size-16 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary">
-            <Ticket className="size-7" />
-          </span>
+          <BrandMark
+            names={[event.kind, event.name]}
+            size={64}
+            fallback={
+              <span className="grid size-16 shrink-0 place-items-center rounded-2xl bg-primary/10 text-primary">
+                <Ticket className="size-7" />
+              </span>
+            }
+          />
         )}
         <div className="min-w-0 flex-1">
           <h1 className="font-heading text-xl font-semibold tracking-tight">{event.name}</h1>

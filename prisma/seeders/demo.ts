@@ -32,6 +32,15 @@ const USERS: DemoUser[] = [
   { email: "demo.tesorero@comuapp.test", name: "Tomás Tesorero", level: "leader", roleId: "system-treasurer", hierarchy: "leader", stage: "leadership" },
   { email: "demo.celula@comuapp.test", name: "Lupita Líder de Célula", level: "leader", roleId: "system-cell-leader", hierarchy: "leader", stage: "leadership" },
   { email: "demo.creyente@comuapp.test", name: "Carlos Creyente", level: "believer", roleId: "system-believer", hierarchy: "believer", stage: "consolidate" },
+  // Un usuario por cada rol de sistema restante: alimentan los accesos rápidos del login en desarrollo.
+  { email: "demo.pastor@comuapp.test", name: "Pablo Pastor", level: "leader", roleId: "system-pastor", hierarchy: "pastor", stage: "leadership" },
+  { email: "demo.administrativo@comuapp.test", name: "Alma Administrativa", level: "leader", roleId: "system-all-rounder", hierarchy: "leader", stage: "leadership" },
+  { email: "demo.asistencia@comuapp.test", name: "Ulises Ujier", level: "servant", roleId: "system-attendance", hierarchy: "servant", stage: "school" },
+  { email: "demo.kids@comuapp.test", name: "Karla Kids", level: "servant", roleId: "system-kids-staff", hierarchy: "servant", stage: "school" },
+  { email: "demo.red@comuapp.test", name: "Ramiro Líder de Red", level: "leader", roleId: "system-network-leader", hierarchy: "network_leader", stage: "leadership" },
+  { email: "demo.ministerio@comuapp.test", name: "Marta Líder de Ministerio", level: "leader", roleId: "system-ministry-leader", hierarchy: "leader", stage: "leadership" },
+  { email: "demo.maestro@comuapp.test", name: "Mateo Maestro", level: "leader", roleId: "system-teacher", hierarchy: "leader", stage: "leadership" },
+  { email: "demo.discipulo@comuapp.test", name: "Diana Discípula", level: "leader", roleId: "system-disciple", hierarchy: "disciple", stage: "discipleship" },
 ]
 
 const EXTRA_MEMBERS: { name: string; stage: $Enums.VisionStage; gender: $Enums.Gender; phone: string }[] = [

@@ -27,6 +27,7 @@ import { crudApi } from "@/lib/api"
 import { notify } from "@/lib/notify"
 import { swalConfirm, swalError } from "@/lib/swal"
 import { CrudForm } from "./crud-form"
+import { useHierarchy } from "@/providers/hierarchy-provider"
 import { getCrudUi, type CrudColumn, type CrudUiConfig } from "./crud-config"
 
 interface CrudPageProps {
@@ -107,7 +108,18 @@ function useDebounce<T>(value: T, delay = 350): T {
 
 export function CrudPage({ moduleKey, canManage, canDelete, icon }: CrudPageProps) {
   const router = useRouter()
-  const config = useMemo<CrudUiConfig | null>(() => getCrudUi(moduleKey) ?? null, [moduleKey])
+  const hierarchy = useHierarchy()
+  // La jerarquía usa los nombres que la iglesia definió en Ajustes (filtros, columna y formulario).
+  const config = useMemo<CrudUiConfig | null>(() => {
+    const base = getCrudUi(moduleKey) ?? null
+    if (!base) return null
+    return {
+      ...base,
+      filters: base.filters?.map((f) => (f.key === "hierarchy" ? { ...f, options: hierarchy.allOptions } : f)),
+      columns: base.columns.map((c) => (c.key === "hierarchy" ? { ...c, displayMap: hierarchy.labels } : c)),
+      fields: base.fields?.map((f) => (f.key === "hierarchy" ? { ...f, options: hierarchy.optionsFor() } : f)),
+    }
+  }, [moduleKey, hierarchy])
   const meta = config ?? { module: moduleKey, title: "Módulo", description: "" }
   const searchPlaceholder = config?.searchPlaceholder ?? "Buscar…"
 
@@ -267,6 +279,7 @@ export function CrudPage({ moduleKey, canManage, canDelete, icon }: CrudPageProp
               title={String(r[col.key] ?? "—")}
               subtitle={subtitle || undefined}
               image={typeof r.imageUrl === "string" ? r.imageUrl : null}
+              brandNames={[String(r[col.key] ?? ""), typeof r.kind === "string" ? r.kind : null]}
               muted={r.isActive === false}
             />
           )

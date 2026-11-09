@@ -8,7 +8,7 @@ import { useForm } from "react-hook-form"
 import { yupResolver } from "@hookform/resolvers/yup"
 import * as yup from "yup"
 import { motion } from "framer-motion"
-import { Eye, EyeOff, Loader2, Lock, User, ArrowRight, Building2 } from "lucide-react"
+import { Eye, EyeOff, FlaskConical, Loader2, Lock, User, ArrowRight, Building2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -45,9 +45,14 @@ type LoginValues = yup.InferType<typeof validationSchema>
 export function LoginForm({
   callbackUrl,
   error: nextAuthError,
+  devAccounts = [],
+  devPassword = null,
 }: {
   callbackUrl?: string | null
   error?: string | null
+  /** Solo en desarrollo: un acceso rápido por cada rol de sistema. */
+  devAccounts?: { roleId: string; label: string; description: string; email: string }[]
+  devPassword?: string | null
 }) {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
@@ -237,6 +242,29 @@ export function LoginForm({
               )}
             </Button>
           </form>
+
+          {devAccounts.length > 0 && devPassword && (
+            <section aria-label="Acceso de desarrollo" className="mt-6 space-y-2 rounded-2xl border border-dashed border-warning/50 bg-warning/5 p-3">
+              <p className="flex items-center gap-1.5 text-xs font-semibold text-warning-ink">
+                <FlaskConical className="size-3.5" /> Solo desarrollo · entrar como…
+              </p>
+              <ul className="grid grid-cols-2 gap-1.5">
+                {devAccounts.map((a) => (
+                  <li key={a.roleId}>
+                    <button
+                      type="button"
+                      disabled={loading}
+                      title={a.description}
+                      onClick={() => void runLogin(a.email, devPassword)}
+                      className="press h-9 w-full truncate rounded-lg border bg-card px-2 text-xs font-medium hover:border-primary/50 hover:bg-primary/5 disabled:opacity-50"
+                    >
+                      {a.label}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
         </div>
       </motion.div>
     </div>
