@@ -1,8 +1,7 @@
 import { SYSTEM_ROLES } from "@/lib/auth/system-roles"
 
 // Accesos rápidos de DESARROLLO: un botón por cada rol de sistema en el login, para probar la
-// app como cada tipo de usuario. Solo existen mientras NODE_ENV sea «development»; en producción
-// la lista llega vacía y no se renderiza nada. Los usuarios los crea el seeder de demostración.
+// app como cada tipo de usuario (ver el aviso de `isDevLoginEnabled`: hoy se muestran siempre). Los usuarios los crea el seeder de demostración.
 
 export interface DevAccount {
   roleId: string
@@ -29,7 +28,10 @@ export const DEV_ACCOUNT_EMAILS: Record<string, string> = {
   "system-believer": "demo.creyente@comuapp.test",
 }
 
-export const isDevLoginEnabled = () => process.env.NODE_ENV === "development"
+// TEMPORAL: se muestran SIEMPRE (la condición NODE_ENV="development" no se está detectando en el
+// entorno actual). Antes de publicar de verdad, volver a `process.env.NODE_ENV === "development"`
+// o a una variable explícita como DEV_LOGIN_BUTTONS="true".
+export const isDevLoginEnabled = () => true
 
 /** Cuentas de demostración para el login; vacío fuera de desarrollo. */
 export function devAccounts(): DevAccount[] {

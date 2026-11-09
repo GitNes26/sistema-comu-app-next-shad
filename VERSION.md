@@ -30,6 +30,10 @@ Formato: `MAJOR.MINOR.PATCH.REVISION` (X.X.X.X)
 
 ## Historial
 
+### [0.36.1.0] — 2026-11-09
+- **Tipo:** `fix` (Patch)
+- fix: botones de acceso por rol del login siempre visibles de forma temporal
+
 ### [0.36.0.0] — 2026-11-09
 - **Tipo:** `feat` (Minor)
 - feat: boleto vertical, favicon e iconos por tema, imagenes de marca de ministerios, jerarquia editable con migracion y accesos por rol en el login de desarrollo

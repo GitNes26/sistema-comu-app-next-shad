@@ -52,14 +52,9 @@ test("jerarquía editable: solo se guardan los cambios, se resuelven valores por
   assert.equal(duplicateHierarchyLabel(resolveHierarchy({ leader: { label: "pastór" }, pastor: { label: "Pastor" } })), "Pastor")
 })
 
-test("accesos de desarrollo: un botón por rol de sistema (salvo superadmin) y nada fuera de desarrollo", () => {
-  const prev = process.env.NODE_ENV
-  process.env.NODE_ENV = "development"
+test("accesos de desarrollo: un botón por rol de sistema (salvo superadmin)", () => {
   const accounts = devAccounts()
   assert.equal(accounts.length, SYSTEM_ROLES.filter((r) => r.id !== "system-superadmin").length)
   assert.ok(accounts.every((a) => a.email.endsWith("@comuapp.test")))
   assert.equal(new Set(Object.values(DEV_ACCOUNT_EMAILS)).size, Object.keys(DEV_ACCOUNT_EMAILS).length)
-  process.env.NODE_ENV = "production"
-  assert.deepEqual(devAccounts(), [])
-  process.env.NODE_ENV = prev
 })
